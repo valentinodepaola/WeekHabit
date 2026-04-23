@@ -6,16 +6,24 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct ContentView: View {
+    @Environment(\.modelContext) private var context
+    @Query var habits: [Habit]
     var body: some View {
         VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+            Text("Habits: \(habits.count)")
+            Button("Agregar prueba") {
+                let habit = Habit(
+                    title: "Ejercicio",
+                    category: "Salud",
+                    targetDaysPerWeek: 5,
+                    activeDaysOfWeek: [.monday, .wednesday, .friday]
+                )
+                context.insert(habit)
+            }
         }
-        .padding()
     }
 }
 
