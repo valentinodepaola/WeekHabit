@@ -25,6 +25,7 @@ struct HabitsView: View {
                     }
                 }
                 .padding(.horizontal)
+                .padding(.top, 15)
                 Spacer()
                 
                 if self.emptyState {
