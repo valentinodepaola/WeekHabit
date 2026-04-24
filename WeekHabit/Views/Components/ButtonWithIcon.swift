@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct ButtonWithIcon: View {
-    var icon: String
+    var icon: String? = nil
     var text: String
     var action: () -> Void
     
@@ -17,7 +17,9 @@ struct ButtonWithIcon: View {
             self.action()
         } label: {
             HStack {
-                Image(systemName: self.icon)
+                if let icon = self.icon {
+                    Image(systemName: self.icon ?? "")
+                }
                 Text(self.text)
             }
             .fontWeight(.bold)

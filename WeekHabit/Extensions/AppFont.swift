@@ -12,5 +12,6 @@ enum AppFont {
     static let subtitle = Font.system(size: 28, weight: .regular, design: .serif)
     static let body = Font.system(size: 17, weight: .regular, design: .default)
     static let body2 = Font.system(size: 16, weight: .regular, design: .default)
+    static let captionApp = Font.system(size: 14, weight: .regular, design: .default)
     static let tabBarText = Font.system(size: 10.5, weight: .regular, design: .default)
 }
