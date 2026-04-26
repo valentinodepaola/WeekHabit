@@ -10,8 +10,8 @@ import SwiftUI
 struct EmptyStateIcon: View {
     
     // Personaliza con tus colores de tema
-    var accentColor: Color = Color(hex: "#c2573c")
-    var fillColor: Color = Color(hex: "#f3d9cf")
+    var accentColor: Color = AppColor.accent
+    var fillColor: Color = AppColor.accentSoft
     
     var body: some View {
         ZStack {

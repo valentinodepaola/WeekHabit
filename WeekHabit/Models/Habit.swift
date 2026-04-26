@@ -13,24 +13,28 @@ final class Habit {
     var id: UUID
     var title: String
     var note: String?
-    var category: String        // String libre, el usuario define
+    var category: HabitCategory?
     var targetDaysPerWeek: Int
-    var activeDaysOfWeekRaw: [Int]  // almacenado como [Int]
+    var activeDaysOfWeekRaw: [Int]
     var createdAt: Date
 
     @Relationship(deleteRule: .cascade)
     var entries: [HabitEntry] = []
 
-    // Interfaz cómoda para trabajar con Weekday
+    /// Set-based view of `activeDaysOfWeekRaw`.
     var activeDaysOfWeek: Set<Weekday> {
         get { Set(activeDaysOfWeekRaw.compactMap { Weekday(rawValue: $0) }) }
         set { activeDaysOfWeekRaw = newValue.map(\.rawValue) }
     }
 
+    var displayCategory: HabitCategory {
+        category ?? .health
+    }
+
     init(
         title: String,
         note: String? = nil,
-        category: String,
+        category: HabitCategory,
         targetDaysPerWeek: Int,
         activeDaysOfWeek: Set<Weekday>,
         createdAt: Date = .now
@@ -44,4 +48,3 @@ final class Habit {
         self.createdAt = createdAt
     }
 }
-

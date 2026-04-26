@@ -19,13 +19,15 @@ struct TabBarItem: View {
             VStack(spacing: 5) {
                 Image(systemName: self.icon)
                     .font(.system(size: 22))
-                    .foregroundStyle(isSelected ? Color(hex: "#c2573c") : .gray)
+                    .foregroundStyle(isSelected ? AppColor.accent : .gray)
                     .frame(maxWidth: .infinity)
                 Text(self.text)
                     .font(AppFont.tabBarText)
-                    .foregroundStyle(isSelected ? Color(hex: "#c2573c") : .gray)
+                    .foregroundStyle(isSelected ? AppColor.accent : .gray)
             }
         }
+        .accessibilityLabel(self.text)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }
 

@@ -27,10 +27,9 @@ struct AppBackground<Content: View> : View {
     private var backgroundColor: Color {
         switch colorScheme {
         case .dark:
-            Color(hex: "#121010")
-            
+            AppColor.bgDark
         default:
-            Color(hex: "#f5f1ea")
+            AppColor.bgLight
         }
     }
 }

@@ -8,30 +8,34 @@
 import SwiftUI
 
 struct EmptyStateView: View {
+    
+    var onCreateHabit: () -> Void
+    
     var body: some View {
-        
+
         EmptyStateIcon()
-        
+
         VStack(spacing: 25) {
             Text("Tu semana está en blanco")
                 .font(AppFont.subtitle)
             (
                 Text("Elige un pequeño habito. El cambio empieza con lo que haces ")
                     .font(AppFont.body2)
-                    .foregroundStyle(Color(hex: "#6b6458"))
+                    .foregroundStyle(AppColor.mutedText)
                 +
                 Text("mañana por la mañana")
                     .font(AppFont.body2)
-                    .foregroundStyle(Color(hex: "#c2573c"))
+                    .foregroundStyle(AppColor.accent)
             )
             .multilineTextAlignment(.center)
             .padding(.horizontal, 50)
-            
-            ButtonWithIcon(
+
+            IconButton(
                 icon: "plus",
-                text: "Crear mi primer hábito"
-            ){
-                //falta accion.
+                text: "Crear mi primer hábito",
+                style: .pill
+            ) {
+                self.onCreateHabit()
             }
         }
         .padding(.top, 30)
@@ -39,5 +43,7 @@ struct EmptyStateView: View {
 }
 
 #Preview {
-    EmptyStateView()
+    EmptyStateView(
+        onCreateHabit: { }
+    )
 }

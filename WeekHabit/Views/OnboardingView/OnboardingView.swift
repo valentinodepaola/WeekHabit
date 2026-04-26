@@ -1,5 +1,5 @@
 //
-//  onBoardingView.swift
+//  OnboardingView.swift
 //  WeekHabit
 //
 //  Created by Valentino De Paola Gallardo on 24/04/26.
@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct onBoardingView: View {
+struct OnboardingView: View {
     var body: some View {
         AppBackground {
             
@@ -20,10 +20,10 @@ struct onBoardingView: View {
                             .font(AppFont.title1)
                         Text("Un ritmo.")
                             .font(AppFont.title1.italic())
-                            .foregroundStyle(Color(hex: "#c2573c"))
+                            .foregroundStyle(AppColor.accent)
                         Text("Construye habitos que si se sostienen - día a día, sin presión.")
                             .font(AppFont.body2)
-                            .foregroundStyle(Color(hex: "#6b6458"))
+                            .foregroundStyle(AppColor.mutedText)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 60)
                     }
@@ -32,19 +32,16 @@ struct onBoardingView: View {
             
             VStack {
                 Spacer()
-                ButtonWithIcon(text: "Empezar mi semana") {
-                    print("Empezar mi semana button")
-                }
-                .padding()
+                IconButton(text: "Empezar mi semana", style: .pill) { }
+                    .padding()
                 Text("Ya tengo una cuenta")
                     .font(AppFont.captionApp)
-                    .foregroundStyle(Color(hex: "#a8a091"))
-                    
+                    .foregroundStyle(AppColor.subtleText)
             }
         }
     }
 }
 
 #Preview {
-    onBoardingView()
+    OnboardingView()
 }

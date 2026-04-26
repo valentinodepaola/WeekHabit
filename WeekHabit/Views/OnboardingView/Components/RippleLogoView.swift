@@ -1,6 +1,9 @@
-
-import SwiftUI
-
+//
+//  RippleLogoView.swift
+//  WeekHabit
+//
+//  Created by Valentino De Paola Gallardo on 24/04/26.
+//
 
 import SwiftUI
 
@@ -16,7 +19,7 @@ struct RippleLogoView: View {
             ZStack {
                 ForEach(rings.indices, id: \.self) { i in
                     Circle()
-                        .stroke(Color(hex: "#c2573c"), lineWidth: 1.5)
+                        .stroke(AppColor.accent, lineWidth: 1.5)
                         .frame(
                             width: baseSize * rings[i] * (isExpanded ? 1.06 : 1.0),
                             height: baseSize * rings[i] * (isExpanded ? 1.06 : 1.0)
@@ -25,7 +28,7 @@ struct RippleLogoView: View {
                 }
 
                 Circle()
-                    .fill(Color(hex: "#c2573c"))
+                    .fill(AppColor.accent)
                     .frame(width: 68, height: 68)
 
                 Image(systemName: "flame.fill")
