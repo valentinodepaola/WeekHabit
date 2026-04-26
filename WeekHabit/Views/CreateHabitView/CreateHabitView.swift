@@ -89,6 +89,18 @@ struct CreateHabitView: View {
                         targetDays: daysPerWeek
                     )
                     
+                    HStack{
+                        Image(systemName: "circle.hexagongrid")
+                            .foregroundStyle(Color(hex: "#c2573c"))
+
+                        Text("Lunes a viernes es un buen ritmo para empezar.")
+                            .font(AppFont.formSectionText)
+                            .foregroundStyle(Color(hex: "#c2573c"))
+                    }
+                    .padding(8)
+                    .background(Color(hex: "#c2573c").opacity(0.2))
+                    .cornerRadius(12)
+                    
                     
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -96,7 +108,6 @@ struct CreateHabitView: View {
                 .onChange(of: daysPerWeek) { _, newValue in
                     trimSelectedDays(to: newValue)
                 }
-
                 
                 Spacer()
                 
