@@ -14,7 +14,7 @@ struct CreateHabitView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     
-    @State var habitName: String = ""
+    @State private var habitName: String = ""
     @State private var note: String = ""
     @State private var selectedCategory: HabitCategory = .health
     @State private var daysPerWeek: Int = 0
@@ -33,10 +33,10 @@ struct CreateHabitView: View {
                     Button("Cancelar") {
                         self.dismiss()
                     }
-                    .foregroundStyle(Color(hex: "#6b6458"))
-                    
+                    .foregroundStyle(AppColor.mutedText)
+
                     Spacer()
-                    
+
                     Button {
                         saveHabit()
                     } label: {
@@ -44,15 +44,15 @@ struct CreateHabitView: View {
                     }
                     .buttonStyle(.borderedProminent)
                     .fontWeight(.bold)
-                    .tint(Color(hex: "#c2573c"))
+                    .tint(AppColor.accent)
                 }
                 .padding(.horizontal)
-                
+
                 VStack(alignment: .leading, spacing: 25) {
-                    
+
                     Text("Nuevo habito")
                         .font(AppFont.title)
-                        .foregroundStyle(Color(hex: "1c1812"))
+                        .foregroundStyle(AppColor.strongText)
                         .padding(.bottom, 20)
                     
                     TextFieldComponent(
@@ -71,15 +71,15 @@ struct CreateHabitView: View {
                     
                     Text("Categoria")
                         .font(AppFont.formSectionText)
-                        .foregroundStyle(Color(hex: "#6b6458"))
+                        .foregroundStyle(AppColor.mutedText)
                         .textCase(.uppercase)
-                    
+
                     //TODO: Agregar animacion al cambiar de boton.
                     ButtonCategoryComponent(selectedCategory: $selectedCategory)
-                    
+
                     Text("Meta semanal")
                         .font(AppFont.formSectionText)
-                        .foregroundStyle(Color(hex: "#6b6458"))
+                        .foregroundStyle(AppColor.mutedText)
                         .textCase(.uppercase)
                     
                     WeekGoalComponent(days: self.$daysPerWeek)
@@ -89,17 +89,17 @@ struct CreateHabitView: View {
                         targetDays: daysPerWeek
                     )
                     
-                    HStack{
+                    HStack {
                         Image(systemName: "circle.hexagongrid")
-                            .foregroundStyle(Color(hex: "#c2573c"))
+                            .foregroundStyle(AppColor.accent)
 
                         Text("Lunes a viernes es un buen ritmo para empezar.")
                             .font(AppFont.formSectionText)
-                            .foregroundStyle(Color(hex: "#c2573c"))
+                            .foregroundStyle(AppColor.accent)
                     }
                     .padding(8)
-                    .background(Color(hex: "#c2573c").opacity(0.2))
-                    .cornerRadius(12)
+                    .background(AppColor.accent.opacity(0.2))
+                    .cornerRadius(AppRadius.medium)
                     
                     
                 }
@@ -133,7 +133,7 @@ struct CreateHabitView: View {
         let habit = Habit(
             title: trimmedName,
             note: trimmedNote.isEmpty ? nil : trimmedNote,
-            category: selectedCategory.rawValue,
+            category: selectedCategory,
             targetDaysPerWeek: daysPerWeek,
             activeDaysOfWeek: selectedActiveDays
         )

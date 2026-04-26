@@ -18,20 +18,20 @@ struct TextFieldComponent: View {
         VStack(alignment: .leading) {
             Text(self.titleSection)
                 .font(AppFont.formSectionText)
-                .foregroundStyle(Color(hex: "#6b6458"))
+                .foregroundStyle(AppColor.mutedText)
                 .textCase(.uppercase)
             
             if normalTextField {
                 TextField(self.placeholder, text: $habitName)
                     .padding()
-                    .background(Color.white)
-                    .cornerRadius(12)
+                    .background(AppColor.surface)
+                    .cornerRadius(AppRadius.medium)
             } else {
                 TextField(self.placeholder, text: $habitName, axis: .vertical)
                     .lineLimit(5...10)
                     .padding()
-                    .background(Color.white)
-                    .cornerRadius(12)
+                    .background(AppColor.surface)
+                    .cornerRadius(AppRadius.medium)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

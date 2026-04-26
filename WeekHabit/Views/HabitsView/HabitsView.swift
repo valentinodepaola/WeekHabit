@@ -23,9 +23,7 @@ struct HabitsView: View {
                         .font(AppFont.title)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     
-                    CircleButtonIcon(
-                        icon: "plus"
-                    ) {
+                    IconButton(icon: "plus", style: .circle) {
                         isShowingCreateHabit = true
                     }
                     

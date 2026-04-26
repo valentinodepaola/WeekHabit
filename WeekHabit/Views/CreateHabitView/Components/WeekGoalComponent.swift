@@ -17,11 +17,11 @@ struct WeekGoalComponent: View {
                 .padding(.leading)
             Text("dias/semana")
                 .font(AppFont.captionApp)
-                .foregroundStyle(Color(hex: "#a8a091"))
-            
+                .foregroundStyle(AppColor.subtleText)
+
             Spacer()
-            
-            Button{
+
+            Button {
                 if self.days > 0 {
                     self.days -= 1
                 }
@@ -29,13 +29,13 @@ struct WeekGoalComponent: View {
                 Image(systemName: "minus")
                     .foregroundStyle(.black)
                     .fontWeight(.bold)
-
             }
             .frame(width: 15, height: 15)
             .padding()
-            .background(Color(hex: "#fbf7f0"))
-            .cornerRadius(15)
-            
+            .background(AppColor.surfaceMuted)
+            .cornerRadius(AppRadius.pill)
+            .accessibilityLabel("Disminuir días")
+
             Button {
                 if self.days < 7 {
                     self.days += 1
@@ -47,14 +47,14 @@ struct WeekGoalComponent: View {
             }
             .frame(width: 15, height: 15)
             .padding()
-            .background(Color(hex: "#c2573c"))
-            .cornerRadius(15)
-
+            .background(AppColor.accent)
+            .cornerRadius(AppRadius.pill)
+            .accessibilityLabel("Aumentar días")
         }
         .padding(8)
         .frame(maxWidth: .infinity)
-        .background(Color.white)
-        .cornerRadius(15)
+        .background(AppColor.surface)
+        .cornerRadius(AppRadius.pill)
 
     }
 }

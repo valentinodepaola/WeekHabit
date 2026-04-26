@@ -17,12 +17,12 @@ struct ActiveDaysComponent: View {
             HStack(spacing: 2) {
                 Text("Días activos")
                     .font(AppFont.formSectionText)
-                    .foregroundStyle(Color(hex: "#6b6458"))
+                    .foregroundStyle(AppColor.mutedText)
                     .textCase(.uppercase)
-                
+
                 Text("·")
                     .font(AppFont.formSectionText)
-                    .foregroundStyle(Color(hex: "#c2573c"))
+                    .foregroundStyle(AppColor.accent)
             }
             
             HStack(spacing: 7) {
@@ -40,13 +40,15 @@ struct ActiveDaysComponent: View {
             toggle(day)
         } label: {
             Text(day.oneLetterName)
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(isSelected ? .white : Color(hex: "#6b6458"))
+                .font(AppFont.dayLabel)
+                .foregroundStyle(isSelected ? .white : AppColor.mutedText)
                 .frame(width: 45, height: 45)
-                .background(isSelected ? Color(hex: "#c2573c") : .white)
-                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .background(isSelected ? AppColor.accent : AppColor.surface)
+                .clipShape(RoundedRectangle(cornerRadius: AppRadius.small))
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(day.shortName)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
     
     private func toggle(_ day: Weekday) {

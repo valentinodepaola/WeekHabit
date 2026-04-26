@@ -6,7 +6,7 @@
 //
 import SwiftUI
 
-enum HabitCategory: String, CaseIterable {
+enum HabitCategory: String, Codable, CaseIterable {
     case health
     case work
     case personal
