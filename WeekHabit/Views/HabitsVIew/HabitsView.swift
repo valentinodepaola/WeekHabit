@@ -9,6 +9,11 @@ import SwiftUI
 import SwiftData
 
 struct HabitsView: View {
+    
+    @Environment(\.modelContext) private var modelContext
+    @Query(sort: \Habit.createdAt, order: .reverse) private var habits: [Habit]
+    @State private var isShowingCreateHabit: Bool = false
+    
     var emptyState: Bool = true
     var body: some View {
         AppBackground {
@@ -21,19 +26,25 @@ struct HabitsView: View {
                     CircleButtonIcon(
                         icon: "plus"
                     ) {
-                        //action
+                        isShowingCreateHabit = true
                     }
+                    
                 }
                 .padding(.horizontal)
                 .padding(.top, 15)
                 Spacer()
                 
-                if self.emptyState {
-                    EmptyStateView()
+                if habits.isEmpty {
+                    EmptyStateView {
+                        isShowingCreateHabit = true
+                    }
                 }
                 
                 Spacer()
                 
+            }
+            .fullScreenCover(isPresented: $isShowingCreateHabit) {
+                CreateHabitView()
             }
         }
     }

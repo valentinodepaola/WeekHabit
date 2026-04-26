@@ -27,6 +27,18 @@ enum Weekday: Int, Codable, CaseIterable, Identifiable {
         case .sunday:    return "Dom"
         }
     }
+    
+    var oneLetterName: String {
+        switch self {
+        case .monday:    return "L"
+        case .tuesday:   return "M"
+        case .wednesday: return "X"
+        case .thursday:  return "J"
+        case .friday:    return "V"
+        case .saturday:  return "S"
+        case .sunday:    return "D"
+        }
+    }
 
     // Orden visual L-D
     static var ordered: [Weekday] {

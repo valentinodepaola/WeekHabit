@@ -8,6 +8,9 @@
 import SwiftUI
 
 struct EmptyStateView: View {
+    
+    var onCreateHabit: () -> Void
+    
     var body: some View {
         
         EmptyStateIcon()
@@ -31,7 +34,7 @@ struct EmptyStateView: View {
                 icon: "plus",
                 text: "Crear mi primer hábito"
             ){
-                //falta accion.
+                self.onCreateHabit()
             }
         }
         .padding(.top, 30)
@@ -39,5 +42,7 @@ struct EmptyStateView: View {
 }
 
 #Preview {
-    EmptyStateView()
+    EmptyStateView(
+        onCreateHabit: { }
+    )
 }

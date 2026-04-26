@@ -26,6 +26,10 @@ final class Habit {
         get { Set(activeDaysOfWeekRaw.compactMap { Weekday(rawValue: $0) }) }
         set { activeDaysOfWeekRaw = newValue.map(\.rawValue) }
     }
+    
+    var habitCategory: HabitCategory {
+        HabitCategory(rawValue: category) ?? .personal
+    }
 
     init(
         title: String,
