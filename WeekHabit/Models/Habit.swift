@@ -13,7 +13,7 @@ final class Habit {
     var id: UUID
     var title: String
     var note: String?
-    var category: HabitCategory
+    var category: HabitCategory?
     var targetDaysPerWeek: Int
     var activeDaysOfWeekRaw: [Int]
     var createdAt: Date
@@ -25,6 +25,10 @@ final class Habit {
     var activeDaysOfWeek: Set<Weekday> {
         get { Set(activeDaysOfWeekRaw.compactMap { Weekday(rawValue: $0) }) }
         set { activeDaysOfWeekRaw = newValue.map(\.rawValue) }
+    }
+
+    var displayCategory: HabitCategory {
+        category ?? .health
     }
 
     init(
@@ -44,4 +48,3 @@ final class Habit {
         self.createdAt = createdAt
     }
 }
-

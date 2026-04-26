@@ -11,7 +11,7 @@ enum HabitCategory: String, Codable, CaseIterable {
     case work
     case personal
     case learning
-    
+
     var title: String {
         switch self {
         case .health: return "Health"
@@ -20,7 +20,16 @@ enum HabitCategory: String, Codable, CaseIterable {
         case .learning: return "Learning"
         }
     }
-    
+
+    var displayTitle: String {
+        switch self {
+        case .health: return "Salud"
+        case .work: return "Trabajo"
+        case .personal: return "Mente"
+        case .learning: return "Lectura"
+        }
+    }
+
     var icon: String {
         switch self {
         case .health: return "heart.fill"
@@ -29,7 +38,7 @@ enum HabitCategory: String, Codable, CaseIterable {
         case .learning: return "book.fill"
         }
     }
-    
+
     var color: Color {
         switch self {
         case .health: return Color(hex: "#7fa774")
@@ -38,7 +47,7 @@ enum HabitCategory: String, Codable, CaseIterable {
         case .learning: return Color(hex: "#5c89a8")
         }
     }
-    
+
     static var allCases: [HabitCategory] {
         return [.health, .work, .personal, .learning]
     }
