@@ -17,83 +17,91 @@ struct HabitsView: View {
     @State private var habitToDelete: Habit?
     @State private var showDeleteAlert: Bool = false
     @State private var editRoute: EditHabitRoute?
+    @State private var selectedHabit: Habit?
 
     var emptyState: Bool = true
     var body: some View {
-        AppBackground {
-            VStack(spacing: 0) {
-                HStack {
-                    Text("Hábitos")
-                        .font(AppFont.title)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+        NavigationStack {
+            AppBackground {
+                VStack(spacing: 0) {
+                    HStack {
+                        Text("Hábitos")
+                            .font(AppFont.title)
+                            .frame(maxWidth: .infinity, alignment: .leading)
 
-                    IconButton(icon: "plus", style: .circle) {
-                        isShowingCreateHabit = true
-                    }
-
-                }
-                .padding(.horizontal)
-                .padding(.top, 15)
-
-                if habits.isEmpty {
-                    Spacer()
-
-                    EmptyStateView {
-                        isShowingCreateHabit = true
-                    }
-
-                    Spacer()
-                } else {
-                    List {
-                        ForEach(habits) { habit in
-                            HabitCard(
-                                habit: habit,
-                                includesHorizontalPadding: false
-                            ) { }
-                                .listRowBackground(Color.clear)
-                                .listRowSeparator(.hidden)
-                                .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
-                                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                                    Button(role: .destructive) {
-                                        habitToDelete = habit
-                                        showDeleteAlert = true
-                                    } label: {
-                                        Label("Borrar", systemImage: "trash")
-                                    }
-                                    .tint(AppColor.destructiveAction)
-
-                                    Button {
-                                        editRoute = EditHabitRoute(habit: habit)
-                                    } label: {
-                                        Label("Editar", systemImage: "pencil")
-                                    }
-                                    .tint(AppColor.editAction)
-                                }
+                        IconButton(icon: "plus", style: .circle) {
+                            isShowingCreateHabit = true
                         }
-                    }
-                    .listStyle(.plain)
-                    .listRowSpacing(12)
-                    .scrollContentBackground(.hidden)
-                    .contentMargins(.top, 18, for: .scrollContent)
-                    .contentMargins(.bottom, 120, for: .scrollContent)
-                }
-            }
-            .fullScreenCover(isPresented: $isShowingCreateHabit) {
-                CreateHabitView()
-            }
-            .fullScreenCover(item: $editRoute) { route in
-                CreateHabitView(habitToEdit: route.habit)
-            }
-            .alert("¿Borrar hábito?", isPresented: $showDeleteAlert) {
-                Button("Cancelar", role: .cancel) {
-                    habitToDelete = nil
-                }
 
-                Button("Borrar", role: .destructive) {
-                    deleteSelectedHabit()
+                    }
+                    .padding(.horizontal)
+                    .padding(.top, 15)
+
+                    if habits.isEmpty {
+                        Spacer()
+
+                        EmptyStateView {
+                            isShowingCreateHabit = true
+                        }
+
+                        Spacer()
+                    } else {
+                        List {
+                            ForEach(habits) { habit in
+                                HabitCard(
+                                    habit: habit,
+                                    includesHorizontalPadding: false
+                                ) {
+                                    selectedHabit = habit
+                                }
+                                    .listRowBackground(Color.clear)
+                                    .listRowSeparator(.hidden)
+                                    .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
+                                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                        Button(role: .destructive) {
+                                            habitToDelete = habit
+                                            showDeleteAlert = true
+                                        } label: {
+                                            Label("Borrar", systemImage: "trash")
+                                        }
+                                        .tint(AppColor.destructiveAction)
+
+                                        Button {
+                                            editRoute = EditHabitRoute(habit: habit)
+                                        } label: {
+                                            Label("Editar", systemImage: "pencil")
+                                        }
+                                        .tint(AppColor.editAction)
+                                    }
+                            }
+                        }
+                        .listStyle(.plain)
+                        .listRowSpacing(12)
+                        .scrollContentBackground(.hidden)
+                        .contentMargins(.top, 18, for: .scrollContent)
+                        .contentMargins(.bottom, 120, for: .scrollContent)
+                    }
                 }
-            } message: {
-                Text("Esta acción eliminará el hábito y su progreso registrado. No se puede deshacer.")
+                .navigationDestination(item: $selectedHabit) { habit in
+                    HabitDetailView(habit: habit)
+                }
+                .fullScreenCover(isPresented: $isShowingCreateHabit) {
+                    CreateHabitView()
+                }
+                .fullScreenCover(item: $editRoute) { route in
+                    CreateHabitView(habitToEdit: route.habit)
+                }
+                .alert("¿Borrar hábito?", isPresented: $showDeleteAlert) {
+                    Button("Cancelar", role: .cancel) {
+                        habitToDelete = nil
+                    }
+
+                    Button("Borrar", role: .destructive) {
+                        deleteSelectedHabit()
+                    }
+                } message: {
+                    Text("Esta acción eliminará el hábito y su progreso registrado. No se puede deshacer.")
+                }
             }
         }
     }

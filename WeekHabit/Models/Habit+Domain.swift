@@ -9,6 +9,13 @@
 
 import Foundation
 
+enum CellState: Equatable {
+    case completed
+    case missed
+    case inactive
+    case future
+}
+
 extension Habit {
     /// True if the habit is scheduled for the weekday containing `date`.
     func isActive(on date: Date) -> Bool {
@@ -42,8 +49,9 @@ extension Habit {
         var streak = 0
         var cursor = AppCalendar.startOfDay(for: reference)
         let calendar = AppCalendar.current
+        var scannedDays = 0
 
-        while true {
+        while scannedDays < 365 * 5 {
             if isActive(on: cursor) {
                 guard isCompleted(on: cursor) else { break }
                 streak += 1
@@ -52,9 +60,73 @@ extension Habit {
                 break
             }
             cursor = previous
-            // Hard cap to avoid runaway loops on corrupted data.
-            if streak > 365 * 5 { break }
+            scannedDays += 1
         }
         return streak
+    }
+
+    /// Best historical streak from the habit creation day to `reference`.
+    /// Inactive days don't break the streak; missed active days do.
+    func bestStreak(reference: Date = .now) -> Int {
+        let calendar = AppCalendar.current
+        let start = AppCalendar.startOfDay(for: createdAt)
+        let end = AppCalendar.startOfDay(for: reference)
+        guard start <= end else { return 0 }
+
+        var running = 0
+        var best = 0
+        var cursor = start
+        var scannedDays = 0
+
+        while cursor <= end && scannedDays < 365 * 5 {
+            if isActive(on: cursor) {
+                if isCompleted(on: cursor) {
+                    running += 1
+                    best = max(best, running)
+                } else {
+                    running = 0
+                }
+            }
+
+            guard let next = calendar.date(byAdding: .day, value: 1, to: cursor) else {
+                break
+            }
+            cursor = next
+            scannedDays += 1
+        }
+
+        return best
+    }
+
+    /// Matrix `[weeks][7]`, oldest week first and weekdays ordered L-D.
+    func completionMatrix(weeks: Int, reference: Date = .now) -> [[CellState]] {
+        guard weeks > 0 else { return [] }
+
+        let calendar = AppCalendar.current
+        let referenceDay = AppCalendar.startOfDay(for: reference)
+        let creationDay = AppCalendar.startOfDay(for: createdAt)
+        let currentWeekStart = AppCalendar.weekRange(containing: referenceDay).lowerBound
+
+        return (0..<weeks).map { weekIndex in
+            let offset = weekIndex - (weeks - 1)
+            let weekStart = calendar.date(byAdding: .weekOfYear, value: offset, to: currentWeekStart)
+                ?? currentWeekStart
+
+            return Weekday.ordered.enumerated().map { dayIndex, _ in
+                let date = calendar.date(byAdding: .day, value: dayIndex, to: weekStart)
+                    ?? weekStart
+                let day = AppCalendar.startOfDay(for: date)
+
+                if day > referenceDay || day < creationDay {
+                    return .future
+                }
+
+                if !isActive(on: day) {
+                    return .inactive
+                }
+
+                return isCompleted(on: day) ? .completed : .missed
+            }
+        }
     }
 }
