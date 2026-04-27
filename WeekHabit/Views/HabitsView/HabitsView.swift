@@ -17,6 +17,7 @@ struct HabitsView: View {
     @State private var habitToDelete: Habit?
     @State private var showDeleteAlert: Bool = false
     @State private var editRoute: EditHabitRoute?
+    @State private var openRowID: UUID?
 
     var emptyState: Bool = true
     var body: some View {
@@ -48,6 +49,8 @@ struct HabitsView: View {
                         LazyVStack(spacing: 12) {
                             ForEach(habits) { habit in
                                 SwipableRow(
+                                    id: habit.id,
+                                    openRowID: $openRowID,
                                     onEdit: {
                                         self.editRoute = EditHabitRoute(habit: habit)
                                     },

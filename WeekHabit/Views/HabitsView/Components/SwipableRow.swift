@@ -11,11 +11,13 @@ struct SwipableRow<Content: View>: View {
 
     @Environment(\.colorScheme) private var colorScheme
 
+    let id: UUID
     let content: Content
     let onEdit: () -> Void
     let onDelete: () -> Void
 
-    @State private var offset: CGFloat = 0
+    @Binding var openRowID: UUID?
+
     @State private var dragOffset: CGFloat = 0
     @State private var isHorizontalDrag: Bool?
 
@@ -26,10 +28,14 @@ struct SwipableRow<Content: View>: View {
     private let horizontalDominanceRatio: CGFloat = 1.35
 
     init(
+        id: UUID,
+        openRowID: Binding<UUID?>,
         onEdit: @escaping () -> Void,
         onDelete: @escaping () -> Void,
         @ViewBuilder content: () -> Content
     ) {
+        self.id = id
+        self._openRowID = openRowID
         self.onEdit = onEdit
         self.onDelete = onDelete
         self.content = content()
@@ -41,27 +47,48 @@ struct SwipableRow<Content: View>: View {
                 actionButton(
                     title: "Editar",
                     icon: "pencil",
-                    color: Color(hex: "#5f93b4"),
+                    color: AppColor.editAction,
                     action: onEdit
                 )
 
                 actionButton(
                     title: "Borrar",
                     icon: "trash",
-                    color: Color(hex: "#cf453e"),
+                    color: AppColor.destructiveAction,
                     action: onDelete
                 )
             }
             .frame(width: revealWidth)
             .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            .accessibilityHidden(true)
 
             content
                 .background(backgroundColor)
-                .offset(x: offset + dragOffset)
+                .overlay {
+                    if isOpen {
+                        Color.clear
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                closeRow()
+                            }
+                    }
+                }
+                .accessibilityAction(named: "Editar", onEdit)
+                .accessibilityAction(named: "Borrar", onDelete)
+                .offset(x: visualOffset)
                 .simultaneousGesture(swipeGesture)
 
         }
         .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+        .sensoryFeedback(.impact(weight: .light), trigger: isOpen)
+    }
+
+    private var isOpen: Bool {
+        openRowID == id
+    }
+
+    private var visualOffset: CGFloat {
+        (isOpen ? -revealWidth : 0) + dragOffset
     }
 
     private var swipeGesture: some Gesture {
@@ -89,10 +116,10 @@ struct SwipableRow<Content: View>: View {
 
         guard isHorizontalDrag == true else { return }
 
-        if offset == 0 {
-            dragOffset = min(0, width)
-        } else {
+        if isOpen {
             dragOffset = max(0, min(revealWidth, width))
+        } else {
+            dragOffset = min(0, width)
         }
     }
 
@@ -108,10 +135,10 @@ struct SwipableRow<Content: View>: View {
         let threshold: CGFloat = revealWidth / 2
 
         withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-            if offset == 0 {
-                offset = translation < -threshold ? -revealWidth : 0
+            if isOpen {
+                openRowID = translation > threshold ? nil : id
             } else {
-                offset = translation > threshold ? 0 : -revealWidth
+                openRowID = translation < -threshold ? id : nil
             }
 
             dragOffset = 0
@@ -120,12 +147,21 @@ struct SwipableRow<Content: View>: View {
 
     private func performAction(_ action: @escaping () -> Void) {
         withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-            offset = 0
             dragOffset = 0
+            openRowID = nil
         }
 
         isHorizontalDrag = nil
         action()
+    }
+
+    private func closeRow() {
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+            dragOffset = 0
+            openRowID = nil
+        }
+
+        isHorizontalDrag = nil
     }
 
     private func actionButton(
@@ -155,18 +191,30 @@ struct SwipableRow<Content: View>: View {
 }
 
 #Preview {
-    SwipableRow(
-        onEdit: { print("editar") },
-        onDelete: { print("borrar") }
-    ) {
-        HabitCard(
-            habit: Habit(
-                title: "Leer 20 páginas",
-                category: .learning,
-                targetDaysPerWeek: 6,
-                activeDaysOfWeek: [.monday, .tuesday, .wednesday]
-            ),
-            onTap: {}
-        )
+    SwipableRowPreview()
+}
+
+private struct SwipableRowPreview: View {
+    @State private var openRowID: UUID?
+
+    let habit = Habit(
+        title: "Leer 20 páginas",
+        category: .learning,
+        targetDaysPerWeek: 6,
+        activeDaysOfWeek: [.monday, .tuesday, .wednesday]
+    )
+
+    var body: some View {
+        SwipableRow(
+            id: habit.id,
+            openRowID: $openRowID,
+            onEdit: { print("editar") },
+            onDelete: { print("borrar") }
+        ) {
+            HabitCard(
+                habit: habit,
+                onTap: {}
+            )
+        }
     }
 }
