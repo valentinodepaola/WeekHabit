@@ -17,7 +17,7 @@ struct CurrentStreakHeroCard: View {
     var body: some View {
         ZStack(alignment: .trailing) {
             RoundedRectangle(cornerRadius: AppRadius.large, style: .continuous)
-                .fill(category.color)
+                .fill(currentStreak == 0 ? .gray : .orange)
 
             Image(systemName: "flame.fill")
                 .font(.system(size: 118, weight: .bold))
@@ -71,7 +71,7 @@ struct CurrentStreakHeroCard: View {
             targetDaysPerWeek: 5,
             activeDaysOfWeek: Set(Weekday.ordered)
         ),
-        currentStreak: 4,
+        currentStreak: 0,
         bestStreak: 7
     )
     .padding()
