@@ -17,7 +17,6 @@ struct HabitsView: View {
     @State private var habitToDelete: Habit?
     @State private var showDeleteAlert: Bool = false
     @State private var editRoute: EditHabitRoute?
-    @State private var openRowID: UUID?
 
     var emptyState: Bool = true
     var body: some View {
@@ -45,31 +44,38 @@ struct HabitsView: View {
 
                     Spacer()
                 } else {
-                    ScrollView {
-                        LazyVStack(spacing: 12) {
-                            ForEach(habits) { habit in
-                                SwipableRow(
-                                    id: habit.id,
-                                    openRowID: $openRowID,
-                                    onEdit: {
-                                        self.editRoute = EditHabitRoute(habit: habit)
-                                    },
-                                    onDelete: {
-                                        self.habitToDelete = habit
-                                        self.showDeleteAlert = true
+                    List {
+                        ForEach(habits) { habit in
+                            HabitCard(
+                                habit: habit,
+                                includesHorizontalPadding: false
+                            ) { }
+                                .listRowBackground(Color.clear)
+                                .listRowSeparator(.hidden)
+                                .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
+                                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                    Button(role: .destructive) {
+                                        habitToDelete = habit
+                                        showDeleteAlert = true
+                                    } label: {
+                                        Label("Borrar", systemImage: "trash")
                                     }
-                                ) {
-                                    HabitCard(
-                                        habit: habit,
-                                        includesHorizontalPadding: false
-                                    ) { }
+                                    .tint(AppColor.destructiveAction)
+
+                                    Button {
+                                        editRoute = EditHabitRoute(habit: habit)
+                                    } label: {
+                                        Label("Editar", systemImage: "pencil")
+                                    }
+                                    .tint(AppColor.editAction)
                                 }
-                                .padding(.horizontal)
-                            }
                         }
-                        .padding(.top, 18)
-                        .padding(.bottom, 120)
                     }
+                    .listStyle(.plain)
+                    .listRowSpacing(12)
+                    .scrollContentBackground(.hidden)
+                    .contentMargins(.top, 18, for: .scrollContent)
+                    .contentMargins(.bottom, 120, for: .scrollContent)
                 }
             }
             .fullScreenCover(isPresented: $isShowingCreateHabit) {
