@@ -18,6 +18,22 @@ struct LastWeeksHeatmapCard: View {
         habit.completionMatrix(weeks: weeks, reference: referenceDate)
     }
 
+    private var heatmapCells: [HeatmapCell] {
+        matrix.enumerated().flatMap { weekIndex, week in
+            week.enumerated().map { dayIndex, state in
+                HeatmapCell(
+                    id: weekIndex * rowCount + dayIndex,
+                    weekIndex: weekIndex,
+                    state: state
+                )
+            }
+        }
+    }
+
+    private let cellSpacing: CGFloat = 7
+    private let cellCornerRadius: CGFloat = 6
+    private let rowCount = 7
+
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text("ÚLTIMAS 10 SEMANAS")
@@ -25,23 +41,26 @@ struct LastWeeksHeatmapCard: View {
                 .foregroundStyle(AppColor.mutedText)
                 .textCase(.uppercase)
 
-            HStack(alignment: .top, spacing: 4) {
-                ForEach(Array(matrix.enumerated()), id: \.offset) { weekIndex, week in
-                    VStack(spacing: 4) {
-                        ForEach(Array(week.enumerated()), id: \.offset) { _, state in
-                            RoundedRectangle(cornerRadius: 3, style: .continuous)
-                                .fill(color(for: state, intensity: intensity(for: weekIndex)))
-                                .frame(width: 12, height: 12)
-                        }
-                    }
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .center)
+            heatmapGrid
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
         .background(AppColor.surface)
         .clipShape(RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous))
+    }
+
+    private var heatmapGrid: some View {
+        HeatmapGridLayout(
+            columns: matrix.count,
+            rows: rowCount,
+            spacing: cellSpacing
+        ) {
+            ForEach(heatmapCells) { cell in
+                RoundedRectangle(cornerRadius: cellCornerRadius, style: .continuous)
+                    .fill(color(for: cell.state, intensity: intensity(for: cell.weekIndex)))
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .topLeading)
     }
 
     private func intensity(for weekIndex: Int) -> Double {
@@ -76,6 +95,67 @@ struct LastWeeksHeatmapCard: View {
         case .inactive, .future:
             return AppColor.bgLight
         }
+    }
+}
+
+private struct HeatmapCell: Identifiable {
+    let id: Int
+    let weekIndex: Int
+    let state: CellState
+}
+
+private struct HeatmapGridLayout: Layout {
+    let columns: Int
+    let rows: Int
+    let spacing: CGFloat
+
+    func sizeThatFits(
+        proposal: ProposedViewSize,
+        subviews: Subviews,
+        cache: inout ()
+    ) -> CGSize {
+        guard columns > 0, rows > 0 else { return .zero }
+
+        let fallbackCellSize: CGFloat = 12
+        let fallbackWidth = CGFloat(columns) * fallbackCellSize + CGFloat(max(0, columns - 1)) * spacing
+        let width = max(0, proposal.width ?? fallbackWidth)
+        let cellSize = cellSize(for: width)
+        let height = CGFloat(rows) * cellSize + CGFloat(max(0, rows - 1)) * spacing
+
+        return CGSize(width: width, height: height)
+    }
+
+    func placeSubviews(
+        in bounds: CGRect,
+        proposal: ProposedViewSize,
+        subviews: Subviews,
+        cache: inout ()
+    ) {
+        guard columns > 0, rows > 0 else { return }
+
+        let cellSize = cellSize(for: bounds.width)
+        let cellProposal = ProposedViewSize(width: cellSize, height: cellSize)
+
+        for index in subviews.indices {
+            let column = index / rows
+            let row = index % rows
+            guard column < columns else { continue }
+
+            subviews[index].place(
+                at: CGPoint(
+                    x: bounds.minX + CGFloat(column) * (cellSize + spacing),
+                    y: bounds.minY + CGFloat(row) * (cellSize + spacing)
+                ),
+                anchor: .topLeading,
+                proposal: cellProposal
+            )
+        }
+    }
+
+    private func cellSize(for width: CGFloat) -> CGFloat {
+        let totalHorizontalSpacing = CGFloat(max(0, columns - 1)) * spacing
+
+        return max(0, (width - totalHorizontalSpacing) / CGFloat(columns))
     }
 }
 
