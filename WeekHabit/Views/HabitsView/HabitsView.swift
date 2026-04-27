@@ -16,6 +16,7 @@ struct HabitsView: View {
     @State private var isShowingCreateHabit: Bool = false
     @State private var habitToDelete: Habit?
     @State private var showDeleteAlert: Bool = false
+    @State private var editRoute: EditHabitRoute?
 
     var emptyState: Bool = true
     var body: some View {
@@ -48,7 +49,7 @@ struct HabitsView: View {
                             ForEach(habits) { habit in
                                 SwipableRow(
                                     onEdit: {
-                                        //Vacio por el momento
+                                        self.editRoute = EditHabitRoute(habit: habit)
                                     },
                                     onDelete: {
                                         self.habitToDelete = habit
@@ -71,6 +72,9 @@ struct HabitsView: View {
             .fullScreenCover(isPresented: $isShowingCreateHabit) {
                 CreateHabitView()
             }
+            .fullScreenCover(item: $editRoute) { route in
+                CreateHabitView(habitToEdit: route.habit)
+            }
             .alert("¿Borrar hábito?", isPresented: $showDeleteAlert) {
                 Button("Cancelar", role: .cancel) {
                     habitToDelete = nil
@@ -90,6 +94,14 @@ struct HabitsView: View {
 
         modelContext.delete(habitToDelete)
         self.habitToDelete = nil
+    }
+}
+
+private struct EditHabitRoute: Identifiable {
+    let habit: Habit
+
+    var id: UUID {
+        habit.id
     }
 }
 

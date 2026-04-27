@@ -118,13 +118,25 @@ struct SwipableRow<Content: View>: View {
         }
     }
 
+    private func performAction(_ action: @escaping () -> Void) {
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+            offset = 0
+            dragOffset = 0
+        }
+
+        isHorizontalDrag = nil
+        action()
+    }
+
     private func actionButton(
         title: String,
         icon: String,
         color: Color,
         action: @escaping () -> Void
     ) -> some View {
-        Button(action: action) {
+        Button {
+            performAction(action)
+        } label: {
             VStack(spacing: 8) {
                 Image(systemName: icon)
                     .font(.system(size: 23, weight: .semibold))
