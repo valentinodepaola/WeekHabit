@@ -12,7 +12,10 @@ struct HabitsView: View {
 
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Habit.createdAt, order: .reverse) private var habits: [Habit]
+
     @State private var isShowingCreateHabit: Bool = false
+    @State private var habitToDelete: Habit?
+    @State private var showDeleteAlert: Bool = false
 
     var emptyState: Bool = true
     var body: some View {
@@ -43,7 +46,21 @@ struct HabitsView: View {
                     ScrollView {
                         LazyVStack(spacing: 12) {
                             ForEach(habits) { habit in
-                                HabitCard(habit: habit) { }
+                                SwipableRow(
+                                    onEdit: {
+                                        //Vacio por el momento
+                                    },
+                                    onDelete: {
+                                        self.habitToDelete = habit
+                                        self.showDeleteAlert = true
+                                    }
+                                ) {
+                                    HabitCard(
+                                        habit: habit,
+                                        includesHorizontalPadding: false
+                                    ) { }
+                                }
+                                .padding(.horizontal)
                             }
                         }
                         .padding(.top, 18)
@@ -54,7 +71,25 @@ struct HabitsView: View {
             .fullScreenCover(isPresented: $isShowingCreateHabit) {
                 CreateHabitView()
             }
+            .alert("¿Borrar hábito?", isPresented: $showDeleteAlert) {
+                Button("Cancelar", role: .cancel) {
+                    habitToDelete = nil
+                }
+
+                Button("Borrar", role: .destructive) {
+                    deleteSelectedHabit()
+                }
+            } message: {
+                Text("Esta acción eliminará el hábito y su progreso registrado. No se puede deshacer.")
+            }
         }
+    }
+
+    private func deleteSelectedHabit() {
+        guard let habitToDelete else { return }
+
+        modelContext.delete(habitToDelete)
+        self.habitToDelete = nil
     }
 }
 

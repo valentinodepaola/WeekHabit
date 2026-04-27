@@ -11,6 +11,7 @@ struct HabitCard: View {
 
     var habit: Habit
     var referenceDate: Date = .now
+    var includesHorizontalPadding: Bool = true
     var onTap: () -> Void
     private var category: HabitCategory {
         habit.displayCategory
@@ -63,7 +64,7 @@ struct HabitCard: View {
             .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         }
         .buttonStyle(HabitCardButtonStyle())
-        .padding(.horizontal)
+        .padding(.horizontal, includesHorizontalPadding ? 16 : 0)
     }
 }
 
