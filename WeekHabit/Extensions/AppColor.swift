@@ -17,4 +17,8 @@ enum AppColor {
     static let surfaceMuted = Color(hex: "#fbf7f0")
     static let bgLight      = Color(hex: "#f5f1ea")
     static let bgDark       = Color(hex: "#121010")
+
+    // Row actions
+    static let editAction        = Color(hex: "#5c89a8")
+    static let destructiveAction = Color(hex: "#c4423a")
 }

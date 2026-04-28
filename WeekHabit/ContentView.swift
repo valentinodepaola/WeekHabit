@@ -27,7 +27,6 @@ struct ContentView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             
             CustomTabBar(selectedTab: $selectedTab)
-                .padding(.bottom, 24)
         }
         .ignoresSafeArea(edges: .bottom)
     }

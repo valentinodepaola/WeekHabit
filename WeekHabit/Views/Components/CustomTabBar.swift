@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct CustomTabBar: View {
+    @Environment(\.colorScheme) private var colorScheme
+
     @Binding var selectedTab: Int
     
     let tabs: [TabItems] = [.today, .habits, .week, .insights]
@@ -27,10 +29,16 @@ struct CustomTabBar: View {
                         }
                     }
                 }
+                .padding(.vertical, 14)
+                .padding(.horizontal, 12)
             }
-            .padding(.vertical, 14)
-            .padding(.horizontal, 12)
         }
+        .padding(.bottom, 24)
+        .background(backgroundColor.ignoresSafeArea(edges: .bottom))
+    }
+
+    private var backgroundColor: Color {
+        colorScheme == .dark ? AppColor.bgDark : AppColor.bgLight
     }
 }
 
