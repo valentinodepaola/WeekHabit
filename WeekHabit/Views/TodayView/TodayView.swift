@@ -39,6 +39,14 @@ struct TodayView: View {
         return Double(completedTodayCount) / Double(todayHabits.count)
     }
     
+    private var topStreakHabit: (habit: Habit, streak: Int)? {
+        habits.map {
+            ($0, $0.currentStreak(reference: referenceDate))
+        }
+        .max(by: { $0.1 < $1.1})
+        .flatMap { $0.1 > 0 ? $0 : nil }
+    }
+    
     var body: some View {
         AppBackground {
             ScrollView() {
@@ -69,6 +77,13 @@ struct TodayView: View {
                         ) {
                             toggleCompletion(for: habit)
                         }
+                    }
+                    
+                    if let top = topStreakHabit {
+                        LongestStreakBanner(
+                            habitTitle: top.habit.title,
+                            streakDays: top.streak
+                        )
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
