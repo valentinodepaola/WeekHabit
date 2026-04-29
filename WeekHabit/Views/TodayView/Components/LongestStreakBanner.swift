@@ -11,6 +11,17 @@ struct LongestStreakBanner: View {
     
     let habitTitle: String
     let streakDays: Int
+    var allSameStreak: Bool = false
+    
+    private var caption: String {
+        allSameStreak ? "¡TODOS EN RACHA!" : "RACHA MÁS LARGA"
+    }
+    
+    private var titleText: String {
+        allSameStreak
+            ? "Todos tus hábitos · \(streakDays) días 🔥"
+            : "\(habitTitle) · \(streakDays) días 🔥"
+    }
     
     var body: some View {
         ZStack(alignment: .trailing) {
@@ -21,11 +32,11 @@ struct LongestStreakBanner: View {
                     .padding()
                 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("RACHA MAS LARGA")
+                    Text(self.caption)
                         .font(AppFont.formSectionText)
                         .fontWeight(.semibold)
                         .foregroundStyle(.white.opacity(0.85))
-                    Text("\(self.habitTitle) · \(self.streakDays) dias 🔥")
+                    Text(self.titleText)
                         .font(AppFont.subtitle3)
                         .foregroundStyle(.white)
                 }
