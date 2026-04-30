@@ -21,6 +21,18 @@ struct TodayView: View {
     private var currentDayTitle: String {
         AppCalendar.weekday(of: referenceDate).displayName
     }
+
+    private var currentDateTitle: String {
+        let locale = Locale(identifier: "es_MX")
+        let formatter = DateFormatter()
+        formatter.calendar = AppCalendar.current
+        formatter.locale = locale
+        formatter.dateFormat = "EEEE d 'DE' MMMM"
+        return formatter
+            .string(from: referenceDate)
+            .folding(options: .diacriticInsensitive, locale: locale)
+            .uppercased(with: locale)
+    }
     
     private var todayHabits: [Habit] {
         habits.filter { habit in
@@ -63,8 +75,14 @@ struct TodayView: View {
         AppBackground {
             ScrollView() {
                 VStack(alignment: .leading, spacing: 18) {
-                    Text("Buenos días")
-                        .font(AppFont.title)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(currentDateTitle)
+                            .font(AppFont.captionApp)
+                            .foregroundStyle(AppColor.mutedText)
+
+                        Text("Buenos días")
+                            .font(AppFont.title)
+                    }
 
                     DailyProgressCard(
                         progress: dailyProgress,
