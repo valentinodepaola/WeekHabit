@@ -10,6 +10,8 @@ enum AppFont {
     static let title1 = Font.system(size: 38, weight: .regular, design: .serif)
     static let title = Font.system(size: 34, weight: .regular, design: .serif)
     static let subtitle = Font.system(size: 28, weight: .regular, design: .serif)
+    static let subtitle2 = Font.system(size: 20, weight: .bold, design: .default)
+    static let subtitle3 = Font.system(size: 20, weight: .semibold, design: .serif)
     static let body = Font.system(size: 17, weight: .regular, design: .default)
     static let body2 = Font.system(size: 16, weight: .regular, design: .default)
     static let captionApp = Font.system(size: 14, weight: .regular, design: .default)
