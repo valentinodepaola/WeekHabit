@@ -18,6 +18,10 @@ struct TodayView: View {
         Date()
     }
     
+    private var currentDayTitle: String {
+        AppCalendar.weekday(of: referenceDate).displayName
+    }
+    
     private var todayHabits: [Habit] {
         habits.filter { habit in
             habit.isActive(on: referenceDate)
@@ -73,7 +77,7 @@ struct TodayView: View {
                         Text("Habitos de hoy")
                             .font(AppFont.subtitle2)
                         Spacer()
-                        Text("Martes")
+                        Text(self.currentDayTitle)
                             .font(AppFont.body2)
                             .foregroundStyle(AppColor.mutedText)
                     }

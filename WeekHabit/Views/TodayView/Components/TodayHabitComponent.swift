@@ -16,10 +16,6 @@ struct TodayHabitComponent: View {
         self.habit.displayCategory
     }
     
-    private var currentStreak: Int {
-        habit.currentStreak()
-    }
-    
     var body: some View {
         HStack(spacing: 12) {
             IconComponent(
@@ -34,7 +30,7 @@ struct TodayHabitComponent: View {
                     .foregroundStyle(AppColor.strongText)
                     .lineLimit(1)
                 
-                Text("\(category.displayTitle) · racha \(habit.currentStreak())d")
+                Text("\(category.displayTitle) · racha \(habit.displayStreak())d")
                     .font(AppFont.formSectionText2)
                     .foregroundStyle(AppColor.mutedText)
                     .lineLimit(1)

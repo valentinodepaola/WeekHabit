@@ -64,6 +64,20 @@ extension Habit {
         }
         return streak
     }
+    
+    func displayStreak(reference: Date = .now) -> Int {
+        if isActive(on: reference), !isCompleted(on: reference) {
+            let yesterday = AppCalendar.current.date(
+                byAdding: .day,
+                value: -1,
+                to: AppCalendar.startOfDay(for: reference)
+            ) ?? reference
+
+            return currentStreak(reference: yesterday)
+        }
+
+        return currentStreak(reference: reference)
+    }
 
     /// Best historical streak from the habit creation day to `reference`.
     /// Inactive days don't break the streak; missed active days do.
