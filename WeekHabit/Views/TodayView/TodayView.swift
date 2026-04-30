@@ -54,23 +54,7 @@ struct TodayView: View {
         guard !todayHabits.isEmpty else { return 0 }
         return Double(completedTodayCount) / Double(todayHabits.count)
     }
-    
-    // Hábito con la racha actual más alta entre todos los hábitos (no solo los de hoy)
-    private var topStreakHabit: (habit: Habit, streak: Int)? {
-        habits
-            .map { ($0, $0.currentStreak(reference: referenceDate)) }
-            .max(by: { $0.1 < $1.1 })
-            .flatMap { $0.1 > 0 ? $0 : nil }
-    }
 
-    // True si todos los hábitos de hoy comparten exactamente la misma racha (mínimo 2 hábitos)
-    private var allTodayHabitsShareStreak: Bool {
-        guard todayHabits.count >= 2 else { return false }
-        let streaks = todayHabits.map { $0.currentStreak(reference: referenceDate) }
-        guard let first = streaks.first, first > 0 else { return false }
-        return streaks.allSatisfy { $0 == first }
-    }
-    
     var body: some View {
         AppBackground {
             ScrollView() {
@@ -109,11 +93,11 @@ struct TodayView: View {
                         }
                     }
                     
-                    if let top = topStreakHabit {
+                    if let top = habits.topStreakHabit(reference: referenceDate) {
                         LongestStreakBanner(
                             habitTitle: top.habit.title,
                             streakDays: top.streak,
-                            allSameStreak: allTodayHabitsShareStreak
+                            allSameStreak: todayHabits.allShareSameCurrentStreak(reference: referenceDate)
                         )
                     }
                 }

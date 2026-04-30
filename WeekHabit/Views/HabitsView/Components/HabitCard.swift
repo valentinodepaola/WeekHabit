@@ -72,17 +72,9 @@ private struct WeekProgressDots: View {
     var habit: Habit
     var referenceDate: Date
 
-    private var completedWeekdays: Set<Weekday> {
-        let week = AppCalendar.weekRange(containing: referenceDate)
-
-        return Set(
-            habit.entries
-                .filter { week.contains($0.date) }
-                .map { AppCalendar.weekday(of: $0.date) }
-        )
-    }
-
     var body: some View {
+        let completedWeekdays = habit.completedWeekdays(reference: referenceDate)
+
         HStack(spacing: 6) {
             ForEach(Weekday.ordered) { weekday in
                 VStack(spacing: 5) {

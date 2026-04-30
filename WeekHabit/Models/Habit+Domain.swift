@@ -27,6 +27,16 @@ extension Habit {
         entries.contains { AppCalendar.isSameDay($0.date, date) }
     }
 
+    /// Distinct weekdays with at least one entry within the calendar week containing `reference`.
+    func completedWeekdays(reference: Date = .now) -> Set<Weekday> {
+        let week = AppCalendar.weekRange(containing: reference)
+        return Set(
+            entries
+                .filter { week.contains($0.date) }
+                .map { AppCalendar.weekday(of: $0.date) }
+        )
+    }
+
     /// Count of distinct days completed within the calendar week containing `reference`.
     func completedDaysThisWeek(reference: Date = .now) -> Int {
         let week = AppCalendar.weekRange(containing: reference)
@@ -142,5 +152,31 @@ extension Habit {
                 return isCompleted(on: day) ? .completed : .missed
             }
         }
+    }
+}
+
+extension Sequence where Element == Habit {
+    /// Habit with the highest current streak, or nil if none has a positive streak.
+    func topStreakHabit(reference: Date = .now) -> (habit: Habit, streak: Int)? {
+        self
+            .map { ($0, $0.currentStreak(reference: reference)) }
+            .max(by: { $0.1 < $1.1 })
+            .flatMap { $0.1 > 0 ? $0 : nil }
+    }
+
+    /// True when ≥2 habits share the same positive current streak.
+    func allShareSameCurrentStreak(reference: Date = .now) -> Bool {
+        let streaks = map { $0.currentStreak(reference: reference) }
+        guard streaks.count >= 2, let first = streaks.first, first > 0 else { return false }
+        return streaks.allSatisfy { $0 == first }
+    }
+}
+
+extension Array where Element == CellState {
+    /// Fraction of cells completed against the weekly target, clamped to 0…1.
+    func completionRatio(target: Int) -> Double {
+        guard target > 0 else { return 0 }
+        let completed = filter { $0 == .completed }.count
+        return Swift.min(1, Double(completed) / Double(target))
     }
 }

@@ -64,13 +64,8 @@ struct LastWeeksHeatmapCard: View {
     }
 
     private func intensity(for weekIndex: Int) -> Double {
-        guard habit.targetDaysPerWeek > 0,
-              matrix.indices.contains(weekIndex) else {
-            return 0
-        }
-
-        let completedDays = matrix[weekIndex].filter { $0 == .completed }.count
-        let ratio = min(1, Double(completedDays) / Double(habit.targetDaysPerWeek))
+        guard matrix.indices.contains(weekIndex) else { return 0 }
+        let ratio = matrix[weekIndex].completionRatio(target: habit.targetDaysPerWeek)
 
         switch ratio {
         case 0:
