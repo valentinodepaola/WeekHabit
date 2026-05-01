@@ -39,7 +39,7 @@ struct WeekGridRow: View {
 
                         WeekProgressBar(
                             progress: habit.weekProgress(reference: referenceDate),
-                            categoryColor: habit.displayCategory.color
+                            categoryColor: AppColor.accent
                         )
                     }
                     .contentShape(Rectangle())
@@ -50,7 +50,7 @@ struct WeekGridRow: View {
                     ForEach(daysInWeek, id: \.self) { date in
                         WeekGridCell(
                             state: cellState(for: date),
-                            categoryColor: habit.displayCategory.color,
+                            categoryColor: AppColor.accent,
                             onTap: { onToggle(date) }
                         )
                     }
@@ -62,6 +62,7 @@ struct WeekGridRow: View {
         }
         .background(AppColor.surface)
         .clipShape(RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous))
+        .shadow(color: AppColor.strongText.opacity(0.10), radius: 12, x: 0, y: 6)
     }
 
     private func cellState(for date: Date) -> WeekGridCell.State {
