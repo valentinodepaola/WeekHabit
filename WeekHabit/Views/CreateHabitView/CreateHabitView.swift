@@ -14,6 +14,9 @@ struct CreateHabitView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
 
+    @Query(sort: \HabitExperiment.startedAt, order: .reverse)
+    private var experiments: [HabitExperiment]
+
     @State private var habitName: String = ""
     @State private var note: String = ""
     @State private var selectedCategory: HabitCategory = .health
@@ -152,6 +155,10 @@ struct CreateHabitView: View {
         let trimmedNote = note.trimmingCharacters(in: .whitespacesAndNewlines)
 
         if let habitToEdit {
+            if let activeExperiment = experiments.activeExperiment(for: habitToEdit.id) {
+                activeExperiment.cancel()
+            }
+
             habitToEdit.title = trimmedName
             habitToEdit.note = trimmedNote.isEmpty ? nil : trimmedNote
             habitToEdit.category = selectedCategory

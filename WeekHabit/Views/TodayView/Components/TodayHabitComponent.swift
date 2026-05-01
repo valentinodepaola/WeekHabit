@@ -10,6 +10,8 @@ import SwiftUI
 struct TodayHabitComponent: View {
     let habit: Habit
     let isCompleted: Bool
+    var activeExperiment: HabitExperiment?
+    var referenceDate: Date = .now
     let onToggle: () -> Void
     
     private var category: HabitCategory {
@@ -30,7 +32,7 @@ struct TodayHabitComponent: View {
                     .foregroundStyle(AppColor.strongText)
                     .lineLimit(1)
                 
-                Text("\(category.displayTitle) · racha \(habit.displayStreak())d")
+                Text(subtitle)
                     .font(AppFont.formSectionText2)
                     .foregroundStyle(AppColor.mutedText)
                     .lineLimit(1)
@@ -65,6 +67,22 @@ struct TodayHabitComponent: View {
         .padding(.vertical, 12)
         .background(AppColor.surface)
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    private var subtitle: String {
+        guard let activeExperiment else {
+            return "\(category.displayTitle) · racha \(habit.displayStreak())d"
+        }
+
+        if activeExperiment.needsReview(reference: referenceDate) {
+            return "Prueba lista para revisar en Insights"
+        }
+
+        if let suggestedHourText = activeExperiment.suggestedHourText {
+            return "Prueba · \(suggestedHourText)"
+        }
+
+        return "Prueba activa · \(activeExperiment.daySummary)"
     }
 }
 

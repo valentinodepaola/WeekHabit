@@ -4,9 +4,13 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct HabitDetailView: View {
     @Environment(\.dismiss) private var dismiss
+
+    @Query(sort: \HabitExperiment.startedAt, order: .reverse)
+    private var experiments: [HabitExperiment]
 
     let habit: Habit
 
@@ -38,6 +42,10 @@ struct HabitDetailView: View {
 
     private var weekProgress: Double {
         habit.weekProgress()
+    }
+
+    private var activeExperiment: HabitExperiment? {
+        experiments.activeExperiment(for: habit.id)
     }
 
     var body: some View {
@@ -111,6 +119,13 @@ struct HabitDetailView: View {
                     .font(AppFont.body2)
                     .foregroundStyle(AppColor.mutedText)
                     .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            if let activeExperiment {
+                HabitExperimentStatusCard(
+                    experiment: activeExperiment,
+                    habit: habit
+                )
             }
         }
     }

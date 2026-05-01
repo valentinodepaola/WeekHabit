@@ -17,12 +17,22 @@ enum SchemaV1: VersionedSchema {
     }
 }
 
+enum SchemaV2: VersionedSchema {
+    static var versionIdentifier: Schema.Version { .init(2, 0, 0) }
+
+    static var models: [any PersistentModel.Type] {
+        [Habit.self, HabitEntry.self, HabitExperiment.self]
+    }
+}
+
 enum HabitMigrationPlan: SchemaMigrationPlan {
     static var schemas: [any VersionedSchema.Type] {
-        [SchemaV1.self]
+        [SchemaV1.self, SchemaV2.self]
     }
 
     static var stages: [MigrationStage] {
-        []
+        [
+            .lightweight(fromVersion: SchemaV1.self, toVersion: SchemaV2.self)
+        ]
     }
 }

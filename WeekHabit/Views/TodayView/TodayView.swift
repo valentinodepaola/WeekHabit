@@ -13,6 +13,9 @@ struct TodayView: View {
     
     @Query(sort: \Habit.createdAt, order: .reverse)
     private var habits: [Habit]
+
+    @Query(sort: \HabitExperiment.startedAt, order: .reverse)
+    private var experiments: [HabitExperiment]
     
     @State private var createHabitRoute: TodayCreateHabitRoute?
 
@@ -149,7 +152,12 @@ struct TodayView: View {
                 ForEach(todayHabits) { habit in
                     TodayHabitComponent(
                         habit: habit,
-                        isCompleted: habit.isCompleted(on: referenceDate)
+                        isCompleted: habit.isCompleted(on: referenceDate),
+                        activeExperiment: experiments.activeExperiment(
+                            for: habit.id,
+                            reference: referenceDate
+                        ),
+                        referenceDate: referenceDate
                     ) {
                         toggleCompletion(for: habit)
                     }
@@ -176,7 +184,7 @@ struct TodayView: View {
 
         withAnimation(.easeInOut(duration: 0.2)) {
             if entriesForToday.isEmpty {
-                let entry = HabitEntry(date: referenceDate, habit: habit)
+                let entry = HabitEntry(date: referenceDate, completedAt: .now, habit: habit)
                 modelContext.insert(entry)
             } else {
                 entriesForToday.forEach { entry in

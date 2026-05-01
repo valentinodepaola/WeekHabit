@@ -165,7 +165,13 @@ struct WeekView: View {
 
         withAnimation(.easeInOut(duration: 0.2)) {
             if willMark {
-                modelContext.insert(HabitEntry(date: date, habit: habit))
+                modelContext.insert(
+                    HabitEntry(
+                        date: date,
+                        completedAt: AppCalendar.isSameDay(date, .now) ? .now : nil,
+                        habit: habit
+                    )
+                )
             } else {
                 entriesForDay.forEach { entry in
                     modelContext.delete(entry)
