@@ -18,6 +18,7 @@ struct TodayView: View {
     private var experiments: [HabitExperiment]
     
     @State private var createHabitRoute: TodayCreateHabitRoute?
+    @State private var isShowingFocusSession = false
 
     private var referenceDate: Date {
         Date()
@@ -101,6 +102,9 @@ struct TodayView: View {
                 )
             }
         }
+        .fullScreenCover(isPresented: $isShowingFocusSession) {
+            FocusSessionView(habits: todayHabits)
+        }
     }
 
     private var header: some View {
@@ -138,6 +142,11 @@ struct TodayView: View {
                     completedCount: completedTodayCount,
                     totalCount: todayHabits.count,
                     remainingCount: remainingTodayCount
+                )
+
+                FocusSessionLauncherCard(
+                    remainingCount: remainingTodayCount,
+                    onStart: { isShowingFocusSession = true }
                 )
 
                 HStack {
@@ -184,7 +193,12 @@ struct TodayView: View {
 
         withAnimation(.easeInOut(duration: 0.2)) {
             if entriesForToday.isEmpty {
-                let entry = HabitEntry(date: referenceDate, completedAt: .now, habit: habit)
+                let entry = HabitEntry(
+                    date: referenceDate,
+                    completedAt: .now,
+                    source: .today,
+                    habit: habit
+                )
                 modelContext.insert(entry)
             } else {
                 entriesForToday.forEach { entry in

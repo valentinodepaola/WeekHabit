@@ -29,6 +29,59 @@ struct GlobalInsightSnapshot {
     }
 }
 
+enum RhythmConfidenceLevel {
+    case high
+    case learning
+    case low
+}
+
+struct RhythmConfidence {
+    let trustedMarks: Int
+    let totalMarks: Int
+    let focusSessionMarks: Int
+
+    var ratio: Double {
+        guard totalMarks > 0 else { return 0 }
+        return Double(trustedMarks) / Double(totalMarks)
+    }
+
+    var level: RhythmConfidenceLevel {
+        guard totalMarks > 0 else { return .low }
+
+        switch ratio {
+        case 0.75...:
+            return .high
+        case 0.35..<0.75:
+            return .learning
+        default:
+            return .low
+        }
+    }
+
+    var title: String {
+        switch level {
+        case .high:
+            return "Alta confianza"
+        case .learning:
+            return "Aún aprendiendo"
+        case .low:
+            return "Pocas marcas reales"
+        }
+    }
+
+    var detail: String {
+        guard totalMarks > 0 else {
+            return "Inicia una sesión o marca desde Hoy para que Insights lea tu ritmo real."
+        }
+
+        if focusSessionMarks > 0 {
+            return "\(trustedMarks) de \(totalMarks) marcas son en momento real · \(focusSessionMarks) desde sesiones."
+        }
+
+        return "\(trustedMarks) de \(totalMarks) marcas son en momento real."
+    }
+}
+
 struct HabitInsightSummary: Identifiable {
     let habit: Habit
     let stats: HabitCompletionStats
@@ -123,7 +176,7 @@ extension Habit {
 
         for day in insightDays(from: start, to: end) where day >= creationDay && isActive(on: day) {
             scheduled += 1
-            if isCompleted(on: day) {
+            if isTrustedCompleted(on: day) {
                 completed += 1
             }
         }
@@ -148,7 +201,7 @@ extension Habit {
                 && AppCalendar.weekday(of: day) == weekday
                 && isActive(on: day) {
                 scheduled += 1
-                if isCompleted(on: day) {
+                if isTrustedCompleted(on: day) {
                     completed += 1
                 }
             }
@@ -161,7 +214,7 @@ extension Habit {
         let range = insightDateRange(days: lastDays, reference: reference)
         var counts: [Int: Int] = [:]
 
-        for entry in entries where range.contains(entry.date) {
+        for entry in entries where range.contains(entry.date) && entry.source.isTrustedForInsights {
             guard let completedAt = entry.completedAt else { continue }
             let hour = AppCalendar.current.component(.hour, from: completedAt)
             counts[hour, default: 0] += 1
@@ -180,12 +233,19 @@ extension Habit {
     func daysSinceLastCompletion(reference: Date = .now) -> Int? {
         let referenceDay = AppCalendar.startOfDay(for: reference)
         let lastDate = entries
+            .filter { $0.source.isTrustedForInsights }
             .map { AppCalendar.startOfDay(for: $0.date) }
             .filter { $0 <= referenceDay }
             .max()
 
         guard let lastDate else { return nil }
         return AppCalendar.current.dateComponents([.day], from: lastDate, to: referenceDay).day
+    }
+
+    func isTrustedCompleted(on date: Date) -> Bool {
+        entries.contains {
+            AppCalendar.isSameDay($0.date, date) && $0.source.isTrustedForInsights
+        }
     }
 }
 
@@ -209,16 +269,43 @@ extension Sequence where Element == Habit {
             return HabitInsightSummary(
                 habit: habit,
                 stats: stats,
-                detail: "\(habit.displayStreak(reference: reference)) días seguidos"
+                detail: "\(stats.percentage)% en marcas reales"
             )
         }
-        .filter { $0.stats.scheduled > 0 }
+        .filter { $0.stats.scheduled > 0 && $0.stats.completed > 0 }
         .max { lhs, rhs in
             if lhs.stats.ratio == rhs.stats.ratio {
                 return lhs.stats.completed < rhs.stats.completed
             }
             return lhs.stats.ratio < rhs.stats.ratio
         }
+    }
+
+    func rhythmConfidence(reference: Date = .now) -> RhythmConfidence {
+        let range = insightDateRange(days: 30, reference: reference)
+        var totalMarks = 0
+        var trustedMarks = 0
+        var focusSessionMarks = 0
+
+        for habit in self {
+            for entry in habit.entries where range.contains(entry.date) {
+                totalMarks += 1
+
+                if entry.source.isTrustedForInsights {
+                    trustedMarks += 1
+                }
+
+                if entry.source == .focusSession {
+                    focusSessionMarks += 1
+                }
+            }
+        }
+
+        return RhythmConfidence(
+            trustedMarks: trustedMarks,
+            totalMarks: totalMarks,
+            focusSessionMarks: focusSessionMarks
+        )
     }
 
     func attentionHabit(reference: Date = .now) -> HabitInsightSummary? {
@@ -259,7 +346,7 @@ extension Sequence where Element == Habit {
                 for habit in habits
                 where day >= AppCalendar.startOfDay(for: habit.createdAt) && habit.isActive(on: day) {
                     scheduled += 1
-                    if habit.isCompleted(on: day) {
+                    if habit.isTrustedCompleted(on: day) {
                         completed += 1
                     }
                 }
@@ -281,7 +368,7 @@ extension Sequence where Element == Habit {
         var counts: [Int: Int] = [:]
 
         for habit in self {
-            for entry in habit.entries where range.contains(entry.date) {
+            for entry in habit.entries where range.contains(entry.date) && entry.source.isTrustedForInsights {
                 guard let completedAt = entry.completedAt else { continue }
                 let hour = AppCalendar.current.component(.hour, from: completedAt)
                 counts[hour, default: 0] += 1
@@ -309,7 +396,7 @@ extension Sequence where Element == Habit {
             .filter { !excludingHabitIDs.contains($0.id) }
             .compactMap { habit -> RhythmExperimentSuggestion? in
                 let stats = habit.completionStats(reference: reference)
-                guard stats.scheduled > 0, !habit.activeDaysOfWeek.isEmpty else { return nil }
+                guard stats.scheduled > 0, stats.completed > 0, !habit.activeDaysOfWeek.isEmpty else { return nil }
 
                 let currentDays = Weekday.ordered.filter { habit.activeDaysOfWeek.contains($0) }
                 let weekdayStats = habit.weekdayPerformance(reference: reference)

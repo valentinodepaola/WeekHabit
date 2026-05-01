@@ -168,7 +168,8 @@ struct WeekView: View {
                 modelContext.insert(
                     HabitEntry(
                         date: date,
-                        completedAt: AppCalendar.isSameDay(date, .now) ? .now : nil,
+                        completedAt: nil,
+                        source: .manual,
                         habit: habit
                     )
                 )

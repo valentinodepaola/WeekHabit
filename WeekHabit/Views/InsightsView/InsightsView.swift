@@ -25,6 +25,10 @@ struct InsightsView: View {
         habits.globalInsightSnapshot(reference: referenceDate)
     }
 
+    private var confidence: RhythmConfidence {
+        habits.rhythmConfidence(reference: referenceDate)
+    }
+
     private var activeExperimentIDs: Set<UUID> {
         experiments.activeHabitIDs(reference: referenceDate)
     }
@@ -55,6 +59,8 @@ struct InsightsView: View {
                             emptyState
                         } else {
                             InsightsHeroCard(snapshot: snapshot)
+
+                            InsightConfidenceCard(confidence: confidence)
 
                             ForEach(reviewExperiments) { experiment in
                                 if let habit = habit(for: experiment) {
@@ -171,7 +177,7 @@ struct InsightsView: View {
                     iconColor: AppColor.highPurple,
                     title: "TU HORA PUNTA",
                     value: peakHour.displayText,
-                    detail: "la mayoría de tus marcas"
+                    detail: "basada en \(peakHour.count) marcas reales"
                 )
             }
         }
