@@ -9,11 +9,15 @@ import SwiftUI
 import SwiftData
 
 struct WeekView: View {
+    @Environment(\.modelContext) private var modelContext
+
     @Query(sort: \Habit.createdAt, order: .reverse)
     private var habits: [Habit]
 
     @Query private var entries: [HabitEntry]
     @State private var weekOffset: Int = 0
+    @State private var selectedHabit: Habit?
+    @State private var lastToggle: ToggleHaptic?
 
     private var referenceDate: Date {
         AppCalendar.current.date(byAdding: .weekOfYear, value: weekOffset, to: .now) ?? .now
@@ -33,10 +37,6 @@ struct WeekView: View {
         (0..<7).compactMap { dayOffset in
             AppCalendar.current.date(byAdding: .day, value: dayOffset, to: weekRange.lowerBound)
         }
-    }
-
-    private var isWeekEmpty: Bool {
-        entriesThisWeek.isEmpty
     }
 
     private var monthYearLabel: String {
@@ -69,62 +69,81 @@ struct WeekView: View {
     }
 
     var body: some View {
-        AppBackground {
-            ScrollView(.vertical) {
-                VStack(alignment: .leading, spacing: 20) {
-                    headerSection
+        NavigationStack {
+            AppBackground {
+                VStack(alignment: .leading, spacing: 0) {
+                    WeekHeaderSection(
+                        monthYearLabel: monthYearLabel,
+                        weekNumber: weekNumber,
+                        weekOffset: $weekOffset
+                    )
+                    
                     dayStrip
                     contentArea
-                    summarySection
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 16)
-                .padding(.bottom, 120)
-            }
-        }
-    }
-
-    private var headerSection: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(monthYearLabel)
-                .font(AppFont.formSectionText)
-                .foregroundStyle(AppColor.mutedText)
-
-            HStack(spacing: 16) {
-                Text("Semana \(weekNumber)")
-                    .font(AppFont.title)
-                    .foregroundStyle(AppColor.strongText)
-
-                Spacer()
-
-                HStack(spacing: 8) {
-                    navButton(systemName: "chevron.left") {
-                        weekOffset -= 1
-                    }
-
-                    navButton(systemName: "chevron.right") {
-                        weekOffset += 1
-                    }
-                    .disabled(weekOffset >= 0)
+                .navigationDestination(item: $selectedHabit) { habit in
+                    HabitDetailView(habit: habit)
+                }
+                .sensoryFeedback(.success, trigger: lastToggle) { _, newValue in
+                    if case .marked = newValue { return true }
+                    return false
+                }
+                .sensoryFeedback(.impact(weight: .light), trigger: lastToggle) { _, newValue in
+                    if case .unmarked = newValue { return true }
+                    return false
                 }
             }
         }
     }
-
+    
     private var dayStrip: some View {
         HStack(spacing: 0) {
-            ForEach(daysInWeek, id: \.self) { date in
-                DayColumn(date: date, isToday: AppCalendar.isSameDay(date, .now))
+            Spacer()
+                .frame(width: WeekGridLayout.habitColumnWidth)
+
+            HStack(spacing: WeekGridLayout.cellSpacing) {
+                ForEach(daysInWeek, id: \.self) { date in
+                    DayColumn(date: date, isToday: AppCalendar.isSameDay(date, .now))
+                }
             }
         }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 8)
     }
 
     @ViewBuilder
     private var contentArea: some View {
-        if isWeekEmpty {
+        if habits.isEmpty {
             WeekEmptyStateCard()
+                .padding(.horizontal, 16)
+            Spacer()
         } else {
-            WeekGridView(entries: entriesThisWeek, habits: habits)
+            List {
+                ForEach(habits) { habit in
+                    WeekGridRow(
+                        habit: habit,
+                        daysInWeek: daysInWeek,
+                        referenceDate: referenceDate,
+                        today: .now,
+                        onSelectHabit: { selectedHabit = habit },
+                        onToggle: { date in toggleCompletion(for: habit, on: date) }
+                    )
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                    .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
+                }
+
+                Section {
+                    summarySection
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                        .listRowInsets(EdgeInsets(top: 24, leading: 16, bottom: 0, trailing: 16))
+                }
+            }
+            .listStyle(.plain)
+            .listRowSpacing(6)
+            .scrollContentBackground(.hidden)
+            .contentMargins(.bottom, 120, for: .scrollContent)
         }
     }
 
@@ -135,90 +154,37 @@ struct WeekView: View {
                 .foregroundStyle(AppColor.mutedText)
 
             HStack(spacing: 10) {
-                StatTile(label: "Completados", value: completedDisplay)
-                StatTile(label: "Meta total", value: "\(totalGoal)")
-                StatTile(label: "Consistencia", value: consistencyDisplay)
+                StatTile(label: "Completados", value: completedDisplay, icon: "checkmark.circle.fill")
+                StatTile(label: "Meta total", value: "\(totalGoal)", icon: "target")
+                StatTile(label: "Consistencia", value: consistencyDisplay, icon: "chart.bar.fill")
             }
         }
     }
 
-    private func navButton(systemName: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: systemName)
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(AppColor.strongText)
-                .frame(width: 40, height: 40)
-                .background(AppColor.surface)
-                .clipShape(Circle())
-                .overlay {
-                    Circle()
-                        .stroke(AppColor.subtleText.opacity(0.12), lineWidth: 1)
+    private func toggleCompletion(for habit: Habit, on date: Date) {
+        let entriesForDay = habit.entries.filter {
+            AppCalendar.isSameDay($0.date, date)
+        }
+        let willMark = entriesForDay.isEmpty
+
+        withAnimation(.easeInOut(duration: 0.2)) {
+            if willMark {
+                modelContext.insert(HabitEntry(date: date, habit: habit))
+            } else {
+                entriesForDay.forEach { entry in
+                    modelContext.delete(entry)
                 }
+            }
         }
-        .buttonStyle(.plain)
+
+        lastToggle = willMark ? .marked(UUID()) : .unmarked(UUID())
     }
+
 }
 
-private struct DayColumn: View {
-    let date: Date
-    let isToday: Bool
-
-    private var dayAbbrev: String {
-        AppCalendar.weekday(of: date)
-            .shortName
-            .uppercased(with: Locale(identifier: "es_MX"))
-    }
-
-    private var dayNumber: String {
-        String(AppCalendar.current.component(.day, from: date))
-    }
-
-    var body: some View {
-        VStack(spacing: 6) {
-            Text(dayAbbrev)
-                .font(AppFont.formSectionText)
-                .foregroundStyle(isToday ? .white : AppColor.mutedText)
-
-            Text(dayNumber)
-                .font(AppFont.dayLabel)
-                .foregroundStyle(isToday ? .white : AppColor.strongText)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 10)
-        .background(isToday ? AppColor.accent : Color.clear)
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.medium))
-    }
-}
-
-private struct WeekGridView: View {
-    let entries: [HabitEntry]
-    let habits: [Habit]
-
-    var body: some View {
-        EmptyView()
-    }
-}
-
-private struct StatTile: View {
-    let label: String
-    let value: String
-
-    var body: some View {
-        VStack(spacing: 6) {
-            Text(value)
-                .font(AppFont.subtitle2)
-                .foregroundStyle(value == "—" ? AppColor.subtleText : AppColor.strongText)
-
-            Text(label)
-                .font(AppFont.formSectionText2)
-                .foregroundStyle(AppColor.mutedText)
-                .lineLimit(1)
-                .minimumScaleFactor(0.85)
-        }
-        .frame(maxWidth: .infinity, minHeight: 70)
-        .background(AppColor.surface)
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.medium))
-    }
+private enum ToggleHaptic: Equatable {
+    case marked(UUID)
+    case unmarked(UUID)
 }
 
 #Preview {

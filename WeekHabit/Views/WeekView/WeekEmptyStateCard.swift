@@ -26,7 +26,7 @@ struct WeekEmptyStateCard: View {
                 Circle()
                     .fill(AppColor.accentSoft)
                     .frame(width: 64, height: 64)
-                Image(systemName: "calendar")
+                Image(systemName: "square.grid.3x2")
                     .font(.system(size: 26, weight: .medium))
                     .foregroundStyle(AppColor.accent)
             }
