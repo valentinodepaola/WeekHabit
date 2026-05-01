@@ -26,7 +26,9 @@ struct WeekHabitApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            AppLaunchView {
+                ContentView()
+            }
         }
         .modelContainer(container)
     }
