@@ -97,17 +97,13 @@ struct WeekView: View {
     }
     
     private var dayStrip: some View {
-        HStack(spacing: 0) {
-            Spacer()
-                .frame(width: WeekGridLayout.habitColumnWidth)
-
-            HStack(spacing: WeekGridLayout.cellSpacing) {
-                ForEach(daysInWeek, id: \.self) { date in
-                    DayColumn(date: date, isToday: AppCalendar.isSameDay(date, .now))
-                }
+        HStack(spacing: WeekGridLayout.cellSpacing) {
+            ForEach(daysInWeek, id: \.self) { date in
+                DayColumn(date: date, isToday: AppCalendar.isSameDay(date, .now))
             }
         }
-        .padding(.horizontal, 16)
+        .padding(.leading, 34)
+        .padding(.trailing, 30)
         .padding(.bottom, 8)
     }
 

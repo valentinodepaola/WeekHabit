@@ -16,6 +16,7 @@ struct WeekGridCell: View {
     }
 
     let state: State
+    let categoryColor: Color
     let onTap: () -> Void
 
     var body: some View {
@@ -39,6 +40,7 @@ struct WeekGridCell: View {
         }
         .buttonStyle(.plain)
         .disabled(state == .inactive || state == .future)
+        .frame(maxWidth: .infinity)
     }
 
     @ViewBuilder
@@ -46,20 +48,20 @@ struct WeekGridCell: View {
         switch state {
         case .completed:
             RoundedRectangle(cornerRadius: AppRadius.small)
-                .fill(AppColor.accent)
+                .fill(categoryColor)
         case .pending:
             RoundedRectangle(cornerRadius: AppRadius.small)
-                .fill(AppColor.accentSoft.opacity(0.55))
+                .fill(categoryColor.opacity(0.12))
                 .overlay {
                     RoundedRectangle(cornerRadius: AppRadius.small)
-                        .stroke(AppColor.accent.opacity(0.20), lineWidth: 1)
+                        .stroke(categoryColor.opacity(0.24), lineWidth: 1)
                 }
         case .inactive:
             RoundedRectangle(cornerRadius: AppRadius.small)
-                .fill(AppColor.surfaceMuted)
+                .fill(AppColor.bgLight.opacity(0.7))
         case .future:
             RoundedRectangle(cornerRadius: AppRadius.small)
-                .stroke(AppColor.subtleText.opacity(0.2), lineWidth: 1)
+                .stroke(AppColor.subtleText.opacity(0.16), lineWidth: 1)
                 .opacity(0.5)
         }
     }

@@ -31,8 +31,7 @@ struct DayColumn: View {
                 .font(AppFont.dayLabel)
                 .foregroundStyle(isToday ? .white : AppColor.strongText)
         }
-        .frame(width: WeekGridLayout.cellSize)
-        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, minHeight: 54)
         .background(isToday ? AppColor.accent : Color.clear)
         .clipShape(RoundedRectangle(cornerRadius: AppRadius.medium))
     }

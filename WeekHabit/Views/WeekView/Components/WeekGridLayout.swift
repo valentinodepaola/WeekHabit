@@ -8,10 +8,9 @@
 import SwiftUI
 
 enum WeekGridLayout {
-    static let habitColumnWidth: CGFloat = 94
-    static let categoryStripWidth: CGFloat = 3
-    static let cellSpacing: CGFloat = 4
-    static let cellSize: CGFloat = 34
+    static let categoryStripWidth: CGFloat = 4
+    static let cellSpacing: CGFloat = 10
+    static let cellSize: CGFloat = 38
 }
 
 struct WeekProgressBar: View {

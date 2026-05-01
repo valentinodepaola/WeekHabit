@@ -21,40 +21,45 @@ struct WeekGridRow: View {
             habit.displayCategory.color
                 .frame(width: WeekGridLayout.categoryStripWidth)
 
-            Button(action: onSelectHabit) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(habit.title)
-                        .font(AppFont.body2)
-                        .foregroundStyle(AppColor.strongText)
-                        .lineLimit(1)
+            VStack(alignment: .leading, spacing: 14) {
+                Button(action: onSelectHabit) {
+                    VStack(alignment: .leading, spacing: 7) {
+                        HStack(alignment: .firstTextBaseline, spacing: 12) {
+                            Text(habit.title)
+                                .font(AppFont.body2)
+                                .foregroundStyle(AppColor.strongText)
+                                .lineLimit(1)
 
-                    WeekProgressBar(
-                        progress: habit.weekProgress(reference: referenceDate),
-                        categoryColor: habit.displayCategory.color
-                    )
+                            Spacer(minLength: 8)
 
-                    Text("\(habit.completedDaysThisWeek(reference: referenceDate))/\(habit.targetDaysPerWeek)")
-                        .font(AppFont.formSectionText2)
-                        .foregroundStyle(AppColor.mutedText)
+                            Text("\(habit.completedDaysThisWeek(reference: referenceDate))/\(habit.targetDaysPerWeek)")
+                                .font(AppFont.formSectionText2)
+                                .foregroundStyle(AppColor.mutedText)
+                        }
+
+                        WeekProgressBar(
+                            progress: habit.weekProgress(reference: referenceDate),
+                            categoryColor: habit.displayCategory.color
+                        )
+                    }
+                    .contentShape(Rectangle())
                 }
-                .padding(.leading, 8)
-                .frame(
-                    width: WeekGridLayout.habitColumnWidth - WeekGridLayout.categoryStripWidth,
-                    alignment: .leading
-                )
-            }
-            .buttonStyle(.plain)
+                .buttonStyle(.plain)
 
-            HStack(spacing: WeekGridLayout.cellSpacing) {
-                ForEach(daysInWeek, id: \.self) { date in
-                    WeekGridCell(
-                        state: cellState(for: date),
-                        onTap: { onToggle(date) }
-                    )
+                HStack(spacing: WeekGridLayout.cellSpacing) {
+                    ForEach(daysInWeek, id: \.self) { date in
+                        WeekGridCell(
+                            state: cellState(for: date),
+                            categoryColor: habit.displayCategory.color,
+                            onTap: { onToggle(date) }
+                        )
+                    }
                 }
             }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 14)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(.vertical, 10)
         .background(AppColor.surface)
         .clipShape(RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous))
     }
