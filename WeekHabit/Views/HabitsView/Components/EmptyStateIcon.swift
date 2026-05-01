@@ -10,8 +10,10 @@ import SwiftUI
 struct EmptyStateIcon: View {
     
     // Personaliza con tus colores de tema
-    var accentColor: Color = AppColor.accent
-    var fillColor: Color = AppColor.accentSoft
+    var iconColor: Color
+    var fillColor: Color
+    var insideCirculeColor: Color
+    let icon: String
     
     var body: some View {
         ZStack {
@@ -21,24 +23,29 @@ struct EmptyStateIcon: View {
                     lineWidth: 2,
                     dash: [6, 5]
                 ))
-                .foregroundStyle(fillColor)
+                .foregroundStyle(self.fillColor)
                 .frame(width: 180, height: 180)
             
             // Círculo interior sólido
             Circle()
-                .foregroundStyle(fillColor)
+                .foregroundStyle(self.insideCirculeColor)
                 .frame(width: 80, height: 80)
             
             // Ícono central
-            Image(systemName: "circle.hexagongrid")
+            Image(systemName: self.icon)
                 .font(.system(size: 26, weight: .medium))
-                .foregroundStyle(accentColor)
+                .foregroundStyle(self.iconColor)
         }
     }
 }
 
 #Preview {
-    EmptyStateIcon()
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(red: 0.99, green: 0.96, blue: 0.94))
+    EmptyStateIcon(
+        iconColor: AppColor.accent,
+        fillColor: AppColor.accentSoft,
+        insideCirculeColor: AppColor.accentSoft,
+        icon: "circle.hexagongrid"
+    )
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+    .background(Color(red: 0.99, green: 0.96, blue: 0.94))
 }

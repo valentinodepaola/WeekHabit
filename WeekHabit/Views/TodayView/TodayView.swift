@@ -13,13 +13,23 @@ struct TodayView: View {
     
     @Query(sort: \Habit.createdAt, order: .reverse)
     private var habits: [Habit]
+    
+    @State private var createHabitRoute: TodayCreateHabitRoute?
 
     private var referenceDate: Date {
         Date()
     }
     
+    private var currentWeekday: Weekday {
+        AppCalendar.weekday(of: referenceDate)
+    }
+    
     private var currentDayTitle: String {
-        AppCalendar.weekday(of: referenceDate).displayName
+        currentWeekday.displayName
+    }
+    
+    private var currentDayNameForSentence: String {
+        currentDayTitle.lowercased(with: Locale(identifier: "es_MX"))
     }
 
     private var currentDateTitle: String {
@@ -39,6 +49,16 @@ struct TodayView: View {
             habit.isActive(on: referenceDate)
         }
     }
+    
+    private var tomorrowDate: Date {
+        AppCalendar.current.date(byAdding: .day, value: 1, to: referenceDate) ?? referenceDate
+    }
+    
+    private var tomorrowHabitsCount: Int {
+        habits.filter { habit in
+            habit.isActive(on: tomorrowDate)
+        }.count
+    }
 
     private var completedTodayCount: Int {
         todayHabits.filter { habit in
@@ -57,53 +77,95 @@ struct TodayView: View {
 
     var body: some View {
         AppBackground {
-            ScrollView() {
-                VStack(alignment: .leading, spacing: 18) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(currentDateTitle)
-                            .font(AppFont.captionApp)
-                            .foregroundStyle(AppColor.mutedText)
+            if todayHabits.isEmpty {
+                VStack(alignment: .leading, spacing: 0) {
+                    header
+                        .padding(.horizontal)
+                        .padding(.top, 15)
 
-                        Text("Buenos días")
-                            .font(AppFont.title)
-                    }
+                    emptyTodayContent
+                }
+            } else {
+                todayHabitsContent
+            }
+        }
+        .fullScreenCover(item: $createHabitRoute) { route in
+            switch route {
+            case .today(let weekday):
+                CreateHabitView(
+                    initialDaysPerWeek: 1,
+                    initialActiveDays: [weekday]
+                )
+            }
+        }
+    }
 
-                    DailyProgressCard(
-                        progress: dailyProgress,
-                        completedCount: completedTodayCount,
-                        totalCount: todayHabits.count,
-                        remainingCount: remainingTodayCount
-                    )
-                    
-                    HStack {
-                        Text("Habitos de hoy")
-                            .font(AppFont.subtitle2)
-                        Spacer()
-                        Text(self.currentDayTitle)
-                            .font(AppFont.body2)
-                            .foregroundStyle(AppColor.mutedText)
-                    }
-                    
-                    ForEach(todayHabits) { habit in
-                        TodayHabitComponent(
-                            habit: habit,
-                            isCompleted: habit.isCompleted(on: referenceDate)
-                        ) {
-                            toggleCompletion(for: habit)
-                        }
-                    }
-                    
-                    if let top = habits.topStreakHabit(reference: referenceDate) {
-                        LongestStreakBanner(
-                            habitTitle: top.habit.title,
-                            streakDays: top.streak,
-                            allSameStreak: todayHabits.allShareSameCurrentStreak(reference: referenceDate)
-                        )
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(currentDateTitle)
+                .font(AppFont.captionApp)
+                .foregroundStyle(AppColor.mutedText)
+
+            Text("Buenos días")
+                .font(AppFont.title)
+        }
+    }
+
+    private var emptyTodayContent: some View {
+        ZStack {
+            TodayEmptyStateView(
+                weekdayName: currentDayNameForSentence,
+                tomorrowHabitsCount: tomorrowHabitsCount
+            ) {
+                createHabitRoute = .today(currentWeekday)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.horizontal, 16)
+        .padding(.bottom, 120)
+    }
+
+    private var todayHabitsContent: some View {
+        ScrollView() {
+            VStack(alignment: .leading, spacing: 18) {
+                header
+
+                DailyProgressCard(
+                    progress: dailyProgress,
+                    completedCount: completedTodayCount,
+                    totalCount: todayHabits.count,
+                    remainingCount: remainingTodayCount
+                )
+
+                HStack {
+                    Text("Habitos de hoy")
+                        .font(AppFont.subtitle2)
+                    Spacer()
+                    Text(self.currentDayTitle)
+                        .font(AppFont.body2)
+                        .foregroundStyle(AppColor.mutedText)
+                }
+
+                ForEach(todayHabits) { habit in
+                    TodayHabitComponent(
+                        habit: habit,
+                        isCompleted: habit.isCompleted(on: referenceDate)
+                    ) {
+                        toggleCompletion(for: habit)
                     }
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding()
+
+                if let top = habits.topStreakHabit(reference: referenceDate) {
+                    LongestStreakBanner(
+                        habitTitle: top.habit.title,
+                        streakDays: top.streak,
+                        allSameStreak: todayHabits.allShareSameCurrentStreak(reference: referenceDate)
+                    )
+                }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding()
+            .padding(.bottom, 120)
         }
     }
 
@@ -121,6 +183,17 @@ struct TodayView: View {
                     modelContext.delete(entry)
                 }
             }
+        }
+    }
+}
+
+private enum TodayCreateHabitRoute: Identifiable {
+    case today(Weekday)
+    
+    var id: String {
+        switch self {
+        case .today(let weekday):
+            return "today-\(weekday.rawValue)"
         }
     }
 }

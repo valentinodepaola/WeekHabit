@@ -13,7 +13,12 @@ struct EmptyStateView: View {
     
     var body: some View {
 
-        EmptyStateIcon()
+        EmptyStateIcon(
+            iconColor: AppColor.accent,
+            fillColor: AppColor.accentSoft,
+            insideCirculeColor: AppColor.accentSoft,
+            icon: "circle.hexagongrid"
+        )
 
         VStack(spacing: 25) {
             Text("Tu semana está en blanco")

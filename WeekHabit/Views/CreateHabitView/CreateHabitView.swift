@@ -32,14 +32,18 @@ struct CreateHabitView: View {
         habitToEdit != nil
     }
 
-    init(habitToEdit: Habit? = nil) {
+    init(
+        habitToEdit: Habit? = nil,
+        initialDaysPerWeek: Int = 0,
+        initialActiveDays: Set<Weekday> = []
+    ) {
         self.habitToEdit = habitToEdit
 
         _habitName = State(initialValue: habitToEdit?.title ?? "")
         _note = State(initialValue: habitToEdit?.note ?? "")
         _selectedCategory = State(initialValue: habitToEdit?.displayCategory ?? .health)
-        _daysPerWeek = State(initialValue: habitToEdit?.targetDaysPerWeek ?? 0)
-        _selectedActiveDays = State(initialValue: habitToEdit?.activeDaysOfWeek ?? [])
+        _daysPerWeek = State(initialValue: habitToEdit?.targetDaysPerWeek ?? initialDaysPerWeek)
+        _selectedActiveDays = State(initialValue: habitToEdit?.activeDaysOfWeek ?? initialActiveDays)
     }
 
     var body: some View {

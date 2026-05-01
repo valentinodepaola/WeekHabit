@@ -33,7 +33,7 @@ struct ButtonCategoryComponent: View {
                     }
                     .padding(10)
                 }
-                .background(selectedCategory == category ? category.color.opacity(0.2) : Color.white)
+                .background(selectedCategory == category ? category.color.opacity(0.2) : AppColor.surface)
                 .cornerRadius(12)
             }
         }
