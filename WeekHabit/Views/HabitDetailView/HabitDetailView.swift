@@ -121,6 +121,11 @@ struct HabitDetailView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
 
+            Text(detailSummary)
+                .font(AppFont.formSectionText2)
+                .foregroundStyle(AppColor.mutedText)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
             if let activeExperiment {
                 HabitExperimentStatusCard(
                     experiment: activeExperiment,
@@ -140,6 +145,14 @@ struct HabitDetailView: View {
         }
 
         return "tu mejor marca"
+    }
+
+    private var detailSummary: String {
+        if habit.trackingKind == .quantity {
+            return "\(habit.scheduleSummaryText) · \(habit.targetPerSessionText)"
+        }
+
+        return habit.scheduleSummaryText
     }
 }
 

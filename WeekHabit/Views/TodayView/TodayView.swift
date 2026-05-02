@@ -18,6 +18,8 @@ struct TodayView: View {
     private var experiments: [HabitExperiment]
     
     @State private var createHabitRoute: TodayCreateHabitRoute?
+    @State private var isShowingFocusSession = false
+    @State private var quantityHabit: Habit?
 
     private var referenceDate: Date {
         Date()
@@ -49,7 +51,7 @@ struct TodayView: View {
     
     private var todayHabits: [Habit] {
         habits.filter { habit in
-            habit.isActive(on: referenceDate)
+            habit.isLoggable(on: referenceDate)
         }
     }
     
@@ -59,14 +61,12 @@ struct TodayView: View {
     
     private var tomorrowHabitsCount: Int {
         habits.filter { habit in
-            habit.isActive(on: tomorrowDate)
+            habit.isLoggable(on: tomorrowDate)
         }.count
     }
 
     private var completedTodayCount: Int {
-        todayHabits.filter { habit in
-            habit.isCompleted(on: referenceDate)
-        }.count
+        todayHabits.filter { isCompleteForTodayList($0) }.count
     }
 
     private var remainingTodayCount: Int {
@@ -100,6 +100,19 @@ struct TodayView: View {
                     initialActiveDays: [weekday]
                 )
             }
+        }
+        .fullScreenCover(isPresented: $isShowingFocusSession) {
+            FocusSessionView(habits: todayHabits)
+        }
+        .sheet(item: $quantityHabit) { habit in
+            QuantityLogSheet(
+                habit: habit,
+                date: referenceDate,
+                initialValue: habit.totalValue(on: referenceDate)
+            ) { value in
+                upsertQuantityEntry(for: habit, on: referenceDate, value: value, source: .today)
+            }
+            .presentationDetents([.height(310)])
         }
     }
 
@@ -140,6 +153,11 @@ struct TodayView: View {
                     remainingCount: remainingTodayCount
                 )
 
+                FocusSessionLauncherCard(
+                    remainingCount: remainingTodayCount,
+                    onStart: { isShowingFocusSession = true }
+                )
+
                 HStack {
                     Text("Habitos de hoy")
                         .font(AppFont.subtitle2)
@@ -152,7 +170,7 @@ struct TodayView: View {
                 ForEach(todayHabits) { habit in
                     TodayHabitComponent(
                         habit: habit,
-                        isCompleted: habit.isCompleted(on: referenceDate),
+                        isCompleted: isCompleteForTodayList(habit),
                         activeExperiment: experiments.activeExperiment(
                             for: habit.id,
                             reference: referenceDate
@@ -163,7 +181,7 @@ struct TodayView: View {
                     }
                 }
 
-                if let top = habits.topStreakHabit(reference: referenceDate) {
+                if let top = todayHabits.topStreakHabit(reference: referenceDate) {
                     LongestStreakBanner(
                         habitTitle: top.habit.title,
                         streakDays: top.streak,
@@ -178,18 +196,74 @@ struct TodayView: View {
     }
 
     private func toggleCompletion(for habit: Habit) {
+        if habit.trackingKind == .quantity {
+            quantityHabit = habit
+            return
+        }
+
         let entriesForToday = habit.entries.filter {
             AppCalendar.isSameDay($0.date, referenceDate)
         }
 
         withAnimation(.easeInOut(duration: 0.2)) {
             if entriesForToday.isEmpty {
-                let entry = HabitEntry(date: referenceDate, completedAt: .now, habit: habit)
+                let entry = HabitEntry(
+                    date: referenceDate,
+                    completedAt: .now,
+                    source: .today,
+                    value: 1,
+                    habit: habit
+                )
                 modelContext.insert(entry)
             } else {
                 entriesForToday.forEach { entry in
                     modelContext.delete(entry)
                 }
+            }
+        }
+    }
+
+    private func isCompleteForTodayList(_ habit: Habit) -> Bool {
+        if habit.isFlexibleSchedule && habit.completedDaysThisWeek(reference: referenceDate) >= habit.targetDaysPerWeek {
+            return true
+        }
+
+        return habit.isCompleted(on: referenceDate)
+    }
+
+    private func upsertQuantityEntry(
+        for habit: Habit,
+        on date: Date,
+        value: Double,
+        source: HabitEntrySource
+    ) {
+        let entriesForDay = habit.entries.filter {
+            AppCalendar.isSameDay($0.date, date)
+        }
+
+        withAnimation(.easeInOut(duration: 0.2)) {
+            if value <= 0 {
+                entriesForDay.forEach { modelContext.delete($0) }
+                return
+            }
+
+            if let entry = entriesForDay.first {
+                entry.value = value
+                entry.completedCount = Int(value.rounded())
+                entry.completedAt = .now
+                entry.source = source
+                entriesForDay.dropFirst().forEach { modelContext.delete($0) }
+            } else {
+                modelContext.insert(
+                    HabitEntry(
+                        date: date,
+                        completedAt: .now,
+                        source: source,
+                        completedCount: Int(value.rounded()),
+                        value: value,
+                        habit: habit
+                    )
+                )
             }
         }
     }

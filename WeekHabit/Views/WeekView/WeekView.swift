@@ -14,10 +14,10 @@ struct WeekView: View {
     @Query(sort: \Habit.createdAt, order: .reverse)
     private var habits: [Habit]
 
-    @Query private var entries: [HabitEntry]
     @State private var weekOffset: Int = 0
     @State private var selectedHabit: Habit?
     @State private var lastToggle: ToggleHaptic?
+    @State private var quantityRoute: WeekQuantityLogRoute?
 
     private var referenceDate: Date {
         AppCalendar.current.date(byAdding: .weekOfYear, value: weekOffset, to: .now) ?? .now
@@ -27,9 +27,9 @@ struct WeekView: View {
         AppCalendar.weekRange(containing: referenceDate)
     }
 
-    private var entriesThisWeek: [HabitEntry] {
-        entries.filter { entry in
-            weekRange.contains(entry.date)
+    private var visibleHabits: [Habit] {
+        habits.filter { habit in
+            daysInWeek.contains { habit.isLoggable(on: $0) || habit.isCompleted(on: $0) }
         }
     }
 
@@ -55,16 +55,23 @@ struct WeekView: View {
     }
 
     private var completedDisplay: String {
-        entriesThisWeek.isEmpty ? "—" : "\(entriesThisWeek.count)"
+        let completed = completedThisWeek
+        return completed == 0 ? "—" : "\(completed)"
     }
 
     private var totalGoal: Int {
-        habits.reduce(0) { $0 + $1.targetDaysPerWeek }
+        visibleHabits.reduce(0) { $0 + $1.targetDaysPerWeek }
+    }
+
+    private var completedThisWeek: Int {
+        visibleHabits.reduce(0) { partial, habit in
+            partial + habit.completedDaysThisWeek(reference: referenceDate)
+        }
     }
 
     private var consistencyDisplay: String {
-        guard totalGoal > 0, !entriesThisWeek.isEmpty else { return "—" }
-        let percentage = Double(entriesThisWeek.count) / Double(totalGoal) * 100
+        guard totalGoal > 0, completedThisWeek > 0 else { return "—" }
+        let percentage = min(1, Double(completedThisWeek) / Double(totalGoal)) * 100
         return "\(Int(percentage))%"
     }
 
@@ -92,6 +99,16 @@ struct WeekView: View {
                     if case .unmarked = newValue { return true }
                     return false
                 }
+                .sheet(item: $quantityRoute) { route in
+                    QuantityLogSheet(
+                        habit: route.habit,
+                        date: route.date,
+                        initialValue: route.habit.totalValue(on: route.date)
+                    ) { value in
+                        upsertQuantityEntry(for: route.habit, on: route.date, value: value)
+                    }
+                    .presentationDetents([.height(310)])
+                }
             }
         }
     }
@@ -109,13 +126,13 @@ struct WeekView: View {
 
     @ViewBuilder
     private var contentArea: some View {
-        if habits.isEmpty {
+        if visibleHabits.isEmpty {
             WeekEmptyStateCard()
                 .padding(.horizontal, 16)
             Spacer()
         } else {
             List {
-                ForEach(habits) { habit in
+                ForEach(visibleHabits) { habit in
                     WeekGridRow(
                         habit: habit,
                         daysInWeek: daysInWeek,
@@ -158,6 +175,11 @@ struct WeekView: View {
     }
 
     private func toggleCompletion(for habit: Habit, on date: Date) {
+        if habit.trackingKind == .quantity {
+            quantityRoute = WeekQuantityLogRoute(habit: habit, date: date)
+            return
+        }
+
         let entriesForDay = habit.entries.filter {
             AppCalendar.isSameDay($0.date, date)
         }
@@ -168,7 +190,9 @@ struct WeekView: View {
                 modelContext.insert(
                     HabitEntry(
                         date: date,
-                        completedAt: AppCalendar.isSameDay(date, .now) ? .now : nil,
+                        completedAt: nil,
+                        source: .manual,
+                        value: 1,
                         habit: habit
                     )
                 )
@@ -182,11 +206,54 @@ struct WeekView: View {
         lastToggle = willMark ? .marked(UUID()) : .unmarked(UUID())
     }
 
+    private func upsertQuantityEntry(for habit: Habit, on date: Date, value: Double) {
+        let entriesForDay = habit.entries.filter {
+            AppCalendar.isSameDay($0.date, date)
+        }
+        let willMark = value > 0
+
+        withAnimation(.easeInOut(duration: 0.2)) {
+            if value <= 0 {
+                entriesForDay.forEach { entry in
+                    modelContext.delete(entry)
+                }
+            } else if let entry = entriesForDay.first {
+                entry.value = value
+                entry.completedCount = Int(value.rounded())
+                entry.completedAt = nil
+                entry.source = .manual
+                entriesForDay.dropFirst().forEach { modelContext.delete($0) }
+            } else {
+                modelContext.insert(
+                    HabitEntry(
+                        date: date,
+                        completedAt: nil,
+                        source: .manual,
+                        completedCount: Int(value.rounded()),
+                        value: value,
+                        habit: habit
+                    )
+                )
+            }
+        }
+
+        lastToggle = willMark ? .marked(UUID()) : .unmarked(UUID())
+    }
+
 }
 
 private enum ToggleHaptic: Equatable {
     case marked(UUID)
     case unmarked(UUID)
+}
+
+private struct WeekQuantityLogRoute: Identifiable {
+    let habit: Habit
+    let date: Date
+
+    var id: String {
+        "\(habit.id)-\(date.timeIntervalSinceReferenceDate)"
+    }
 }
 
 #Preview {

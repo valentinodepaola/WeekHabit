@@ -71,7 +71,11 @@ struct TodayHabitComponent: View {
 
     private var subtitle: String {
         guard let activeExperiment else {
-            return "\(category.displayTitle) · racha \(habit.displayStreak())d"
+            if habit.trackingKind == .quantity {
+                return "\(habit.targetPerSessionText) · \(habit.scheduleSummaryText)"
+            }
+
+            return "\(category.displayTitle) · \(habit.scheduleSummaryText) · racha \(habit.displayStreak())d"
         }
 
         if activeExperiment.needsReview(reference: referenceDate) {

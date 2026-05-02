@@ -11,7 +11,7 @@ import SwiftData
 @main
 struct WeekHabitApp: App {
     let container: ModelContainer = {
-        let schema = Schema(versionedSchema: SchemaV2.self)
+        let schema = Schema(versionedSchema: SchemaV4.self)
         let config = ModelConfiguration(schema: schema)
         do {
             return try ModelContainer(
@@ -26,7 +26,9 @@ struct WeekHabitApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            AppLaunchView {
+                ContentView()
+            }
         }
         .modelContainer(container)
     }

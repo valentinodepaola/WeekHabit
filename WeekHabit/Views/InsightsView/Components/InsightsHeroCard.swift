@@ -7,6 +7,7 @@ import SwiftUI
 
 struct InsightsHeroCard: View {
     let snapshot: GlobalInsightSnapshot
+    var readiness: InsightReadiness? = nil
 
     private var consistencyText: String {
         snapshot.current.scheduled == 0 ? "—" : "\(snapshot.current.percentage)%"
@@ -23,6 +24,10 @@ struct InsightsHeroCard: View {
     }
 
     private var message: String {
+        if let readiness, !readiness.isReady {
+            return "La gráfica ya reacciona a tus marcas, pero todavía estoy juntando contexto."
+        }
+
         guard snapshot.current.scheduled > 0 else {
             return "Marca algunos hábitos para empezar a leer tu ritmo."
         }
@@ -43,6 +48,10 @@ struct InsightsHeroCard: View {
     }
 
     private var encouragement: String {
+        if let readiness, !readiness.isReady {
+            return readiness.remainingDays == 1 ? "Falta 1 día para activar Insights." : "Faltan \(readiness.remainingDays) días para activar Insights."
+        }
+
         if snapshot.current.scheduled == 0 { return "Empieza suave." }
         return snapshot.deltaPercentagePoints >= 0 ? "Sigue así." : "Ajustemos el plan."
     }

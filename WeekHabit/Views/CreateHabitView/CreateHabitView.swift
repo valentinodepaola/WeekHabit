@@ -20,19 +20,44 @@ struct CreateHabitView: View {
     @State private var habitName: String = ""
     @State private var note: String = ""
     @State private var selectedCategory: HabitCategory = .health
-    @State private var daysPerWeek: Int = 0
+    @State private var trackingKind: HabitTrackingKind = .check
+    @State private var measurementUnit: HabitMeasurementUnit = .none
+    @State private var targetValueText: String = "1"
+    @State private var scheduleKind: HabitScheduleKind = .daily
+    @State private var timesPerWeek: Int = 1
     @State private var selectedActiveDays: Set<Weekday> = []
+    @State private var hasEndDate: Bool = false
+    @State private var endsAt: Date = .now
 
     private let habitToEdit: Habit?
 
     private var isSaveDisabled: Bool {
-        habitName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
-        daysPerWeek == 0 ||
-        selectedActiveDays.count != daysPerWeek
+        if habitName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return true
+        }
+
+        if trackingKind == .quantity {
+            guard parsedTargetValue > 0 else { return true }
+            if measurementUnit == .none { return true }
+        }
+
+        switch scheduleKind {
+        case .daily:
+            return false
+        case .specificDays:
+            return selectedActiveDays.isEmpty
+        case .timesPerWeek:
+            return !(1...7).contains(timesPerWeek)
+        }
     }
 
     private var isEditing: Bool {
         habitToEdit != nil
+    }
+
+    private var parsedTargetValue: Double {
+        let normalized = targetValueText.replacingOccurrences(of: ",", with: ".")
+        return Double(normalized) ?? 0
     }
 
     init(
@@ -42,110 +67,78 @@ struct CreateHabitView: View {
     ) {
         self.habitToEdit = habitToEdit
 
+        let initialScheduleKind: HabitScheduleKind
+        if let habitToEdit {
+            initialScheduleKind = habitToEdit.scheduleKind
+        } else if initialDaysPerWeek > 0 || !initialActiveDays.isEmpty {
+            initialScheduleKind = .specificDays
+        } else {
+            initialScheduleKind = .daily
+        }
+
         _habitName = State(initialValue: habitToEdit?.title ?? "")
         _note = State(initialValue: habitToEdit?.note ?? "")
         _selectedCategory = State(initialValue: habitToEdit?.displayCategory ?? .health)
-        _daysPerWeek = State(initialValue: habitToEdit?.targetDaysPerWeek ?? initialDaysPerWeek)
+        _trackingKind = State(initialValue: habitToEdit?.trackingKind ?? .check)
+        _measurementUnit = State(initialValue: Self.normalizedInitialUnit(habitToEdit?.measurementUnit ?? .none))
+        _targetValueText = State(initialValue: Habit.formattedQuantity(habitToEdit?.sessionTargetValue ?? 1))
+        _scheduleKind = State(initialValue: initialScheduleKind)
+        _timesPerWeek = State(initialValue: habitToEdit?.targetDaysPerWeek ?? max(initialDaysPerWeek, 1))
         _selectedActiveDays = State(initialValue: habitToEdit?.activeDaysOfWeek ?? initialActiveDays)
+        _hasEndDate = State(initialValue: habitToEdit?.endsAt != nil)
+        _endsAt = State(initialValue: habitToEdit?.endsAt ?? .now)
     }
 
     var body: some View {
         AppBackground {
             ScrollView {
-                HStack {
-                    Button("Cancelar") {
-                        self.dismiss()
-                    }
-                    .foregroundStyle(AppColor.mutedText)
-
-                    Spacer()
-
-                    Button {
-                        saveHabit()
-                    } label: {
-                        Text("Guardar")
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .fontWeight(.bold)
-                    .tint(AppColor.accent)
-                }
-                .padding(.horizontal)
+                CreateHabitTopBar(
+                    isSaveDisabled: isSaveDisabled,
+                    onCancel: { dismiss() },
+                    onSave: { saveHabit() }
+                )
 
                 VStack(alignment: .leading, spacing: 25) {
-
                     Text(isEditing ? "Editar habito" : "Nuevo habito")
                         .font(AppFont.title)
                         .foregroundStyle(AppColor.strongText)
-                        .padding(.bottom, 20)
+                        .padding(.bottom, 8)
 
-                    TextFieldComponent(
-                        titleSection: "Nombre",
-                        placeholder: "Tomar agua",
+                    HabitBasicInfoSection(
                         habitName: $habitName,
-                        normalTextField: true
+                        note: $note,
+                        selectedCategory: $selectedCategory
                     )
 
-                    TextFieldComponent(
-                        titleSection: "Nota opcional",
-                        placeholder: "Un vaso cada 2 horas...",
-                        habitName: $note,
-                        normalTextField: false
+                    HabitMeasurementSection(
+                        trackingKind: $trackingKind,
+                        measurementUnit: $measurementUnit,
+                        targetValueText: $targetValueText
                     )
 
-                    Text("Categoria")
-                        .font(AppFont.formSectionText)
-                        .foregroundStyle(AppColor.mutedText)
-                        .textCase(.uppercase)
-
-                    //TODO: Agregar animacion al cambiar de boton.
-                    ButtonCategoryComponent(selectedCategory: $selectedCategory)
-
-                    Text("Meta semanal")
-                        .font(AppFont.formSectionText)
-                        .foregroundStyle(AppColor.mutedText)
-                        .textCase(.uppercase)
-
-                    WeekGoalComponent(days: self.$daysPerWeek)
-
-                    ActiveDaysComponent(
-                        selectedDays: $selectedActiveDays,
-                        targetDays: daysPerWeek
+                    HabitScheduleSection(
+                        scheduleKind: $scheduleKind,
+                        timesPerWeek: $timesPerWeek,
+                        selectedActiveDays: $selectedActiveDays
                     )
 
-                    HStack {
-                        Image(systemName: "circle.hexagongrid")
-                            .foregroundStyle(AppColor.accent)
-
-                        Text("Lunes a viernes es un buen ritmo para empezar.")
-                            .font(AppFont.formSectionText)
-                            .foregroundStyle(AppColor.accent)
-                    }
-                    .padding(8)
-                    .background(AppColor.accent.opacity(0.2))
-                    .cornerRadius(AppRadius.medium)
-
-
+                    HabitEndDateSection(
+                        hasEndDate: $hasEndDate,
+                        endsAt: $endsAt
+                    )
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding()
-                .onChange(of: daysPerWeek) { _, newValue in
-                    trimSelectedDays(to: newValue)
+                .onChange(of: trackingKind) { _, newValue in
+                    if newValue == .check {
+                        measurementUnit = .none
+                        targetValueText = "1"
+                    } else if measurementUnit == .none {
+                        measurementUnit = .minutes
+                    }
                 }
-
-                Spacer()
-
             }
         }
-    }
-
-    private func trimSelectedDays(to targetDays: Int) {
-        guard selectedActiveDays.count > targetDays else { return }
-
-        selectedActiveDays = Set(
-            Weekday.ordered
-                .filter { selectedActiveDays.contains($0) }
-                .prefix(targetDays)
-        )
     }
 
     private func saveHabit() {
@@ -153,6 +146,10 @@ struct CreateHabitView: View {
 
         let trimmedName = habitName.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedNote = note.trimmingCharacters(in: .whitespacesAndNewlines)
+        let normalizedTargetValue = trackingKind == .check ? 1 : parsedTargetValue
+        let normalizedMeasurementUnit: HabitMeasurementUnit = trackingKind == .check ? .none : measurementUnit
+        let normalizedEndsAt = hasEndDate ? AppCalendar.startOfDay(for: endsAt) : nil
+        let normalizedPlan = normalizedSchedulePlan()
 
         if let habitToEdit {
             if let activeExperiment = experiments.activeExperiment(for: habitToEdit.id) {
@@ -162,23 +159,49 @@ struct CreateHabitView: View {
             habitToEdit.title = trimmedName
             habitToEdit.note = trimmedNote.isEmpty ? nil : trimmedNote
             habitToEdit.category = selectedCategory
-            habitToEdit.targetDaysPerWeek = daysPerWeek
-            habitToEdit.activeDaysOfWeek = selectedActiveDays
+            habitToEdit.trackingKind = trackingKind
+            habitToEdit.measurementUnit = normalizedMeasurementUnit
+            habitToEdit.customUnitName = nil
+            habitToEdit.targetValuePerSession = normalizedTargetValue
+            habitToEdit.scheduleKind = scheduleKind
+            habitToEdit.targetDaysPerWeek = normalizedPlan.targetDaysPerWeek
+            habitToEdit.activeDaysOfWeek = normalizedPlan.activeDays
+            habitToEdit.endsAt = normalizedEndsAt
         } else {
             let habit = Habit(
                 title: trimmedName,
                 note: trimmedNote.isEmpty ? nil : trimmedNote,
                 category: selectedCategory,
-                targetDaysPerWeek: daysPerWeek,
-                activeDaysOfWeek: selectedActiveDays
+                targetDaysPerWeek: normalizedPlan.targetDaysPerWeek,
+                activeDaysOfWeek: normalizedPlan.activeDays,
+                trackingKind: trackingKind,
+                measurementUnit: normalizedMeasurementUnit,
+                customUnitName: nil,
+                targetValuePerSession: normalizedTargetValue,
+                scheduleKind: scheduleKind,
+                endsAt: normalizedEndsAt
             )
             modelContext.insert(habit)
         }
 
         dismiss()
     }
-}
 
+    private func normalizedSchedulePlan() -> (targetDaysPerWeek: Int, activeDays: Set<Weekday>) {
+        switch scheduleKind {
+        case .daily:
+            return (7, Set(Weekday.ordered))
+        case .specificDays:
+            return (selectedActiveDays.count, selectedActiveDays)
+        case .timesPerWeek:
+            return (timesPerWeek, Set(Weekday.ordered))
+        }
+    }
+
+    private static func normalizedInitialUnit(_ unit: HabitMeasurementUnit) -> HabitMeasurementUnit {
+        unit == .custom ? .minutes : unit
+    }
+}
 
 #Preview {
     CreateHabitView()

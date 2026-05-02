@@ -10,6 +10,7 @@ import SwiftUI
 struct WeekGridCell: View {
     enum State: Equatable {
         case completed
+        case partial
         case pending
         case inactive
         case future
@@ -28,6 +29,12 @@ struct WeekGridCell: View {
                     Image(systemName: "checkmark")
                         .font(.system(size: 14, weight: .bold))
                         .foregroundStyle(.white)
+                }
+
+                if state == .partial {
+                    Circle()
+                        .fill(categoryColor)
+                        .frame(width: 7, height: 7)
                 }
 
                 if state == .inactive {
@@ -49,6 +56,13 @@ struct WeekGridCell: View {
         case .completed:
             RoundedRectangle(cornerRadius: AppRadius.small)
                 .fill(categoryColor)
+        case .partial:
+            RoundedRectangle(cornerRadius: AppRadius.small)
+                .fill(categoryColor.opacity(0.18))
+                .overlay {
+                    RoundedRectangle(cornerRadius: AppRadius.small)
+                        .stroke(categoryColor.opacity(0.36), lineWidth: 1)
+                }
         case .pending:
             RoundedRectangle(cornerRadius: AppRadius.small)
                 .fill(categoryColor.opacity(0.12))

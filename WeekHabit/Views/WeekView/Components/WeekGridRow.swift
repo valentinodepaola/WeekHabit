@@ -37,6 +37,11 @@ struct WeekGridRow: View {
                                 .foregroundStyle(AppColor.mutedText)
                         }
 
+                        Text(habit.trackingKind == .quantity ? habit.targetPerSessionText : habit.scheduleSummaryText)
+                            .font(AppFont.formSectionText2)
+                            .foregroundStyle(AppColor.subtleText)
+                            .lineLimit(1)
+
                         WeekProgressBar(
                             progress: habit.weekProgress(reference: referenceDate),
                             categoryColor: AppColor.accent
@@ -73,8 +78,12 @@ struct WeekGridRow: View {
             return .future
         }
 
-        if !habit.isActive(on: date) {
+        if !habit.isLoggable(on: date) {
             return .inactive
+        }
+
+        if habit.trackingKind == .quantity && habit.totalValue(on: date) > 0 && !habit.isCompleted(on: date) {
+            return .partial
         }
 
         return habit.isCompleted(on: date) ? .completed : .pending

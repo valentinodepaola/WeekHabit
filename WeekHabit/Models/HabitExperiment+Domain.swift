@@ -42,6 +42,7 @@ extension HabitExperiment {
     func apply(to habit: Habit) {
         habit.targetDaysPerWeek = experimentTargetDaysPerWeek
         habit.activeDaysOfWeek = experimentActiveDaysOfWeek
+        habit.scheduleKind = experimentActiveDaysOfWeek.count == Weekday.ordered.count ? .daily : .specificDays
         habitTitle = habit.title
     }
 
@@ -53,6 +54,7 @@ extension HabitExperiment {
     func revert(on habit: Habit, reference: Date = .now) {
         habit.targetDaysPerWeek = originalTargetDaysPerWeek
         habit.activeDaysOfWeek = originalActiveDaysOfWeek
+        habit.scheduleKind = originalActiveDaysOfWeek.count == Weekday.ordered.count ? .daily : .specificDays
         status = .reverted
         resolvedAt = reference
     }

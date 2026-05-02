@@ -34,7 +34,7 @@ struct WeekDotsCard: View {
 
                         WeekDot(
                             isCompleted: habit.isCompleted(on: date(for: index)),
-                            isActive: habit.isActive(on: date(for: index)),
+                            isActive: habit.isLoggable(on: date(for: index)),
                             color: category.color
                         )
                     }
