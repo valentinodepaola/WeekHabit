@@ -236,6 +236,8 @@ struct FocusSessionView: View {
             firstEntry.completedAt = completedAt
             firstEntry.source = .focusSession
             firstEntry.focusSessionID = sessionID
+            firstEntry.value = habit.sessionTargetValue
+            firstEntry.completedCount = Int(habit.sessionTargetValue.rounded())
 
             for duplicate in entriesForDay.dropFirst() {
                 modelContext.delete(duplicate)
@@ -247,6 +249,8 @@ struct FocusSessionView: View {
                     completedAt: completedAt,
                     source: .focusSession,
                     focusSessionID: sessionID,
+                    completedCount: Int(habit.sessionTargetValue.rounded()),
+                    value: habit.sessionTargetValue,
                     habit: habit
                 )
             )

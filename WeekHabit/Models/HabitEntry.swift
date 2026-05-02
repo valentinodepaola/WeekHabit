@@ -33,6 +33,7 @@ final class HabitEntry {
     var sourceRaw: String?
     var focusSessionID: UUID?
     var completedCount: Int
+    var value: Double?
     var habit: Habit?
 
     var source: HabitEntrySource {
@@ -54,6 +55,7 @@ final class HabitEntry {
         source: HabitEntrySource = .manual,
         focusSessionID: UUID? = nil,
         completedCount: Int = 1,
+        value: Double? = nil,
         habit: Habit
     ) {
         self.id = UUID()
@@ -62,6 +64,7 @@ final class HabitEntry {
         self.sourceRaw = source.rawValue
         self.focusSessionID = focusSessionID
         self.completedCount = completedCount
+        self.value = value ?? Double(completedCount)
         self.habit = habit
     }
 }

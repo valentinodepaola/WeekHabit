@@ -33,7 +33,7 @@ struct HabitCard: View {
                             .foregroundStyle(AppColor.strongText)
                             .lineLimit(1)
 
-                        Text("\(category.displayTitle) · meta \(habit.targetDaysPerWeek)/sem")
+                        Text(cardSubtitle)
                             .font(AppFont.formSectionText2)
                             .foregroundStyle(AppColor.subtleText)
                             .lineLimit(1)
@@ -66,6 +66,15 @@ struct HabitCard: View {
         .buttonStyle(HabitCardButtonStyle())
         .padding(.horizontal, includesHorizontalPadding ? 16 : 0)
     }
+
+    private var cardSubtitle: String {
+        let status = habit.isFinished(reference: referenceDate) ? "terminado" : habit.scheduleSummaryText
+        if habit.trackingKind == .quantity {
+            return "\(category.displayTitle) · \(status) · \(habit.targetPerSessionText)"
+        }
+
+        return "\(category.displayTitle) · \(status)"
+    }
 }
 
 private struct WeekProgressDots: View {
@@ -85,7 +94,7 @@ private struct WeekProgressDots: View {
 
                     WeekProgressDot(
                         isCompleted: completedWeekdays.contains(weekday),
-                        isActive: habit.activeDaysOfWeek.contains(weekday)
+                        isActive: habit.scheduleKind == .timesPerWeek || habit.activeDaysOfWeek.contains(weekday)
                     )
                 }
             }

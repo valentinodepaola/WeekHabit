@@ -19,6 +19,14 @@ struct HabitsView: View {
     @State private var editRoute: EditHabitRoute?
     @State private var selectedHabit: Habit?
 
+    private var activeHabits: [Habit] {
+        habits.filter { !$0.isFinished() }
+    }
+
+    private var finishedHabits: [Habit] {
+        habits.filter { $0.isFinished() }
+    }
+
     var emptyState: Bool = true
     var body: some View {
         NavigationStack {
@@ -47,32 +55,24 @@ struct HabitsView: View {
                         Spacer()
                     } else {
                         List {
-                            ForEach(habits) { habit in
-                                HabitCard(
-                                    habit: habit,
-                                    includesHorizontalPadding: false
-                                ) {
-                                    selectedHabit = habit
-                                }
-                                    .listRowBackground(Color.clear)
-                                    .listRowSeparator(.hidden)
-                                    .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
-                                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                                        Button(role: .destructive) {
-                                            habitToDelete = habit
-                                            showDeleteAlert = true
-                                        } label: {
-                                            Label("Borrar", systemImage: "trash")
-                                        }
-                                        .tint(AppColor.destructiveAction)
-
-                                        Button {
-                                            editRoute = EditHabitRoute(habit: habit)
-                                        } label: {
-                                            Label("Editar", systemImage: "pencil")
-                                        }
-                                        .tint(AppColor.editAction)
+                            if !activeHabits.isEmpty {
+                                Section {
+                                    ForEach(activeHabits) { habit in
+                                        habitRow(habit)
                                     }
+                                }
+                            }
+
+                            if !finishedHabits.isEmpty {
+                                Section {
+                                    ForEach(finishedHabits) { habit in
+                                        habitRow(habit)
+                                    }
+                                } header: {
+                                    Text("Terminados")
+                                        .font(AppFont.formSectionText)
+                                        .foregroundStyle(AppColor.mutedText)
+                                }
                             }
                         }
                         .listStyle(.plain)
@@ -111,6 +111,34 @@ struct HabitsView: View {
 
         modelContext.delete(habitToDelete)
         self.habitToDelete = nil
+    }
+
+    private func habitRow(_ habit: Habit) -> some View {
+        HabitCard(
+            habit: habit,
+            includesHorizontalPadding: false
+        ) {
+            selectedHabit = habit
+        }
+        .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
+        .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
+        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            Button(role: .destructive) {
+                habitToDelete = habit
+                showDeleteAlert = true
+            } label: {
+                Label("Borrar", systemImage: "trash")
+            }
+            .tint(AppColor.destructiveAction)
+
+            Button {
+                editRoute = EditHabitRoute(habit: habit)
+            } label: {
+                Label("Editar", systemImage: "pencil")
+            }
+            .tint(AppColor.editAction)
+        }
     }
 }
 

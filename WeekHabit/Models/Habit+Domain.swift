@@ -17,33 +17,111 @@ enum CellState: Equatable {
 }
 
 extension Habit {
-    /// True if the habit is scheduled for the weekday containing `date`.
+    var sessionTargetValue: Double {
+        max(targetValuePerSession ?? 1, 1)
+    }
+
+    var unitDisplayText: String {
+        if measurementUnit == .custom {
+            let trimmed = customUnitName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            return trimmed.isEmpty ? "uds" : trimmed
+        }
+
+        return measurementUnit.shortTitle
+    }
+
+    var targetPerSessionText: String {
+        guard trackingKind == .quantity else { return "check por sesión" }
+        let value = Self.formattedQuantity(sessionTargetValue)
+        let unit = unitDisplayText
+        return unit.isEmpty ? "\(value) por sesión" : "\(value) \(unit) por sesión"
+    }
+
+    var scheduleSummaryText: String {
+        switch scheduleKind {
+        case .daily:
+            return "Diario"
+        case .specificDays:
+            let days = Weekday.ordered
+                .filter { activeDaysOfWeek.contains($0) }
+                .map(\.shortName)
+                .joined(separator: ", ")
+            return days.isEmpty ? "Sin días" : days
+        case .timesPerWeek:
+            return "\(targetDaysPerWeek) veces/sem"
+        }
+    }
+
+    var isFlexibleSchedule: Bool {
+        scheduleKind == .timesPerWeek
+    }
+
+    /// True once the configured end date is in the past. The end date itself is still loggable.
+    func isFinished(reference: Date = .now) -> Bool {
+        guard let endsAt else { return false }
+        return AppCalendar.startOfDay(for: reference) > AppCalendar.startOfDay(for: endsAt)
+    }
+
+    /// True if the habit can receive a mark on `date`.
+    func isLoggable(on date: Date) -> Bool {
+        let day = AppCalendar.startOfDay(for: date)
+        guard day >= AppCalendar.startOfDay(for: createdAt), !isFinished(reference: day) else {
+            return false
+        }
+
+        return isScheduled(on: day)
+    }
+
+    /// True if the habit belongs to the day according to its schedule.
+    func isScheduled(on date: Date) -> Bool {
+        switch scheduleKind {
+        case .daily:
+            return true
+        case .specificDays:
+            return activeDaysOfWeek.contains(AppCalendar.weekday(of: date))
+        case .timesPerWeek:
+            return true
+        }
+    }
+
+    /// Backward-compatible name used by views.
     func isActive(on date: Date) -> Bool {
-        activeDaysOfWeek.contains(AppCalendar.weekday(of: date))
+        isLoggable(on: date)
     }
 
     /// True if there is at least one entry on the same calendar day as `date`.
     func isCompleted(on date: Date) -> Bool {
-        entries.contains { AppCalendar.isSameDay($0.date, date) }
+        totalValue(on: date) >= sessionTargetValue
+    }
+
+    func totalValue(on date: Date) -> Double {
+        entries
+            .filter { AppCalendar.isSameDay($0.date, date) }
+            .reduce(0) { partial, entry in
+                partial + (entry.value ?? Double(entry.completedCount))
+            }
+    }
+
+    func entry(on date: Date) -> HabitEntry? {
+        entries.first { AppCalendar.isSameDay($0.date, date) }
     }
 
     /// Distinct weekdays with at least one entry within the calendar week containing `reference`.
     func completedWeekdays(reference: Date = .now) -> Set<Weekday> {
         let week = AppCalendar.weekRange(containing: reference)
         return Set(
-            entries
-                .filter { week.contains($0.date) }
-                .map { AppCalendar.weekday(of: $0.date) }
+            weekDays(in: week)
+                .filter { isCompleted(on: $0) }
+                .map { AppCalendar.weekday(of: $0) }
         )
     }
 
     /// Count of distinct days completed within the calendar week containing `reference`.
     func completedDaysThisWeek(reference: Date = .now) -> Int {
         let week = AppCalendar.weekRange(containing: reference)
-        let days = entries
-            .filter { week.contains($0.date) }
-            .map { AppCalendar.startOfDay(for: $0.date) }
-        return Set(days).count
+        return weekDays(in: week)
+            .filter { isCompleted(on: $0) }
+            .count
     }
 
     /// 0…1 fraction of the weekly target completed.
@@ -62,7 +140,7 @@ extension Habit {
         var scannedDays = 0
 
         while scannedDays < 365 * 5 {
-            if isActive(on: cursor) {
+            if isLoggable(on: cursor) {
                 guard isCompleted(on: cursor) else { break }
                 streak += 1
             }
@@ -76,7 +154,7 @@ extension Habit {
     }
     
     func displayStreak(reference: Date = .now) -> Int {
-        if isActive(on: reference), !isCompleted(on: reference) {
+        if isLoggable(on: reference), !isCompleted(on: reference) {
             let yesterday = AppCalendar.current.date(
                 byAdding: .day,
                 value: -1,
@@ -103,7 +181,7 @@ extension Habit {
         var scannedDays = 0
 
         while cursor <= end && scannedDays < 365 * 5 {
-            if isActive(on: cursor) {
+            if isLoggable(on: cursor) {
                 if isCompleted(on: cursor) {
                     running += 1
                     best = max(best, running)
@@ -145,13 +223,31 @@ extension Habit {
                     return .future
                 }
 
-                if !isActive(on: day) {
+                if !isLoggable(on: day) {
+                    return .inactive
+                }
+
+                if isFlexibleSchedule && !isCompleted(on: day) {
                     return .inactive
                 }
 
                 return isCompleted(on: day) ? .completed : .missed
             }
         }
+    }
+
+    private func weekDays(in week: Range<Date>) -> [Date] {
+        (0..<7).compactMap { dayOffset in
+            AppCalendar.current.date(byAdding: .day, value: dayOffset, to: week.lowerBound)
+        }
+    }
+
+    static func formattedQuantity(_ value: Double) -> String {
+        if value.rounded() == value {
+            return "\(Int(value))"
+        }
+
+        return String(format: "%.1f", value)
     }
 }
 
