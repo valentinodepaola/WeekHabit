@@ -29,6 +29,26 @@ struct GlobalInsightSnapshot {
     }
 }
 
+struct InsightReadiness {
+    static let defaultRequiredDays = 5
+
+    let elapsedDays: Int
+    let requiredDays: Int
+
+    var isReady: Bool {
+        elapsedDays >= requiredDays
+    }
+
+    var remainingDays: Int {
+        max(0, requiredDays - elapsedDays)
+    }
+
+    var progress: Double {
+        guard requiredDays > 0 else { return 1 }
+        return min(1, Double(elapsedDays) / Double(requiredDays))
+    }
+}
+
 enum RhythmConfidenceLevel {
     case high
     case learning
@@ -154,6 +174,20 @@ struct RhythmExperimentSuggestion: Identifiable {
 }
 
 extension Habit {
+    func insightReadiness(
+        requiredDays: Int = InsightReadiness.defaultRequiredDays,
+        reference: Date = .now
+    ) -> InsightReadiness {
+        let referenceDay = AppCalendar.startOfDay(for: reference)
+        let creationDay = AppCalendar.startOfDay(for: createdAt)
+        let elapsedDays = AppCalendar.current.dateComponents([.day], from: creationDay, to: referenceDay).day ?? 0
+
+        return InsightReadiness(
+            elapsedDays: max(0, elapsedDays),
+            requiredDays: requiredDays
+        )
+    }
+
     func completionStats(lastDays: Int = 30, reference: Date = .now) -> HabitCompletionStats {
         let end = AppCalendar.startOfDay(for: reference)
         let start = AppCalendar.current.date(
@@ -274,6 +308,22 @@ extension Habit {
 }
 
 extension Sequence where Element == Habit {
+    func insightReadiness(
+        requiredDays: Int = InsightReadiness.defaultRequiredDays,
+        reference: Date = .now
+    ) -> InsightReadiness {
+        let referenceDay = AppCalendar.startOfDay(for: reference)
+        let firstHabitDay = map { AppCalendar.startOfDay(for: $0.createdAt) }.min()
+        let elapsedDays = firstHabitDay.flatMap {
+            AppCalendar.current.dateComponents([.day], from: $0, to: referenceDay).day
+        } ?? 0
+
+        return InsightReadiness(
+            elapsedDays: Swift.max(0, elapsedDays),
+            requiredDays: requiredDays
+        )
+    }
+
     func globalInsightSnapshot(reference: Date = .now) -> GlobalInsightSnapshot {
         let currentEnd = AppCalendar.startOfDay(for: reference)
         let currentStart = AppCalendar.current.date(byAdding: .day, value: -29, to: currentEnd) ?? currentEnd
@@ -288,7 +338,8 @@ extension Sequence where Element == Habit {
     }
 
     func topConsistentHabit(reference: Date = .now) -> HabitInsightSummary? {
-        map { habit in
+        filter { $0.insightReadiness(reference: reference).isReady }
+        .map { habit in
             let stats = habit.completionStats(reference: reference)
             return HabitInsightSummary(
                 habit: habit,
@@ -333,7 +384,8 @@ extension Sequence where Element == Habit {
     }
 
     func attentionHabit(reference: Date = .now) -> HabitInsightSummary? {
-        map { habit in
+        filter { $0.insightReadiness(reference: reference).isReady }
+        .map { habit in
             let stats = habit.completionStats(reference: reference)
             let daysSince = habit.daysSinceLastCompletion(reference: reference)
             let detail: String
@@ -414,9 +466,12 @@ extension Sequence where Element == Habit {
         excludingHabitIDs: Set<UUID> = []
     ) -> RhythmExperimentSuggestion? {
         let habits = Array(self)
-        let globalPeakHour = habits.peakHour(reference: reference)?.startHour
+        guard habits.insightReadiness(reference: reference).isReady else { return nil }
 
-        return habits
+        let readyHabits = habits.filter { $0.insightReadiness(reference: reference).isReady }
+        let globalPeakHour = readyHabits.peakHour(reference: reference)?.startHour
+
+        return readyHabits
             .filter { !excludingHabitIDs.contains($0.id) }
             .compactMap { habit -> RhythmExperimentSuggestion? in
                 let stats = habit.completionStats(reference: reference)

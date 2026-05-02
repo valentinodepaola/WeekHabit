@@ -25,6 +25,10 @@ struct InsightsView: View {
         habits.globalInsightSnapshot(reference: referenceDate)
     }
 
+    private var readiness: InsightReadiness {
+        habits.insightReadiness(reference: referenceDate)
+    }
+
     private var confidence: RhythmConfidence {
         habits.rhythmConfidence(reference: referenceDate)
     }
@@ -58,36 +62,40 @@ struct InsightsView: View {
                         if habits.isEmpty {
                             emptyState
                         } else {
-                            InsightsHeroCard(snapshot: snapshot)
+                            InsightsHeroCard(snapshot: snapshot, readiness: readiness)
 
-                            InsightConfidenceCard(confidence: confidence)
+                            if readiness.isReady {
+                                InsightConfidenceCard(confidence: confidence)
 
-                            ForEach(reviewExperiments) { experiment in
-                                if let habit = habit(for: experiment) {
-                                    ExperimentReviewCard(
+                                ForEach(reviewExperiments) { experiment in
+                                    if let habit = habit(for: experiment) {
+                                        ExperimentReviewCard(
+                                            experiment: experiment,
+                                            habit: habit,
+                                            referenceDate: referenceDate,
+                                            onKeep: { keep(experiment) },
+                                            onRevert: { revert(experiment, habit: habit) }
+                                        )
+                                    }
+                                }
+
+                                RhythmExperimentCard(
+                                    suggestion: suggestion,
+                                    onStart: startExperiment
+                                )
+
+                                ForEach(activeExperiments) { experiment in
+                                    ActiveExperimentCard(
                                         experiment: experiment,
-                                        habit: habit,
-                                        referenceDate: referenceDate,
-                                        onKeep: { keep(experiment) },
-                                        onRevert: { revert(experiment, habit: habit) }
+                                        habit: habit(for: experiment),
+                                        referenceDate: referenceDate
                                     )
                                 }
+
+                                summaryCards
+                            } else {
+                                warmupCard
                             }
-
-                            RhythmExperimentCard(
-                                suggestion: suggestion,
-                                onStart: startExperiment
-                            )
-
-                            ForEach(activeExperiments) { experiment in
-                                ActiveExperimentCard(
-                                    experiment: experiment,
-                                    habit: habit(for: experiment),
-                                    referenceDate: referenceDate
-                                )
-                            }
-
-                            summaryCards
                         }
                     }
                     .padding(.horizontal, 16)
@@ -114,6 +122,61 @@ struct InsightsView: View {
                 .foregroundStyle(AppColor.strongText)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var warmupCard: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(AppColor.editAction.opacity(0.14))
+                        .frame(width: 46, height: 46)
+
+                    Image(systemName: "hourglass")
+                        .font(.system(size: 19, weight: .semibold))
+                        .foregroundStyle(AppColor.editAction)
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("INSIGHTS EN PREPARACIÓN")
+                        .font(AppFont.formSectionText2)
+                        .foregroundStyle(AppColor.mutedText)
+                        .tracking(1)
+
+                    Text(readiness.remainingDays == 1 ? "Falta 1 día" : "Faltan \(readiness.remainingDays) días")
+                        .font(AppFont.body2)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(AppColor.strongText)
+                }
+            }
+
+            Text("Voy a esperar 5 días desde tu primer hábito para juntar una base más justa. Mientras tanto, la gráfica sí seguirá reaccionando a lo que marques.")
+                .font(AppFont.body2)
+                .foregroundStyle(AppColor.mutedText)
+                .fixedSize(horizontal: false, vertical: true)
+
+            VStack(alignment: .leading, spacing: 8) {
+                GeometryReader { proxy in
+                    ZStack(alignment: .leading) {
+                        Capsule()
+                            .fill(AppColor.bgLight)
+
+                        Capsule()
+                            .fill(AppColor.editAction)
+                            .frame(width: max(8, proxy.size.width * readiness.progress))
+                    }
+                }
+                .frame(height: 8)
+
+                Text("\(min(readiness.elapsedDays, readiness.requiredDays)) de \(readiness.requiredDays) días de contexto")
+                    .font(AppFont.captionApp)
+                    .foregroundStyle(AppColor.subtleText)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(18)
+        .background(AppColor.surface)
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.large, style: .continuous))
     }
 
     private var emptyState: some View {
