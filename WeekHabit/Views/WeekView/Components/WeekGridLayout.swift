@@ -9,8 +9,8 @@ import SwiftUI
 
 enum WeekGridLayout {
     static let categoryStripWidth: CGFloat = 4
-    static let cellSpacing: CGFloat = 10
-    static let cellSize: CGFloat = 38
+    static let cellSpacing: CGFloat = 8
+    static let cellSize: CGFloat = 34
 }
 
 struct WeekProgressBar: View {
@@ -22,15 +22,20 @@ struct WeekProgressBar: View {
         GeometryReader { geo in
             ZStack(alignment: .leading) {
                 Capsule()
-                    .fill(AppColor.bgLight)
-                    .frame(height: 3)
+                    .fill(AppColor.surfaceMuted)
+                    .frame(height: 5)
 
                 Capsule()
-                    .fill(categoryColor.opacity(0.85))
-                    .frame(width: max(6, geo.size.width * progress), height: 3)
-                    .animation(.easeOut(duration: 0.3), value: progress)
+                    .fill(categoryColor)
+                    .frame(width: progressWidth(in: geo.size.width), height: 5)
+                    .animation(.easeOut(duration: 0.32), value: progress)
             }
         }
-        .frame(height: 3)
+        .frame(height: 5)
+    }
+
+    private func progressWidth(in totalWidth: CGFloat) -> CGFloat {
+        guard progress > 0 else { return 0 }
+        return max(8, totalWidth * CGFloat(min(progress, 1)))
     }
 }

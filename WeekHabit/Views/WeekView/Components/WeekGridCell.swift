@@ -27,14 +27,15 @@ struct WeekGridCell: View {
 
                 if state == .completed {
                     Image(systemName: "checkmark")
-                        .font(.system(size: 14, weight: .bold))
+                        .font(.system(size: 13, weight: .bold))
                         .foregroundStyle(.white)
+                        .symbolEffect(.bounce, value: state)
                 }
 
                 if state == .partial {
                     Circle()
                         .fill(categoryColor)
-                        .frame(width: 7, height: 7)
+                        .frame(width: 8, height: 8)
                 }
 
                 if state == .inactive {
@@ -44,8 +45,9 @@ struct WeekGridCell: View {
                 }
             }
             .frame(width: WeekGridLayout.cellSize, height: WeekGridLayout.cellSize)
+            .contentShape(RoundedRectangle(cornerRadius: AppRadius.small, style: .continuous))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(WeekGridCellButtonStyle())
         .disabled(state == .inactive || state == .future)
         .frame(maxWidth: .infinity)
     }
@@ -56,6 +58,7 @@ struct WeekGridCell: View {
         case .completed:
             RoundedRectangle(cornerRadius: AppRadius.small)
                 .fill(categoryColor)
+                .shadow(color: categoryColor.opacity(0.24), radius: 7, x: 0, y: 4)
         case .partial:
             RoundedRectangle(cornerRadius: AppRadius.small)
                 .fill(categoryColor.opacity(0.18))
@@ -72,11 +75,23 @@ struct WeekGridCell: View {
                 }
         case .inactive:
             RoundedRectangle(cornerRadius: AppRadius.small)
-                .fill(AppColor.bgLight.opacity(0.7))
+                .fill(AppColor.surface.opacity(0.62))
         case .future:
             RoundedRectangle(cornerRadius: AppRadius.small)
-                .stroke(AppColor.subtleText.opacity(0.16), lineWidth: 1)
-                .opacity(0.5)
+                .fill(AppColor.surface.opacity(0.28))
+                .overlay {
+                    RoundedRectangle(cornerRadius: AppRadius.small)
+                        .stroke(AppColor.subtleText.opacity(0.14), lineWidth: 1)
+                }
         }
+    }
+}
+
+private struct WeekGridCellButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.92 : 1)
+            .opacity(configuration.isPressed ? 0.82 : 1)
+            .animation(.spring(response: 0.22, dampingFraction: 0.72), value: configuration.isPressed)
     }
 }

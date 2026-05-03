@@ -16,58 +16,105 @@ struct WeekGridRow: View {
     let onSelectHabit: () -> Void
     let onToggle: (Date) -> Void
 
-    var body: some View {
-        HStack(spacing: 0) {
-            habit.displayCategory.color
-                .frame(width: WeekGridLayout.categoryStripWidth)
+    private var category: HabitCategory {
+        habit.displayCategory
+    }
 
-            VStack(alignment: .leading, spacing: 14) {
-                Button(action: onSelectHabit) {
+    private var categoryColor: Color {
+        category.color
+    }
+
+    private var completedCount: Int {
+        habit.completedDaysThisWeek(reference: referenceDate)
+    }
+
+    private var progress: Double {
+        habit.weekProgress(reference: referenceDate)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Button(action: onSelectHabit) {
+                HStack(alignment: .top, spacing: 12) {
+                    ZStack {
+                        Circle()
+                            .fill(categoryColor.opacity(0.16))
+                            .frame(width: 42, height: 42)
+
+                        Image(systemName: category.icon)
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundStyle(categoryColor)
+                    }
+
                     VStack(alignment: .leading, spacing: 7) {
-                        HStack(alignment: .firstTextBaseline, spacing: 12) {
+                        HStack(alignment: .firstTextBaseline, spacing: 10) {
                             Text(habit.title)
                                 .font(AppFont.body2)
+                                .fontWeight(.semibold)
                                 .foregroundStyle(AppColor.strongText)
                                 .lineLimit(1)
 
                             Spacer(minLength: 8)
 
-                            Text("\(habit.completedDaysThisWeek(reference: referenceDate))/\(habit.targetDaysPerWeek)")
-                                .font(AppFont.formSectionText2)
-                                .foregroundStyle(AppColor.mutedText)
+                            WeekProgressPill(
+                                completed: completedCount,
+                                target: habit.targetDaysPerWeek,
+                                color: categoryColor
+                            )
                         }
 
-                        Text(habit.trackingKind == .quantity ? habit.targetPerSessionText : habit.scheduleSummaryText)
+                        Text(subtitle)
                             .font(AppFont.formSectionText2)
                             .foregroundStyle(AppColor.subtleText)
                             .lineLimit(1)
 
                         WeekProgressBar(
-                            progress: habit.weekProgress(reference: referenceDate),
-                            categoryColor: AppColor.accent
+                            progress: progress,
+                            categoryColor: categoryColor
                         )
                     }
-                    .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
 
-                HStack(spacing: WeekGridLayout.cellSpacing) {
-                    ForEach(daysInWeek, id: \.self) { date in
-                        WeekGridCell(
-                            state: cellState(for: date),
-                            categoryColor: AppColor.accent,
-                            onTap: { onToggle(date) }
-                        )
-                    }
+            HStack(spacing: WeekGridLayout.cellSpacing) {
+                ForEach(daysInWeek, id: \.self) { date in
+                    WeekGridCell(
+                        state: cellState(for: date),
+                        categoryColor: categoryColor,
+                        onTap: { onToggle(date) }
+                    )
                 }
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 14)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(8)
+            .background(AppColor.surfaceMuted.opacity(0.62))
+            .clipShape(RoundedRectangle(cornerRadius: AppRadius.large, style: .continuous))
         }
+        .padding(.leading, 20)
+        .padding(.trailing, 14)
+        .padding(.vertical, 14)
         .background(AppColor.surface)
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous))
-        .shadow(color: AppColor.strongText.opacity(0.10), radius: 12, x: 0, y: 6)
+        .overlay(alignment: .leading) {
+            Rectangle()
+                .fill(categoryColor)
+                .frame(width: 5)
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(categoryColor.opacity(0.12), lineWidth: 1)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .shadow(color: AppColor.strongText.opacity(0.06), radius: 12, x: 0, y: 6)
+        .padding(.vertical, 2)
+    }
+
+    private var subtitle: String {
+        if habit.trackingKind == .quantity {
+            return "\(category.displayTitle) · \(habit.targetPerSessionText)"
+        }
+
+        return "\(category.displayTitle) · \(habit.scheduleSummaryText)"
     }
 
     private func cellState(for date: Date) -> WeekGridCell.State {
@@ -87,5 +134,28 @@ struct WeekGridRow: View {
         }
 
         return habit.isCompleted(on: date) ? .completed : .pending
+    }
+}
+
+private struct WeekProgressPill: View {
+    let completed: Int
+    let target: Int
+    let color: Color
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 11, weight: .semibold))
+
+            Text("\(completed)/\(target)")
+                .font(AppFont.formSectionText2)
+                .fontWeight(.semibold)
+                .monospacedDigit()
+        }
+        .foregroundStyle(color)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 5)
+        .background(color.opacity(0.12))
+        .clipShape(Capsule())
     }
 }
