@@ -154,7 +154,7 @@ struct HabitsView: View {
             plan: plan,
             isExpanded: expandedPlans.contains(plan.id),
             onToggle: {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                withAnimation(.spring(response: 0.42, dampingFraction: 0.86)) {
                     if expandedPlans.contains(plan.id) {
                         expandedPlans.remove(plan.id)
                     } else {
