@@ -27,9 +27,23 @@ struct WeekHabitApp: App {
     var body: some Scene {
         WindowGroup {
             AppLaunchView {
-                ContentView()
+                RootView()
             }
         }
         .modelContainer(container)
+    }
+}
+
+private struct RootView: View {
+    @AppStorage("hasCompletedAppOnboarding") private var hasCompletedAppOnboarding = false
+
+    var body: some View {
+        if hasCompletedAppOnboarding {
+            ContentView()
+        } else {
+            OnboardingView {
+                hasCompletedAppOnboarding = true
+            }
+        }
     }
 }
