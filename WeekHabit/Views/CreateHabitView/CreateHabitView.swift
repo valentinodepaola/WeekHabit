@@ -17,6 +17,9 @@ struct CreateHabitView: View {
     @Query(sort: \HabitExperiment.startedAt, order: .reverse)
     private var experiments: [HabitExperiment]
 
+    @Query(sort: \Plan.createdAt, order: .reverse)
+    private var allPlans: [Plan]
+
     @State private var habitName: String = ""
     @State private var note: String = ""
     @State private var selectedCategory: HabitCategory = .health
@@ -28,6 +31,7 @@ struct CreateHabitView: View {
     @State private var selectedActiveDays: Set<Weekday> = []
     @State private var hasEndDate: Bool = false
     @State private var endsAt: Date = .now
+    @State private var selectedPlans: Set<UUID> = []
 
     private let habitToEdit: Habit?
 
@@ -87,6 +91,7 @@ struct CreateHabitView: View {
         _selectedActiveDays = State(initialValue: habitToEdit?.activeDaysOfWeek ?? initialActiveDays)
         _hasEndDate = State(initialValue: habitToEdit?.endsAt != nil)
         _endsAt = State(initialValue: habitToEdit?.endsAt ?? .now)
+        _selectedPlans = State(initialValue: Set(habitToEdit?.plans.map(\.id) ?? []))
     }
 
     var body: some View {
@@ -126,6 +131,8 @@ struct CreateHabitView: View {
                         hasEndDate: $hasEndDate,
                         endsAt: $endsAt
                     )
+
+                    HabitPlansSection(selectedPlans: $selectedPlans)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding()
@@ -151,6 +158,8 @@ struct CreateHabitView: View {
         let normalizedEndsAt = hasEndDate ? AppCalendar.startOfDay(for: endsAt) : nil
         let normalizedPlan = normalizedSchedulePlan()
 
+        let linkedPlans = allPlans.filter { selectedPlans.contains($0.id) }
+
         if let habitToEdit {
             if let activeExperiment = experiments.activeExperiment(for: habitToEdit.id) {
                 activeExperiment.cancel()
@@ -167,6 +176,7 @@ struct CreateHabitView: View {
             habitToEdit.targetDaysPerWeek = normalizedPlan.targetDaysPerWeek
             habitToEdit.activeDaysOfWeek = normalizedPlan.activeDays
             habitToEdit.endsAt = normalizedEndsAt
+            habitToEdit.plans = linkedPlans
         } else {
             let habit = Habit(
                 title: trimmedName,
@@ -182,6 +192,7 @@ struct CreateHabitView: View {
                 endsAt: normalizedEndsAt
             )
             modelContext.insert(habit)
+            habit.plans = linkedPlans
         }
 
         dismiss()

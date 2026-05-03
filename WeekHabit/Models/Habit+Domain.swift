@@ -242,6 +242,51 @@ extension Habit {
         }
     }
 
+    /// Días completados desde `startDate` hasta `reference` (inclusive en ambos extremos).
+    func completedDaysSince(_ startDate: Date, reference: Date = .now) -> Int {
+        let calendar = AppCalendar.current
+        let start = AppCalendar.startOfDay(for: startDate)
+        let end = AppCalendar.startOfDay(for: reference)
+        guard start <= end else { return 0 }
+
+        var count = 0
+        var cursor = start
+        var scanned = 0
+        while cursor <= end && scanned < 365 * 5 {
+            if isCompleted(on: cursor) { count += 1 }
+            guard let next = calendar.date(byAdding: .day, value: 1, to: cursor) else { break }
+            cursor = next
+            scanned += 1
+        }
+        return count
+    }
+
+    /// Días esperados (según schedule) desde `startDate` hasta `reference`.
+    func expectedDaysSince(_ startDate: Date, reference: Date = .now) -> Int {
+        let calendar = AppCalendar.current
+        let start = AppCalendar.startOfDay(for: startDate)
+        let end = AppCalendar.startOfDay(for: reference)
+        guard start <= end else { return 0 }
+
+        var count = 0
+        var cursor = start
+        var scanned = 0
+        while cursor <= end && scanned < 365 * 5 {
+            if isLoggable(on: cursor) { count += 1 }
+            guard let next = calendar.date(byAdding: .day, value: 1, to: cursor) else { break }
+            cursor = next
+            scanned += 1
+        }
+        return count
+    }
+
+    /// Ratio 0–1 de días completados vs días esperados desde `startDate`.
+    func completionRatio(since startDate: Date, reference: Date = .now) -> Double {
+        let expected = expectedDaysSince(startDate, reference: reference)
+        guard expected > 0 else { return 0 }
+        return min(1, Double(completedDaysSince(startDate, reference: reference)) / Double(expected))
+    }
+
     static func formattedQuantity(_ value: Double) -> String {
         if value.rounded() == value {
             return "\(Int(value))"

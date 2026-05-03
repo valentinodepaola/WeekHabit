@@ -93,6 +93,8 @@ final class Habit {
     @Relationship(deleteRule: .cascade)
     var entries: [HabitEntry] = []
 
+    var plans: [Plan] = []
+
     /// Set-based view of `activeDaysOfWeekRaw`.
     var activeDaysOfWeek: Set<Weekday> {
         get { Set(activeDaysOfWeekRaw.compactMap { Weekday(rawValue: $0) }) }

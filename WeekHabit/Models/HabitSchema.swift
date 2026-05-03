@@ -41,16 +41,25 @@ enum SchemaV4: VersionedSchema {
     }
 }
 
+enum SchemaV5: VersionedSchema {
+    static var versionIdentifier: Schema.Version { .init(5, 0, 0) }
+
+    static var models: [any PersistentModel.Type] {
+        [Habit.self, HabitEntry.self, HabitExperiment.self, FocusSession.self, Plan.self]
+    }
+}
+
 enum HabitMigrationPlan: SchemaMigrationPlan {
     static var schemas: [any VersionedSchema.Type] {
-        [SchemaV1.self, SchemaV2.self, SchemaV3.self, SchemaV4.self]
+        [SchemaV1.self, SchemaV2.self, SchemaV3.self, SchemaV4.self, SchemaV5.self]
     }
 
     static var stages: [MigrationStage] {
         [
             .lightweight(fromVersion: SchemaV1.self, toVersion: SchemaV2.self),
             .lightweight(fromVersion: SchemaV2.self, toVersion: SchemaV3.self),
-            .lightweight(fromVersion: SchemaV3.self, toVersion: SchemaV4.self)
+            .lightweight(fromVersion: SchemaV3.self, toVersion: SchemaV4.self),
+            .lightweight(fromVersion: SchemaV4.self, toVersion: SchemaV5.self)
         ]
     }
 }
