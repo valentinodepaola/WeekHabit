@@ -17,8 +17,8 @@ struct FocusReviewChecklist: View {
                 } label: {
                     HStack(spacing: 12) {
                         IconComponent(
-                            icon: habit.displayCategory.icon,
-                            color: habit.displayCategory.color
+                            icon: habit.iconName,
+                            color: habit.habitColor
                         )
 
                         VStack(alignment: .leading, spacing: 2) {

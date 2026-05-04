@@ -7,6 +7,7 @@
 
 import SwiftData
 import Foundation
+import SwiftUI
 
 enum HabitTrackingKind: String, Codable, CaseIterable, Identifiable {
     case check
@@ -79,7 +80,10 @@ final class Habit {
     var id: UUID
     var title: String
     var note: String?
-    var category: HabitCategory?
+    @Attribute(originalName: "category")
+    var legacyArea: LegacyHabitArea?
+    var iconNameRaw: String?
+    var colorHexRaw: String?
     var targetDaysPerWeek: Int
     var activeDaysOfWeekRaw: [Int]
     var trackingKindRaw: String?
@@ -101,8 +105,18 @@ final class Habit {
         set { activeDaysOfWeekRaw = newValue.map(\.rawValue) }
     }
 
-    var displayCategory: HabitCategory {
-        category ?? .health
+    var iconName: String {
+        get { iconNameRaw ?? legacyArea?.iconName ?? HabitAppearance.defaultIconName }
+        set { iconNameRaw = newValue }
+    }
+
+    var colorHex: String {
+        get { colorHexRaw ?? legacyArea?.colorHex ?? HabitAppearance.defaultColorHex }
+        set { colorHexRaw = newValue }
+    }
+
+    var habitColor: Color {
+        Color(hex: colorHex)
     }
 
     var trackingKind: HabitTrackingKind {
@@ -129,7 +143,8 @@ final class Habit {
     init(
         title: String,
         note: String? = nil,
-        category: HabitCategory,
+        iconName: String = HabitAppearance.defaultIconName,
+        colorHex: String = HabitAppearance.defaultColorHex,
         targetDaysPerWeek: Int,
         activeDaysOfWeek: Set<Weekday>,
         trackingKind: HabitTrackingKind = .check,
@@ -143,7 +158,9 @@ final class Habit {
         self.id = UUID()
         self.title = title
         self.note = note
-        self.category = category
+        self.legacyArea = nil
+        self.iconNameRaw = iconName
+        self.colorHexRaw = colorHex
         self.targetDaysPerWeek = targetDaysPerWeek
         self.activeDaysOfWeekRaw = activeDaysOfWeek.map(\.rawValue)
         self.trackingKindRaw = trackingKind.rawValue

@@ -20,10 +20,9 @@ struct ContentView: View {
             Group {
                 switch selectedTab {
                 case 0: TodayView()
-                case 1: HabitsView()
-                case 2: WeekView()
-                case 3: InsightsView()
-                default: HabitsView()
+                case 1: WeekView()
+                case 2: InsightsView()
+                default: TodayView()
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)

@@ -51,11 +51,11 @@ private struct PlanSelectionRow: View {
             HStack(spacing: 12) {
                 ZStack {
                     Circle()
-                        .fill(plan.displayCategory.color.opacity(0.15))
+                        .fill(AppColor.accent.opacity(0.15))
                         .frame(width: 36, height: 36)
-                    Image(systemName: plan.displayCategory.icon)
+                    Image(systemName: "target")
                         .font(.system(size: 16))
-                        .foregroundStyle(plan.displayCategory.color)
+                        .foregroundStyle(AppColor.accent)
                 }
 
                 VStack(alignment: .leading, spacing: 2) {

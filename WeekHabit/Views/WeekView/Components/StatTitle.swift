@@ -13,10 +13,16 @@ struct StatTile: View {
     let icon: String
 
     var body: some View {
-        VStack(spacing: 5) {
-            Image(systemName: icon)
-                .font(.system(size: 16, weight: .medium))
-                .foregroundStyle(value == "—" ? AppColor.subtleText : AppColor.accent)
+        VStack(alignment: .leading, spacing: 10) {
+            ZStack {
+                Circle()
+                    .fill(iconColor.opacity(value == "—" ? 0.08 : 0.14))
+                    .frame(width: 30, height: 30)
+
+                Image(systemName: icon)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(iconColor)
+            }
 
             Text(value)
                 .font(AppFont.subtitle2)
@@ -29,8 +35,19 @@ struct StatTile: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.85)
         }
-        .frame(maxWidth: .infinity, minHeight: 80)
+        .frame(maxWidth: .infinity, minHeight: 92, alignment: .leading)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 12)
         .background(AppColor.surface)
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.medium))
+        .overlay {
+            RoundedRectangle(cornerRadius: AppRadius.large, style: .continuous)
+                .stroke(AppColor.subtleText.opacity(0.10), lineWidth: 1)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.large, style: .continuous))
+        .shadow(color: AppColor.strongText.opacity(0.04), radius: 8, x: 0, y: 4)
+    }
+
+    private var iconColor: Color {
+        value == "—" ? AppColor.subtleText : AppColor.accent
     }
 }

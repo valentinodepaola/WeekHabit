@@ -22,7 +22,8 @@ struct CreateHabitView: View {
 
     @State private var habitName: String = ""
     @State private var note: String = ""
-    @State private var selectedCategory: HabitCategory = .health
+    @State private var selectedIconName: String = HabitAppearance.defaultIconName
+    @State private var selectedColorHex: String = HabitAppearance.defaultColorHex
     @State private var trackingKind: HabitTrackingKind = .check
     @State private var measurementUnit: HabitMeasurementUnit = .none
     @State private var targetValueText: String = "1"
@@ -82,7 +83,8 @@ struct CreateHabitView: View {
 
         _habitName = State(initialValue: habitToEdit?.title ?? "")
         _note = State(initialValue: habitToEdit?.note ?? "")
-        _selectedCategory = State(initialValue: habitToEdit?.displayCategory ?? .health)
+        _selectedIconName = State(initialValue: habitToEdit?.iconName ?? HabitAppearance.defaultIconName)
+        _selectedColorHex = State(initialValue: habitToEdit?.colorHex ?? HabitAppearance.defaultColorHex)
         _trackingKind = State(initialValue: habitToEdit?.trackingKind ?? .check)
         _measurementUnit = State(initialValue: Self.normalizedInitialUnit(habitToEdit?.measurementUnit ?? .none))
         _targetValueText = State(initialValue: Habit.formattedQuantity(habitToEdit?.sessionTargetValue ?? 1))
@@ -112,7 +114,8 @@ struct CreateHabitView: View {
                     HabitBasicInfoSection(
                         habitName: $habitName,
                         note: $note,
-                        selectedCategory: $selectedCategory
+                        selectedIconName: $selectedIconName,
+                        selectedColorHex: $selectedColorHex
                     )
 
                     HabitMeasurementSection(
@@ -167,7 +170,8 @@ struct CreateHabitView: View {
 
             habitToEdit.title = trimmedName
             habitToEdit.note = trimmedNote.isEmpty ? nil : trimmedNote
-            habitToEdit.category = selectedCategory
+            habitToEdit.iconName = selectedIconName
+            habitToEdit.colorHex = selectedColorHex
             habitToEdit.trackingKind = trackingKind
             habitToEdit.measurementUnit = normalizedMeasurementUnit
             habitToEdit.customUnitName = nil
@@ -181,7 +185,8 @@ struct CreateHabitView: View {
             let habit = Habit(
                 title: trimmedName,
                 note: trimmedNote.isEmpty ? nil : trimmedNote,
-                category: selectedCategory,
+                iconName: selectedIconName,
+                colorHex: selectedColorHex,
                 targetDaysPerWeek: normalizedPlan.targetDaysPerWeek,
                 activeDaysOfWeek: normalizedPlan.activeDays,
                 trackingKind: trackingKind,

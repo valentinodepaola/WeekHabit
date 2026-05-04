@@ -14,15 +14,11 @@ struct TodayHabitComponent: View {
     var referenceDate: Date = .now
     let onToggle: () -> Void
     
-    private var category: HabitCategory {
-        self.habit.displayCategory
-    }
-    
     var body: some View {
         HStack(spacing: 12) {
             IconComponent(
-                icon: category.icon,
-                color: category.color
+                icon: habit.iconName,
+                color: habit.habitColor
             )
             
             VStack(alignment: .leading, spacing: 2) {
@@ -75,7 +71,7 @@ struct TodayHabitComponent: View {
                 return "\(habit.targetPerSessionText) · \(habit.scheduleSummaryText)"
             }
 
-            return "\(category.displayTitle) · \(habit.scheduleSummaryText) · racha \(habit.displayStreak())d"
+            return "\(habit.scheduleSummaryText) · racha \(habit.displayStreak())d"
         }
 
         if activeExperiment.needsReview(reference: referenceDate) {
@@ -95,7 +91,8 @@ struct TodayHabitComponent: View {
     TodayHabitComponent(
         habit: Habit(
             title: "Tender cama",
-            category: .personal,
+            iconName: "sparkles",
+            colorHex: "#c89046",
             targetDaysPerWeek: 3,
             activeDaysOfWeek: [.monday, .tuesday, .wednesday]
         ),

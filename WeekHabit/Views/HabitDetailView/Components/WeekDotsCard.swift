@@ -9,10 +9,6 @@ struct WeekDotsCard: View {
     let habit: Habit
     var referenceDate: Date = .now
 
-    private var category: HabitCategory {
-        habit.displayCategory
-    }
-
     private var weekStart: Date {
         AppCalendar.weekRange(containing: referenceDate).lowerBound
     }
@@ -35,7 +31,7 @@ struct WeekDotsCard: View {
                         WeekDot(
                             isCompleted: habit.isCompleted(on: date(for: index)),
                             isActive: habit.isLoggable(on: date(for: index)),
-                            color: category.color
+                            color: habit.habitColor
                         )
                     }
                     .frame(maxWidth: .infinity)
@@ -107,7 +103,8 @@ private struct WeekDot: View {
     WeekDotsCard(
         habit: Habit(
             title: "Caminar",
-            category: .health,
+            iconName: "figure.walk",
+            colorHex: "#7fa774",
             targetDaysPerWeek: 3,
             activeDaysOfWeek: [.monday, .wednesday, .friday]
         )

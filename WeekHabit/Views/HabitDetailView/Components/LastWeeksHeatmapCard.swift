@@ -10,10 +10,6 @@ struct LastWeeksHeatmapCard: View {
     var weeks: Int = 10
     var referenceDate: Date = .now
 
-    private var category: HabitCategory {
-        habit.displayCategory
-    }
-
     private var matrix: [[CellState]] {
         habit.completionMatrix(weeks: weeks, reference: referenceDate)
     }
@@ -84,9 +80,9 @@ struct LastWeeksHeatmapCard: View {
     private func color(for state: CellState, intensity: Double) -> Color {
         switch state {
         case .completed:
-            return category.color.opacity(max(0.25, intensity))
+            return habit.habitColor.opacity(max(0.25, intensity))
         case .missed:
-            return category.color.opacity(0.10)
+            return habit.habitColor.opacity(0.10)
         case .inactive, .future:
             return AppColor.bgLight
         }
@@ -158,7 +154,8 @@ private struct HeatmapGridLayout: Layout {
     LastWeeksHeatmapCard(
         habit: Habit(
             title: "Meditar",
-            category: .personal,
+            iconName: "brain.head.profile",
+            colorHex: "#8b7fb0",
             targetDaysPerWeek: 5,
             activeDaysOfWeek: Set(Weekday.ordered)
         )

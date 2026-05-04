@@ -34,11 +34,11 @@ struct PlanWrapUpView: View {
             HStack {
                 ZStack {
                     Circle()
-                        .fill(plan.displayCategory.color.opacity(0.15))
+                        .fill(AppColor.accent.opacity(0.15))
                         .frame(width: 48, height: 48)
-                    Image(systemName: plan.displayCategory.icon)
+                    Image(systemName: "target")
                         .font(.system(size: 22))
-                        .foregroundStyle(plan.displayCategory.color)
+                        .foregroundStyle(AppColor.accent)
                 }
 
                 Spacer()
@@ -182,11 +182,11 @@ private struct HabitRetentionRow: View {
         HStack(spacing: 12) {
             ZStack {
                 Circle()
-                    .fill(habit.displayCategory.color.opacity(0.15))
+                    .fill(habit.habitColor.opacity(0.15))
                     .frame(width: 36, height: 36)
-                Image(systemName: habit.displayCategory.icon)
+                Image(systemName: habit.iconName)
                     .font(.system(size: 16))
-                    .foregroundStyle(habit.displayCategory.color)
+                    .foregroundStyle(habit.habitColor)
             }
             .opacity(shouldRetain ? 1 : 0.4)
 

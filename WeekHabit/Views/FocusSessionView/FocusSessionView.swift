@@ -275,7 +275,8 @@ private enum FocusSessionPhase {
         habits: [
             Habit(
                 title: "Leer 20 páginas",
-                category: .learning,
+                iconName: "book.fill",
+                colorHex: "#5c89a8",
                 targetDaysPerWeek: 4,
                 activeDaysOfWeek: [.monday, .wednesday, .friday]
             )

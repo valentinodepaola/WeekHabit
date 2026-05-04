@@ -106,9 +106,25 @@ struct HabitInsightSummary: Identifiable {
     let habit: Habit
     let stats: HabitCompletionStats
     let detail: String
+    var failureType: AttentionFailureType? = nil
+    var recommendation: String? = nil
 
     var id: UUID {
         habit.id
+    }
+}
+
+enum AttentionFailureType {
+    case notDone
+    case manualOnly
+
+    var title: String {
+        switch self {
+        case .notDone:
+            return "No lo hizo"
+        case .manualOnly:
+            return "Lo hizo manual"
+        }
     }
 }
 
@@ -170,6 +186,75 @@ struct RhythmExperimentSuggestion: Identifiable {
     var hourText: String? {
         guard let suggestedStartHour else { return nil }
         return HourWindow(startHour: suggestedStartHour, count: 0).displayText
+    }
+}
+
+struct RankedRhythmSuggestion: Identifiable {
+    let suggestion: RhythmExperimentSuggestion
+    let priorityScore: Double
+    let priorityReason: String
+
+    var id: UUID {
+        suggestion.id
+    }
+}
+
+struct HabitInsightContext: Identifiable {
+    let habit: Habit
+    let count: Int
+
+    var id: UUID {
+        habit.id
+    }
+}
+
+struct ContextualHourInsight: Identifiable {
+    let window: HourWindow
+    let habits: [HabitInsightContext]
+
+    var id: Int {
+        window.id
+    }
+
+    var contextText: String {
+        habitContextText(prefix: "aplica a")
+    }
+
+    private func habitContextText(prefix: String) -> String {
+        let names = habits.map { $0.habit.title }
+        switch names.count {
+        case 0:
+            return "basada en \(window.count) marcas reales"
+        case 1:
+            return "\(prefix) \(names[0])"
+        case 2:
+            return "\(prefix) \(names.joined(separator: " y "))"
+        default:
+            return "\(prefix) \(names.count) hábitos, sobre todo \(names.prefix(2).joined(separator: " y "))"
+        }
+    }
+}
+
+struct ContextualWeekdayInsight: Identifiable {
+    let performance: WeekdayPerformance
+    let habits: [HabitInsightContext]
+
+    var id: Int {
+        performance.id
+    }
+
+    var contextText: String {
+        let names = habits.map { $0.habit.title }
+        switch names.count {
+        case 0:
+            return "\(Int((performance.ratio * 100).rounded()))% de cumplimiento promedio"
+        case 1:
+            return "\(Int((performance.ratio * 100).rounded()))% promedio · destaca \(names[0])"
+        case 2:
+            return "\(Int((performance.ratio * 100).rounded()))% promedio · destacan \(names.joined(separator: " y "))"
+        default:
+            return "\(Int((performance.ratio * 100).rounded()))% promedio · destacan \(names.prefix(2).joined(separator: " y "))"
+        }
     }
 }
 
@@ -305,6 +390,63 @@ extension Habit {
 
         return trustedValue >= sessionTargetValue
     }
+
+    func isManualCompleted(on date: Date) -> Bool {
+        let manualValue = entries
+            .filter { AppCalendar.isSameDay($0.date, date) && $0.source == .manual }
+            .reduce(0) { partial, entry in
+                partial + (entry.value ?? Double(entry.completedCount))
+            }
+
+        return manualValue >= sessionTargetValue
+    }
+
+    func rhythmConfidence(reference: Date = .now) -> RhythmConfidence {
+        let range = insightDateRange(days: 30, reference: reference)
+        var totalMarks = 0
+        var trustedMarks = 0
+        var focusSessionMarks = 0
+
+        for entry in entries where range.contains(entry.date) {
+            totalMarks += 1
+
+            if entry.source.isTrustedForInsights {
+                trustedMarks += 1
+            }
+
+            if entry.source == .focusSession {
+                focusSessionMarks += 1
+            }
+        }
+
+        return RhythmConfidence(
+            trustedMarks: trustedMarks,
+            totalMarks: totalMarks,
+            focusSessionMarks: focusSessionMarks
+        )
+    }
+
+    func attentionFailureType(reference: Date = .now) -> AttentionFailureType? {
+        let range = insightDateRange(days: 30, reference: reference)
+        var notDoneCount = 0
+        var manualOnlyCount = 0
+
+        for day in insightDays(from: range.lowerBound, to: range.upperBound)
+        where day >= AppCalendar.startOfDay(for: createdAt) && isLoggable(on: day) {
+            if isTrustedCompleted(on: day) {
+                continue
+            }
+
+            if isManualCompleted(on: day) {
+                manualOnlyCount += 1
+            } else {
+                notDoneCount += 1
+            }
+        }
+
+        guard notDoneCount > 0 || manualOnlyCount > 0 else { return nil }
+        return manualOnlyCount > notDoneCount ? .manualOnly : .notDone
+    }
 }
 
 extension Sequence where Element == Habit {
@@ -388,7 +530,9 @@ extension Sequence where Element == Habit {
         .map { habit in
             let stats = habit.completionStats(reference: reference)
             let daysSince = habit.daysSinceLastCompletion(reference: reference)
+            let failureType = habit.attentionFailureType(reference: reference)
             let detail: String
+            let recommendation: String
 
             if let daysSince {
                 detail = daysSince == 0 ? "marcado hoy" : "última marca hace \(daysSince) días"
@@ -396,7 +540,22 @@ extension Sequence where Element == Habit {
                 detail = "aún sin marcas"
             }
 
-            return HabitInsightSummary(habit: habit, stats: stats, detail: detail)
+            switch failureType {
+            case .manualOnly:
+                recommendation = "Se está haciendo, pero se registra después. Conviene facilitar la marca en el momento."
+            case .notDone:
+                recommendation = "Conviene reducir fricción: menos días, mejor horario o un recordatorio distinto."
+            case nil:
+                recommendation = "Revisa si el horario actual sigue funcionando."
+            }
+
+            return HabitInsightSummary(
+                habit: habit,
+                stats: stats,
+                detail: detail,
+                failureType: failureType,
+                recommendation: recommendation
+            )
         }
         .filter { summary in
             summary.stats.scheduled > 0 && (summary.stats.ratio < 0.75 || summary.habit.displayStreak(reference: reference) == 0)
@@ -407,6 +566,32 @@ extension Sequence where Element == Habit {
             }
             return lhs.stats.ratio < rhs.stats.ratio
         }
+    }
+
+    func contextualBestWeekday(reference: Date = .now) -> ContextualWeekdayInsight? {
+        guard let best = bestWeekday(reference: reference) else { return nil }
+        let range = insightDateRange(days: 30, reference: reference)
+        var contexts: [HabitInsightContext] = []
+
+        for habit in self {
+            var completed = 0
+            for day in insightDays(from: range.lowerBound, to: range.upperBound)
+            where day >= AppCalendar.startOfDay(for: habit.createdAt)
+                && AppCalendar.weekday(of: day) == best.weekday
+                && habit.isLoggable(on: day)
+                && habit.isTrustedCompleted(on: day) {
+                completed += 1
+            }
+
+            if completed > 0 {
+                contexts.append(HabitInsightContext(habit: habit, count: completed))
+            }
+        }
+
+        return ContextualWeekdayInsight(
+            performance: best,
+            habits: contexts.sorted { $0.count > $1.count }
+        )
     }
 
     func bestWeekday(reference: Date = .now) -> WeekdayPerformance? {
@@ -461,19 +646,52 @@ extension Sequence where Element == Habit {
         return HourWindow(startHour: best.key, count: best.value)
     }
 
+    func contextualPeakHour(reference: Date = .now) -> ContextualHourInsight? {
+        guard let window = peakHour(reference: reference) else { return nil }
+        let range = insightDateRange(days: 30, reference: reference)
+        var contexts: [HabitInsightContext] = []
+
+        for habit in self {
+            let count = habit.entries.filter { entry in
+                guard range.contains(entry.date),
+                      entry.source.isTrustedForInsights,
+                      let completedAt = entry.completedAt else {
+                    return false
+                }
+
+                return AppCalendar.current.component(.hour, from: completedAt) == window.startHour
+            }.count
+
+            if count > 0 {
+                contexts.append(HabitInsightContext(habit: habit, count: count))
+            }
+        }
+
+        return ContextualHourInsight(
+            window: window,
+            habits: contexts.sorted { $0.count > $1.count }
+        )
+    }
+
     func rhythmExperimentSuggestion(
         reference: Date = .now,
         excludingHabitIDs: Set<UUID> = []
     ) -> RhythmExperimentSuggestion? {
-        let habits = Array(self)
-        guard habits.insightReadiness(reference: reference).isReady else { return nil }
+        rhythmExperimentSuggestions(reference: reference, excludingHabitIDs: excludingHabitIDs).first?.suggestion
+    }
 
+    func rhythmExperimentSuggestions(
+        reference: Date = .now,
+        excludingHabitIDs: Set<UUID> = []
+    ) -> [RankedRhythmSuggestion] {
+        let habits = Array(self)
+        guard habits.insightReadiness(reference: reference).isReady else { return [] }
         let readyHabits = habits.filter { $0.insightReadiness(reference: reference).isReady }
         let globalPeakHour = readyHabits.peakHour(reference: reference)?.startHour
 
         return readyHabits
             .filter { !excludingHabitIDs.contains($0.id) }
-            .compactMap { habit -> RhythmExperimentSuggestion? in
+            .compactMap { habit -> RankedRhythmSuggestion? in
                 let stats = habit.completionStats(reference: reference)
                 guard habit.scheduleKind != .timesPerWeek,
                       stats.scheduled > 0,
@@ -497,10 +715,18 @@ extension Sequence where Element == Habit {
 
                 let shouldReduce = stats.ratio < 0.55 && habit.targetDaysPerWeek > 1
                 let suggestedTarget = shouldReduce ? habit.targetDaysPerWeek - 1 : habit.targetDaysPerWeek
-                let suggestedDays = Set(rankedDays.prefix(Swift.max(1, suggestedTarget)))
+                let strongDays = rankedDays.filter { weekday in
+                    let stats = weekdayStats.first { $0.weekday == weekday }
+                    return (stats?.completed ?? 0) > 0
+                }
+                let suggestedDays = Set(strongDays.prefix(Swift.max(1, suggestedTarget)))
                 let suggestedHour = habit.peakHour(reference: reference)?.startHour ?? globalPeakHour
 
-                guard shouldReduce || suggestedHour != nil else { return nil }
+                if shouldReduce {
+                    guard !suggestedDays.isEmpty else { return nil }
+                } else {
+                    guard suggestedHour != nil else { return nil }
+                }
 
                 let title = shouldReduce ? "Prueba bajar la fricción" : "Prueba una hora fija"
                 let message: String
@@ -514,7 +740,7 @@ extension Sequence where Element == Habit {
                     reason = "La mayoría de tus marcas cae cerca de \(HourWindow(startHour: suggestedHour ?? 8, count: 0).displayText)."
                 }
 
-                return RhythmExperimentSuggestion(
+                let suggestion = RhythmExperimentSuggestion(
                     habit: habit,
                     title: title,
                     message: message,
@@ -524,10 +750,55 @@ extension Sequence where Element == Habit {
                     suggestedStartHour: suggestedHour,
                     baselineConsistency: stats.ratio
                 )
+
+                return RankedRhythmSuggestion(
+                    suggestion: suggestion,
+                    priorityScore: suggestionPriorityScore(
+                        habit: habit,
+                        stats: stats,
+                        reference: reference
+                    ),
+                    priorityReason: suggestionPriorityReason(
+                        stats: stats,
+                        confidence: habit.rhythmConfidence(reference: reference)
+                    )
+                )
             }
-            .min { lhs, rhs in
-                lhs.baselineConsistency < rhs.baselineConsistency
+            .sorted { lhs, rhs in
+                if lhs.priorityScore == rhs.priorityScore {
+                    return lhs.suggestion.baselineConsistency < rhs.suggestion.baselineConsistency
+                }
+
+                return lhs.priorityScore > rhs.priorityScore
             }
+    }
+
+    private func suggestionPriorityScore(
+        habit: Habit,
+        stats: HabitCompletionStats,
+        reference: Date
+    ) -> Double {
+        let consistencyGap = Swift.max(0, 1 - stats.ratio)
+        let opportunity = Swift.min(1, Double(stats.scheduled) / 20)
+        let confidence = habit.rhythmConfidence(reference: reference).ratio
+        let daysSince = habit.daysSinceLastCompletion(reference: reference) ?? 14
+        let recency = Swift.min(1, Double(daysSince) / 14)
+
+        return (consistencyGap * 0.45)
+            + (opportunity * 0.25)
+            + (confidence * 0.20)
+            + (recency * 0.10)
+    }
+
+    private func suggestionPriorityReason(
+        stats: HabitCompletionStats,
+        confidence: RhythmConfidence
+    ) -> String {
+        if stats.ratio < 0.55 {
+            return "\(stats.percentage)% de consistencia · \(confidence.title.lowercased(with: Locale(identifier: "es_MX")))"
+        }
+
+        return "\(stats.percentage)% de consistencia · señal horaria clara"
     }
 
     private func globalCompletionStats(from start: Date, to end: Date) -> HabitCompletionStats {

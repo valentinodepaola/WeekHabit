@@ -16,8 +16,20 @@ struct TodayView: View {
 
     @Query(sort: \HabitExperiment.startedAt, order: .reverse)
     private var experiments: [HabitExperiment]
+
+    @Query(sort: \Plan.createdAt, order: .reverse)
+    private var plans: [Plan]
     
     @State private var createHabitRoute: TodayCreateHabitRoute?
+    @State private var isShowingCreatePlan = false
+    @State private var editHabitRoute: TodayEditHabitRoute?
+    @State private var editPlanRoute: TodayEditPlanRoute?
+    @State private var habitToDelete: Habit?
+    @State private var showDeleteHabitAlert = false
+    @State private var planToDelete: Plan?
+    @State private var showDeletePlanAlert = false
+    @State private var selectedHabit: Habit?
+    @State private var expandedPlans: Set<UUID> = []
     @State private var isShowingFocusSession = false
     @State private var quantityHabit: Habit?
 
@@ -79,119 +91,241 @@ struct TodayView: View {
     }
 
     var body: some View {
-        AppBackground {
-            if todayHabits.isEmpty {
-                VStack(alignment: .leading, spacing: 0) {
+        NavigationStack {
+            AppBackground {
+                List {
                     header
-                        .padding(.horizontal)
-                        .padding(.top, 15)
+                        .todayListRow(
+                            EdgeInsets(top: 15, leading: 16, bottom: 0, trailing: 16)
+                        )
 
-                    emptyTodayContent
+                    if todayHabits.isEmpty {
+                        emptyTodayContent
+                            .todayListRow()
+                    } else {
+                        todayHabitsContent
+                    }
+
+                    if !plans.isEmpty {
+                        plansSection
+                    }
                 }
-            } else {
-                todayHabitsContent
+                .listStyle(.plain)
+                .listRowSpacing(18)
+                .scrollContentBackground(.hidden)
+                .contentMargins(.bottom, 120, for: .scrollContent)
             }
-        }
-        .fullScreenCover(item: $createHabitRoute) { route in
-            switch route {
-            case .today(let weekday):
-                CreateHabitView(
-                    initialDaysPerWeek: 1,
-                    initialActiveDays: [weekday]
-                )
+            .navigationDestination(item: $selectedHabit) { habit in
+                HabitDetailView(habit: habit)
             }
-        }
-        .fullScreenCover(isPresented: $isShowingFocusSession) {
-            FocusSessionView(habits: todayHabits)
-        }
-        .sheet(item: $quantityHabit) { habit in
-            QuantityLogSheet(
-                habit: habit,
-                date: referenceDate,
-                initialValue: habit.totalValue(on: referenceDate)
-            ) { value in
-                upsertQuantityEntry(for: habit, on: referenceDate, value: value, source: .today)
+            .fullScreenCover(item: $createHabitRoute) { route in
+                switch route {
+                case .standard:
+                    CreateHabitView()
+                case .today(let weekday):
+                    CreateHabitView(
+                        initialDaysPerWeek: 1,
+                        initialActiveDays: [weekday]
+                    )
+                }
             }
-            .presentationDetents([.height(310)])
+            .fullScreenCover(isPresented: $isShowingCreatePlan) {
+                PlanFlowView()
+            }
+            .fullScreenCover(item: $editHabitRoute) { route in
+                CreateHabitView(habitToEdit: route.habit)
+            }
+            .fullScreenCover(item: $editPlanRoute) { route in
+                CreatePlanView(planToEdit: route.plan)
+            }
+            .fullScreenCover(isPresented: $isShowingFocusSession) {
+                FocusSessionView(habits: todayHabits)
+            }
+            .alert("¿Borrar hábito?", isPresented: $showDeleteHabitAlert) {
+                Button("Cancelar", role: .cancel) { habitToDelete = nil }
+                Button("Borrar", role: .destructive) { deleteSelectedHabit() }
+            } message: {
+                Text("Esta acción eliminará el hábito y su progreso registrado. No se puede deshacer.")
+            }
+            .alert("¿Eliminar plan?", isPresented: $showDeletePlanAlert) {
+                Button("Cancelar", role: .cancel) { planToDelete = nil }
+                Button("Eliminar", role: .destructive) { deleteSelectedPlan() }
+            } message: {
+                Text("Los hábitos del plan no serán eliminados.")
+            }
+            .sheet(item: $quantityHabit) { habit in
+                QuantityLogSheet(
+                    habit: habit,
+                    date: referenceDate,
+                    initialValue: habit.totalValue(on: referenceDate)
+                ) { value in
+                    upsertQuantityEntry(for: habit, on: referenceDate, value: value, source: .today)
+                }
+                .presentationDetents([.height(310)])
+            }
         }
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(currentDateTitle)
-                .font(AppFont.captionApp)
-                .foregroundStyle(AppColor.mutedText)
+        HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(currentDateTitle)
+                    .font(AppFont.captionApp)
+                    .foregroundStyle(AppColor.mutedText)
 
-            Text("Buenos días")
-                .font(AppFont.title)
+                Text("Buenos días")
+                    .font(AppFont.title)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            Menu {
+                Button {
+                    createHabitRoute = .standard
+                } label: {
+                    Label("Nuevo hábito", systemImage: "plus.circle")
+                }
+
+                Button {
+                    isShowingCreatePlan = true
+                } label: {
+                    Label("Nuevo plan", systemImage: "target")
+                }
+            } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 20).bold())
+                    .foregroundStyle(.white)
+                    .frame(width: 38, height: 38)
+                    .background(AppColor.accent)
+                    .clipShape(Circle())
+            }
+            .accessibilityLabel("Crear")
         }
     }
 
     private var emptyTodayContent: some View {
-        ZStack {
-            TodayEmptyStateView(
-                weekdayName: currentDayNameForSentence,
-                tomorrowHabitsCount: tomorrowHabitsCount
-            ) {
-                createHabitRoute = .today(currentWeekday)
-            }
+        TodayEmptyStateView(
+            weekdayName: currentDayNameForSentence,
+            tomorrowHabitsCount: tomorrowHabitsCount
+        ) {
+            createHabitRoute = .today(currentWeekday)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(.horizontal, 16)
-        .padding(.bottom, 120)
+        .padding(.vertical, 24)
     }
 
+    @ViewBuilder
     private var todayHabitsContent: some View {
-        ScrollView() {
-            VStack(alignment: .leading, spacing: 18) {
-                header
+        DailyProgressCard(
+            progress: dailyProgress,
+            completedCount: completedTodayCount,
+            totalCount: todayHabits.count,
+            remainingCount: remainingTodayCount
+        )
+        .todayListRow()
 
-                DailyProgressCard(
-                    progress: dailyProgress,
-                    completedCount: completedTodayCount,
-                    totalCount: todayHabits.count,
-                    remainingCount: remainingTodayCount
-                )
+        FocusSessionLauncherCard(
+            remainingCount: remainingTodayCount,
+            onStart: { isShowingFocusSession = true }
+        )
+        .todayListRow()
 
-                FocusSessionLauncherCard(
-                    remainingCount: remainingTodayCount,
-                    onStart: { isShowingFocusSession = true }
-                )
+        HStack {
+            Text("Hábitos de hoy")
+                .font(AppFont.subtitle2)
+            Spacer()
+            Text(self.currentDayTitle)
+                .font(AppFont.body2)
+                .foregroundStyle(AppColor.mutedText)
+        }
+        .todayListRow()
 
-                HStack {
-                    Text("Habitos de hoy")
-                        .font(AppFont.subtitle2)
-                    Spacer()
-                    Text(self.currentDayTitle)
-                        .font(AppFont.body2)
-                        .foregroundStyle(AppColor.mutedText)
+        ForEach(todayHabits) { habit in
+            TodayHabitComponent(
+                habit: habit,
+                isCompleted: isCompleteForTodayList(habit),
+                activeExperiment: experiments.activeExperiment(
+                    for: habit.id,
+                    reference: referenceDate
+                ),
+                referenceDate: referenceDate
+            ) {
+                toggleCompletion(for: habit)
+            }
+            .todayListRow()
+            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                Button(role: .destructive) {
+                    habitToDelete = habit
+                    showDeleteHabitAlert = true
+                } label: {
+                    Label("Borrar", systemImage: "trash")
                 }
+                .tint(AppColor.destructiveAction)
 
-                ForEach(todayHabits) { habit in
-                    TodayHabitComponent(
-                        habit: habit,
-                        isCompleted: isCompleteForTodayList(habit),
-                        activeExperiment: experiments.activeExperiment(
-                            for: habit.id,
-                            reference: referenceDate
-                        ),
-                        referenceDate: referenceDate
-                    ) {
-                        toggleCompletion(for: habit)
+                Button {
+                    editHabitRoute = TodayEditHabitRoute(habit: habit)
+                } label: {
+                    Label("Editar", systemImage: "pencil")
+                }
+                .tint(AppColor.editAction)
+            }
+        }
+
+        if let top = todayHabits.topStreakHabit(reference: referenceDate) {
+            LongestStreakBanner(
+                habitTitle: top.habit.title,
+                streakDays: top.streak,
+                allSameStreak: todayHabits.allShareSameCurrentStreak(reference: referenceDate)
+            )
+            .todayListRow()
+        }
+    }
+
+    @ViewBuilder
+    private var plansSection: some View {
+        Text("Planes")
+            .font(AppFont.subtitle2)
+            .foregroundStyle(AppColor.strongText)
+            .padding(.top, 10)
+            .todayListRow()
+
+        ForEach(plans) { plan in
+            planRow(plan)
+        }
+    }
+
+    private func planRow(_ plan: Plan) -> some View {
+        PlanAccordion(
+            plan: plan,
+            isExpanded: expandedPlans.contains(plan.id),
+            onToggle: {
+                withAnimation(.spring(response: 0.42, dampingFraction: 0.86)) {
+                    if expandedPlans.contains(plan.id) {
+                        expandedPlans.remove(plan.id)
+                    } else {
+                        expandedPlans.insert(plan.id)
                     }
                 }
-
-                if let top = todayHabits.topStreakHabit(reference: referenceDate) {
-                    LongestStreakBanner(
-                        habitTitle: top.habit.title,
-                        streakDays: top.streak,
-                        allSameStreak: todayHabits.allShareSameCurrentStreak(reference: referenceDate)
-                    )
-                }
+            },
+            onHabitTap: { habit in
+                selectedHabit = habit
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding()
-            .padding(.bottom, 120)
+        )
+        .todayListRow()
+        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+            Button(role: .destructive) {
+                planToDelete = plan
+                showDeletePlanAlert = true
+            } label: {
+                Label("Eliminar", systemImage: "trash")
+            }
+            .tint(AppColor.destructiveAction)
+
+            Button {
+                editPlanRoute = TodayEditPlanRoute(plan: plan)
+            } label: {
+                Label("Editar", systemImage: "pencil")
+            }
+            .tint(AppColor.editAction)
         }
     }
 
@@ -267,19 +401,59 @@ struct TodayView: View {
             }
         }
     }
+
+    private func deleteSelectedHabit() {
+        guard let habitToDelete else { return }
+
+        withAnimation(.easeInOut(duration: 0.2)) {
+            modelContext.delete(habitToDelete)
+        }
+
+        self.habitToDelete = nil
+    }
+
+    private func deleteSelectedPlan() {
+        guard let planToDelete else { return }
+
+        withAnimation(.easeInOut(duration: 0.2)) {
+            modelContext.delete(planToDelete)
+        }
+
+        self.planToDelete = nil
+    }
 }
 
 private enum TodayCreateHabitRoute: Identifiable {
+    case standard
     case today(Weekday)
     
     var id: String {
         switch self {
+        case .standard:
+            return "standard"
         case .today(let weekday):
             return "today-\(weekday.rawValue)"
         }
     }
 }
 
+private struct TodayEditHabitRoute: Identifiable {
+    let habit: Habit
+    var id: UUID { habit.id }
+}
+
+private struct TodayEditPlanRoute: Identifiable {
+    let plan: Plan
+    var id: UUID { plan.id }
+}
+
+private extension View {
+    func todayListRow(_ insets: EdgeInsets = EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16)) -> some View {
+        listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
+            .listRowInsets(insets)
+    }
+}
 
 #Preview {
     TodayView()

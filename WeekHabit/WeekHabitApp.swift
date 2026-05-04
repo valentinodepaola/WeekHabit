@@ -11,7 +11,7 @@ import SwiftData
 @main
 struct WeekHabitApp: App {
     let container: ModelContainer = {
-        let schema = Schema(versionedSchema: SchemaV5.self)
+        let schema = Schema(versionedSchema: SchemaV6.self)
         let config = ModelConfiguration(schema: schema)
         do {
             return try ModelContainer(
@@ -27,9 +27,23 @@ struct WeekHabitApp: App {
     var body: some Scene {
         WindowGroup {
             AppLaunchView {
-                ContentView()
+                RootView()
             }
         }
         .modelContainer(container)
+    }
+}
+
+private struct RootView: View {
+    @AppStorage("hasCompletedAppOnboarding") private var hasCompletedAppOnboarding = false
+
+    var body: some View {
+        if hasCompletedAppOnboarding {
+            ContentView()
+        } else {
+            OnboardingView {
+                hasCompletedAppOnboarding = true
+            }
+        }
     }
 }

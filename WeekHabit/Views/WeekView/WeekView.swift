@@ -87,6 +87,7 @@ struct WeekView: View {
                     
                     dayStrip
                     contentArea
+                        .padding(.top)
                 }
                 .navigationDestination(item: $selectedHabit) { habit in
                     HabitDetailView(habit: habit)
