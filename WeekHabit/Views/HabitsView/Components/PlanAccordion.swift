@@ -10,8 +10,6 @@ struct PlanAccordion: View {
     let isExpanded: Bool
     let onToggle: () -> Void
     let onHabitTap: (Habit) -> Void
-    let onEdit: () -> Void
-    let onDelete: () -> Void
 
     private var planColor: Color { AppColor.accent }
     private var progress: Double { plan.progress() }
@@ -53,34 +51,39 @@ struct PlanAccordion: View {
     }
 
     private var planHeader: some View {
-        Button(action: onToggle) {
-            VStack(alignment: .leading, spacing: 14) {
-                HStack(spacing: 12) {
-                    ZStack {
-                        Circle()
-                            .fill(planColor.opacity(0.15))
-                            .frame(width: 44, height: 44)
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 12) {
+                Button(action: onToggle) {
+                    HStack(spacing: 12) {
+                        ZStack {
+                            Circle()
+                                .fill(planColor.opacity(0.15))
+                                .frame(width: 44, height: 44)
 
-                        Image(systemName: "target")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundStyle(planColor)
+                            Image(systemName: "target")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundStyle(planColor)
+                        }
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(plan.title)
+                                .font(AppFont.body2)
+                                .fontWeight(.semibold)
+                                .foregroundStyle(AppColor.strongText)
+                                .lineLimit(1)
+
+                            Text(plan.daysRemainingText)
+                                .font(AppFont.formSectionText2)
+                                .foregroundStyle(AppColor.subtleText)
+                                .lineLimit(1)
+                        }
                     }
+                }
+                .buttonStyle(PlanHeaderButtonStyle())
 
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(plan.title)
-                            .font(AppFont.body2)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(AppColor.strongText)
-                            .lineLimit(1)
+                Spacer(minLength: 8)
 
-                        Text(plan.daysRemainingText)
-                            .font(AppFont.formSectionText2)
-                            .foregroundStyle(AppColor.subtleText)
-                            .lineLimit(1)
-                    }
-
-                    Spacer(minLength: 8)
-
+                Button(action: onToggle) {
                     ZStack {
                         Circle()
                             .fill(AppColor.surfaceMuted)
@@ -92,7 +95,10 @@ struct PlanAccordion: View {
                             .rotationEffect(.degrees(isExpanded ? 180 : 0))
                     }
                 }
+                .buttonStyle(PlanHeaderButtonStyle())
+            }
 
+            Button(action: onToggle) {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(alignment: .firstTextBaseline) {
                         Text("\(Int(progress * 100))%")
@@ -121,11 +127,11 @@ struct PlanAccordion: View {
                     .frame(height: 7)
                 }
             }
-            .padding(.leading, 20)
-            .padding(.trailing, 16)
-            .padding(.vertical, 16)
+            .buttonStyle(PlanHeaderButtonStyle())
         }
-        .buttonStyle(PlanHeaderButtonStyle())
+        .padding(.leading, 20)
+        .padding(.trailing, 16)
+        .padding(.vertical, 16)
     }
 
     private var planHabits: some View {

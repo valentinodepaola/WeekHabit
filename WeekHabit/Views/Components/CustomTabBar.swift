@@ -14,7 +14,7 @@ struct CustomTabBar: View {
 
     @Binding var selectedTab: Int
 
-    let tabs: [TabItems] = [.today, .habits, .week, .insights]
+    let tabs: [TabItems] = [.today, .week, .insights]
 
     var body: some View {
         HStack(spacing: 6) {
@@ -104,7 +104,6 @@ struct CustomTabBar: View {
 
 enum TabItems: String {
     case today
-    case habits
     case week
     case insights
 
@@ -112,8 +111,6 @@ enum TabItems: String {
         switch self {
         case .today:
             return "Hoy"
-        case .habits:
-            return "Hábitos"
         case .week:
             return "Semana"
         case .insights:
@@ -125,8 +122,6 @@ enum TabItems: String {
         switch self {
         case .today:
             return "sun.max"
-        case .habits:
-            return "list.bullet"
         case .week:
             return "calendar"
         case .insights:
