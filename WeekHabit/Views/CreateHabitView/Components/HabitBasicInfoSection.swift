@@ -8,7 +8,8 @@ import SwiftUI
 struct HabitBasicInfoSection: View {
     @Binding var habitName: String
     @Binding var note: String
-    @Binding var selectedCategory: HabitCategory
+    @Binding var selectedIconName: String
+    @Binding var selectedColorHex: String
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -26,12 +27,10 @@ struct HabitBasicInfoSection: View {
                 normalTextField: false
             )
 
-            Text("Categoria")
-                .font(AppFont.formSectionText)
-                .foregroundStyle(AppColor.mutedText)
-                .textCase(.uppercase)
-
-            ButtonCategoryComponent(selectedCategory: $selectedCategory)
+            HabitAppearancePicker(
+                selectedIconName: $selectedIconName,
+                selectedColorHex: $selectedColorHex
+            )
         }
     }
 }

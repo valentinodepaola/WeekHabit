@@ -13,7 +13,7 @@ struct PlanAccordion: View {
     let onEdit: () -> Void
     let onDelete: () -> Void
 
-    private var categoryColor: Color { plan.displayCategory.color }
+    private var planColor: Color { AppColor.accent }
     private var progress: Double { plan.progress() }
     private var sortedHabits: [Habit] {
         plan.habits.sorted(by: { $0.createdAt > $1.createdAt })
@@ -39,12 +39,12 @@ struct PlanAccordion: View {
         .background(AppColor.surface)
         .overlay(alignment: .leading) {
             Rectangle()
-                .fill(categoryColor)
+                .fill(planColor)
                 .frame(width: 5)
         }
         .overlay {
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(categoryColor.opacity(isExpanded ? 0.24 : 0.12), lineWidth: 1)
+                .stroke(planColor.opacity(isExpanded ? 0.24 : 0.12), lineWidth: 1)
         }
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
@@ -58,12 +58,12 @@ struct PlanAccordion: View {
                 HStack(spacing: 12) {
                     ZStack {
                         Circle()
-                            .fill(categoryColor.opacity(0.15))
+                            .fill(planColor.opacity(0.15))
                             .frame(width: 44, height: 44)
 
-                        Image(systemName: plan.displayCategory.icon)
+                        Image(systemName: "target")
                             .font(.system(size: 18, weight: .semibold))
-                            .foregroundStyle(categoryColor)
+                            .foregroundStyle(planColor)
                     }
 
                     VStack(alignment: .leading, spacing: 4) {
@@ -73,14 +73,10 @@ struct PlanAccordion: View {
                             .foregroundStyle(AppColor.strongText)
                             .lineLimit(1)
 
-                        HStack(spacing: 6) {
-                            Text(plan.displayCategory.displayTitle)
-                            Text("·")
-                            Text(plan.daysRemainingText)
-                        }
-                        .font(AppFont.formSectionText2)
-                        .foregroundStyle(AppColor.subtleText)
-                        .lineLimit(1)
+                        Text(plan.daysRemainingText)
+                            .font(AppFont.formSectionText2)
+                            .foregroundStyle(AppColor.subtleText)
+                            .lineLimit(1)
                     }
 
                     Spacer(minLength: 8)
@@ -113,14 +109,14 @@ struct PlanAccordion: View {
                         PlanMetricPill(
                             icon: "checklist",
                             text: "\(plan.habits.count) \(plan.habits.count == 1 ? "hábito" : "hábitos")",
-                            color: categoryColor
+                            color: planColor
                         )
                     }
 
                     PlanProgressBar(
                         progress: progress,
                         goal: plan.targetCompletionRate,
-                        color: categoryColor
+                        color: planColor
                     )
                     .frame(height: 7)
                 }
@@ -148,13 +144,13 @@ struct PlanAccordion: View {
             .padding(.horizontal, 16)
 
             if sortedHabits.isEmpty {
-                PlanEmptyHabitRow(color: categoryColor)
+                PlanEmptyHabitRow(color: planColor)
             } else {
                 VStack(spacing: 0) {
                     ForEach(Array(sortedHabits.enumerated()), id: \.element.id) { index, habit in
                         PlanHabitRow(
                             habit: habit,
-                            color: categoryColor
+                            color: planColor
                         ) {
                             onHabitTap(habit)
                         }
@@ -184,21 +180,17 @@ private struct PlanHabitRow: View {
     let color: Color
     let onTap: () -> Void
 
-    private var category: HabitCategory {
-        habit.displayCategory
-    }
-
     var body: some View {
         Button(action: onTap) {
             HStack(alignment: .center, spacing: 12) {
                 ZStack {
                     Circle()
-                        .fill(category.color.opacity(0.16))
+                        .fill(habit.habitColor.opacity(0.16))
                         .frame(width: 36, height: 36)
 
-                    Image(systemName: category.icon)
+                    Image(systemName: habit.iconName)
                         .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(category.color)
+                        .foregroundStyle(habit.habitColor)
                 }
 
                 VStack(alignment: .leading, spacing: 7) {
@@ -244,10 +236,10 @@ private struct PlanHabitRow: View {
     private var cardSubtitle: String {
         let status = habit.isFinished() ? "terminado" : habit.scheduleSummaryText
         if habit.trackingKind == .quantity {
-            return "\(category.displayTitle) · \(status) · \(habit.targetPerSessionText)"
+            return "\(status) · \(habit.targetPerSessionText)"
         }
 
-        return "\(category.displayTitle) · \(status)"
+        return status
     }
 }
 

@@ -10,10 +10,6 @@ struct CurrentStreakHeroCard: View {
     let currentStreak: Int
     let bestStreak: Int
 
-    private var category: HabitCategory {
-        habit.displayCategory
-    }
-
     var body: some View {
         ZStack(alignment: .trailing) {
             RoundedRectangle(cornerRadius: AppRadius.large, style: .continuous)
@@ -67,7 +63,8 @@ struct CurrentStreakHeroCard: View {
     CurrentStreakHeroCard(
         habit: Habit(
             title: "Tomar agua",
-            category: .health,
+            iconName: "drop.fill",
+            colorHex: "#7fa774",
             targetDaysPerWeek: 5,
             activeDaysOfWeek: Set(Weekday.ordered)
         ),

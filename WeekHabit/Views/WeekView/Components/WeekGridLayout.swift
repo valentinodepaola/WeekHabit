@@ -8,7 +8,7 @@
 import SwiftUI
 
 enum WeekGridLayout {
-    static let categoryStripWidth: CGFloat = 4
+    static let accentStripWidth: CGFloat = 4
     static let cellSpacing: CGFloat = 8
     static let cellSize: CGFloat = 34
 }
@@ -16,7 +16,7 @@ enum WeekGridLayout {
 struct WeekProgressBar: View {
     
     let progress: Double
-    let categoryColor: Color
+    let habitColor: Color
 
     var body: some View {
         GeometryReader { geo in
@@ -26,7 +26,7 @@ struct WeekProgressBar: View {
                     .frame(height: 5)
 
                 Capsule()
-                    .fill(categoryColor)
+                    .fill(habitColor)
                     .frame(width: progressWidth(in: geo.size.width), height: 5)
                     .animation(.easeOut(duration: 0.32), value: progress)
             }

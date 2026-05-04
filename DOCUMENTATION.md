@@ -22,7 +22,7 @@ WeekHabit es una app iOS de tracking de hábitos semanales. El usuario crea háb
 **Stack:** Swift 5.0 · SwiftUI · SwiftData · iOS 26.4+ · Universal (iPhone + iPad)
 
 **Características actuales:**
-- Crear, editar y eliminar hábitos con categoría, nota, meta semanal y días activos personalizados
+- Crear, editar y eliminar hábitos con icono, color, nota, meta semanal y días activos personalizados
 - Marcar/desmarcar hábitos desde Hoy y desde Semana
 - Distinguir marcas reales (`today` y `focusSession`) de marcas manuales retroactivas para Insights
 - Racha actual, racha visible y mejor racha por hábito
@@ -108,7 +108,8 @@ Entidad principal. Representa un hábito del usuario.
 | `id` | `UUID` | Identificador único |
 | `title` | `String` | Nombre del hábito |
 | `note` | `String?` | Nota opcional |
-| `category` | `HabitCategory?` | Categoría opcional por compatibilidad de schema |
+| `iconNameRaw` | `String?` | SF Symbol persistido para la apariencia del hábito |
+| `colorHexRaw` | `String?` | Color HEX persistido para la apariencia del hábito |
 | `targetDaysPerWeek` | `Int` | Meta de días por semana |
 | `activeDaysOfWeekRaw` | `[Int]` | Días activos persistidos como raw values de `Weekday`. No usar directamente |
 | `createdAt` | `Date` | Fecha de creación |
@@ -119,7 +120,9 @@ Entidad principal. Representa un hábito del usuario.
 | Propiedad | Tipo | Descripción |
 |---|---|---|
 | `activeDaysOfWeek` | `Set<Weekday>` | Vista tipada de `activeDaysOfWeekRaw`; siempre leer/escribir los días activos aquí |
-| `displayCategory` | `HabitCategory` | Categoría con fallback a `.health` si `category` es `nil` |
+| `iconName` | `String` | Ícono con fallback al default de `HabitAppearance` |
+| `colorHex` | `String` | Color HEX con fallback al default de `HabitAppearance` |
+| `habitColor` | `Color` | Color SwiftUI derivado de `colorHex` |
 
 ---
 
@@ -189,16 +192,9 @@ Persistencia de una sesión de ritmo/enfoque. Se crea al iniciar una sesión, pa
 
 ---
 
-### `HabitCategory` — `WeekHabit/Models/HabitCategory.swift`
+### `HabitAppearance` — `WeekHabit/Models/HabitAppearance.swift`
 
-Enum `Codable` que clasifica los hábitos. El `rawValue` (`String`) se persiste en SwiftData.
-
-| Caso | Display | Ícono | Color |
-|---|---|---|---|
-| `.health` | Salud | `heart.fill` | `#7fa774` |
-| `.work` | Trabajo | `briefcase.fill` | `#8b7fb0` |
-| `.personal` | Mente | `person.fill` | `#c89046` |
-| `.learning` | Lectura | `book.fill` | `#5c89a8` |
+Define la paleta curada de íconos SF Symbols y colores HEX disponibles para personalizar hábitos.
 
 ---
 
@@ -384,7 +380,7 @@ Componentes principales:
 Lista completa de hábitos con navegación y CRUD.
 
 - Header con botón `+` para abrir `CreateHabitView`
-- `HabitCard` por hábito, con categoría, meta, racha actual y dots de la semana
+- `HabitCard` por hábito, con apariencia personalizada, meta, racha actual y dots de la semana
 - Tap en card → `HabitDetailView`
 - Swipe trailing → borrar con confirmación o editar en full-screen
 - Estado vacío → `EmptyStateView` con CTA de creación
@@ -444,10 +440,10 @@ Componentes:
 | Componente | Propósito |
 |---|---|
 | `TextFieldComponent` | Campo single-line o multiline |
-| `ButtonCategoryComponent` | Selección de categoría |
+| `HabitAppearancePicker` | Selección curada de ícono y color |
 | `WeekGoalComponent` | Stepper visual +/- para días por semana |
 | `ActiveDaysComponent` | Grilla de 7 botones para días activos |
-| `IconComponent` | Ícono SF Symbol con color de categoría |
+| `IconComponent` | Ícono SF Symbol con color del hábito |
 
 ---
 
@@ -458,7 +454,6 @@ Panel de analytics de un hábito individual.
 
 | Componente | Dato que muestra |
 |---|---|
-| `CategoryBadgeView` | Categoría del hábito |
 | `HabitExperimentStatusCard` | Estado de una prueba activa o lista para revisar |
 | `CurrentStreakHeroCard` | Racha actual, mejor racha y mensaje motivacional |
 | `StatTileView` | Progreso semanal y mejor racha |
@@ -522,7 +517,7 @@ ContentView (ZStack + selectedTab)
 | `editAction` | Azul — acción editar |
 | `destructiveAction` | Rojo — acción destructiva |
 
-Los colores de categoría viven en `HabitCategory.color`.
+La paleta curada de apariencia de hábitos vive en `HabitAppearance`.
 
 ---
 
@@ -611,7 +606,7 @@ Seguir este patrón al agregar nuevas pantallas.
 ### Design system
 
 - Colores → usar `AppColor.*`; agregar tokens nuevos en `AppColor`
-- Categorías → colores e íconos viven en `HabitCategory`
+- Apariencia de hábitos → colores e íconos disponibles viven en `HabitAppearance`
 - Fuentes → usar `AppFont.*` para texto de UI
 - Radios → usar `AppRadius.*` si el radio es compartido
 - Fondo → usar `AppBackground { }` en vistas top-level
@@ -667,12 +662,10 @@ Si el cambio es aditivo, opcional o con default, probablemente basta una migraci
 
 ---
 
-### Nueva categoría de hábito
+### Nueva opción de apariencia de hábito
 
-1. Agregar caso al enum `HabitCategory`
-2. Implementar `title`, `displayTitle`, `icon` y `color`
-3. Actualizar `allCases` si se mantiene manual
-4. Revisar `ButtonCategoryComponent`, cards y previews que dependan de categorías
+1. Agregar el SF Symbol a `HabitAppearance.iconNames` o el HEX a `HabitAppearance.colorHexes`
+2. Revisar `HabitAppearancePicker` y previews si la opción requiere tratamiento visual especial
 
 ---
 

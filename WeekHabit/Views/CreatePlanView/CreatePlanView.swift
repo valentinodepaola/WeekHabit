@@ -15,7 +15,6 @@ struct CreatePlanView: View {
 
     @State private var planName: String = ""
     @State private var motivation: String = ""
-    @State private var selectedCategory: HabitCategory = .health
     @State private var endsAt: Date = Calendar.current.date(byAdding: .day, value: 30, to: .now) ?? .now
     @State private var targetCompletionRate: Double = 0.8
     @State private var selectedHabits: Set<UUID> = []
@@ -35,7 +34,6 @@ struct CreatePlanView: View {
 
         _planName = State(initialValue: planToEdit?.title ?? "")
         _motivation = State(initialValue: planToEdit?.motivation ?? "")
-        _selectedCategory = State(initialValue: planToEdit?.displayCategory ?? .health)
         _endsAt = State(initialValue: planToEdit?.endsAt ?? Calendar.current.date(byAdding: .day, value: 30, to: .now) ?? .now)
         _targetCompletionRate = State(initialValue: planToEdit?.targetCompletionRate ?? 0.8)
         _selectedHabits = State(initialValue: Set(planToEdit?.habits.map(\.id) ?? []))
@@ -58,8 +56,7 @@ struct CreatePlanView: View {
 
                     PlanBasicInfoSection(
                         planName: $planName,
-                        motivation: $motivation,
-                        selectedCategory: $selectedCategory
+                        motivation: $motivation
                     )
 
                     PlanScheduleSection(endsAt: $endsAt)
@@ -85,7 +82,6 @@ struct CreatePlanView: View {
         if let planToEdit {
             planToEdit.title = trimmedName
             planToEdit.motivation = trimmedMotivation.isEmpty ? nil : trimmedMotivation
-            planToEdit.category = selectedCategory
             planToEdit.endsAt = normalizedEndsAt
             planToEdit.targetCompletionRate = targetCompletionRate
             planToEdit.habits = linkedHabits
@@ -93,7 +89,6 @@ struct CreatePlanView: View {
             let plan = Plan(
                 title: trimmedName,
                 motivation: trimmedMotivation.isEmpty ? nil : trimmedMotivation,
-                category: selectedCategory,
                 endsAt: normalizedEndsAt,
                 targetCompletionRate: targetCompletionRate
             )

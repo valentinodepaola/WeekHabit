@@ -8,7 +8,6 @@ import SwiftUI
 struct PlanBasicInfoSection: View {
     @Binding var planName: String
     @Binding var motivation: String
-    @Binding var selectedCategory: HabitCategory
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -44,13 +43,6 @@ struct PlanBasicInfoSection: View {
                 .background(AppColor.surfaceMuted)
                 .clipShape(RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous))
             }
-
-            Text("Categoria")
-                .font(AppFont.formSectionText)
-                .foregroundStyle(AppColor.mutedText)
-                .textCase(.uppercase)
-
-            ButtonCategoryComponent(selectedCategory: $selectedCategory)
         }
     }
 }

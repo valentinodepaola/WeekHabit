@@ -23,8 +23,8 @@ struct FocusHabitPicker: View {
                     } label: {
                         HStack(spacing: 12) {
                             IconComponent(
-                                icon: habit.displayCategory.icon,
-                                color: habit.displayCategory.color
+                                icon: habit.iconName,
+                                color: habit.habitColor
                             )
 
                             Text(habit.title)

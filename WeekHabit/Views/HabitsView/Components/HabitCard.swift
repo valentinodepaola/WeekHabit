@@ -13,17 +13,14 @@ struct HabitCard: View {
     var referenceDate: Date = .now
     var includesHorizontalPadding: Bool = true
     var onTap: () -> Void
-    private var category: HabitCategory {
-        habit.displayCategory
-    }
 
     var body: some View {
         Button(action: onTap) {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(alignment: .top, spacing: 12) {
                     IconComponent(
-                        icon: category.icon,
-                        color: category.color
+                        icon: habit.iconName,
+                        color: habit.habitColor
                     )
 
                     VStack(alignment: .leading, spacing: 2) {
@@ -70,10 +67,10 @@ struct HabitCard: View {
     private var cardSubtitle: String {
         let status = habit.isFinished(reference: referenceDate) ? "terminado" : habit.scheduleSummaryText
         if habit.trackingKind == .quantity {
-            return "\(category.displayTitle) · \(status) · \(habit.targetPerSessionText)"
+            return "\(status) · \(habit.targetPerSessionText)"
         }
 
-        return "\(category.displayTitle) · \(status)"
+        return status
     }
 }
 
@@ -164,7 +161,8 @@ private struct HabitCardButtonStyle: ButtonStyle {
     HabitCard(
         habit: Habit(
             title: "Tender cama",
-            category: .health,
+            iconName: "sparkles",
+            colorHex: "#c2573c",
             targetDaysPerWeek: 3,
             activeDaysOfWeek: [.friday, .saturday, .sunday]
         ),

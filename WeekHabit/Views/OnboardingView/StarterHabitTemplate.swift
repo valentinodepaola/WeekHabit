@@ -8,28 +8,30 @@ import SwiftUI
 struct StarterHabitTemplate: Identifiable, Equatable {
     let id: String
     let title: String
-    let category: HabitCategory
+    let iconName: String
+    let colorHex: String
     let daysPerWeek: Int
     let trackingKind: HabitTrackingKind
     let measurementUnit: HabitMeasurementUnit
     let targetValuePerSession: Double
 
     var subtitle: String {
-        "\(category.displayTitle) · \(daysPerWeek)d/sem"
+        "\(daysPerWeek)d/sem"
     }
 
     var icon: String {
-        OnboardingAreaOption.all.first { $0.category == category }?.icon ?? category.icon
+        iconName
     }
 
     var color: Color {
-        OnboardingAreaOption.all.first { $0.category == category }?.color ?? category.color
+        HabitAppearance.color(for: colorHex)
     }
 
     func makeHabit() -> Habit {
         Habit(
             title: title,
-            category: category,
+            iconName: iconName,
+            colorHex: colorHex,
             targetDaysPerWeek: daysPerWeek,
             activeDaysOfWeek: Set(Weekday.ordered),
             trackingKind: trackingKind,
@@ -45,7 +47,8 @@ struct StarterHabitTemplate: Identifiable, Equatable {
         StarterHabitTemplate(
             id: "water",
             title: "Beber 2L de agua",
-            category: .health,
+            iconName: "drop.fill",
+            colorHex: "#7fa774",
             daysPerWeek: 7,
             trackingKind: .check,
             measurementUnit: .none,
@@ -54,7 +57,8 @@ struct StarterHabitTemplate: Identifiable, Equatable {
         StarterHabitTemplate(
             id: "meditate",
             title: "Meditar 10 min",
-            category: .personal,
+            iconName: "brain.head.profile",
+            colorHex: "#8b7fb0",
             daysPerWeek: 7,
             trackingKind: .quantity,
             measurementUnit: .minutes,
@@ -63,7 +67,8 @@ struct StarterHabitTemplate: Identifiable, Equatable {
         StarterHabitTemplate(
             id: "read",
             title: "Leer antes de dormir",
-            category: .learning,
+            iconName: "book.fill",
+            colorHex: "#5c89a8",
             daysPerWeek: 6,
             trackingKind: .check,
             measurementUnit: .none,
@@ -72,7 +77,8 @@ struct StarterHabitTemplate: Identifiable, Equatable {
         StarterHabitTemplate(
             id: "walk",
             title: "Caminar 30 min",
-            category: .health,
+            iconName: "figure.walk",
+            colorHex: "#7fa774",
             daysPerWeek: 5,
             trackingKind: .quantity,
             measurementUnit: .minutes,
@@ -81,7 +87,8 @@ struct StarterHabitTemplate: Identifiable, Equatable {
         StarterHabitTemplate(
             id: "journal",
             title: "Diario matutino",
-            category: .work,
+            iconName: "pencil",
+            colorHex: "#c89046",
             daysPerWeek: 5,
             trackingKind: .check,
             measurementUnit: .none,

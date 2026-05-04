@@ -7,7 +7,6 @@ enum OnboardingStep: Int, CaseIterable {
     case intro
     case smallStart
     case weeklyRhythm
-    case areas
     case notifications
     case starterHabit
 

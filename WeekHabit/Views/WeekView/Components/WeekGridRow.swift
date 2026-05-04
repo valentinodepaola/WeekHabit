@@ -16,12 +16,8 @@ struct WeekGridRow: View {
     let onSelectHabit: () -> Void
     let onToggle: (Date) -> Void
 
-    private var category: HabitCategory {
-        habit.displayCategory
-    }
-
-    private var categoryColor: Color {
-        category.color
+    private var habitColor: Color {
+        habit.habitColor
     }
 
     private var completedCount: Int {
@@ -38,12 +34,12 @@ struct WeekGridRow: View {
                 HStack(alignment: .top, spacing: 12) {
                     ZStack {
                         Circle()
-                            .fill(categoryColor.opacity(0.16))
+                            .fill(habitColor.opacity(0.16))
                             .frame(width: 42, height: 42)
 
-                        Image(systemName: category.icon)
+                        Image(systemName: habit.iconName)
                             .font(.system(size: 17, weight: .semibold))
-                            .foregroundStyle(categoryColor)
+                            .foregroundStyle(habitColor)
                     }
 
                     VStack(alignment: .leading, spacing: 7) {
@@ -59,7 +55,7 @@ struct WeekGridRow: View {
                             WeekProgressPill(
                                 completed: completedCount,
                                 target: habit.targetDaysPerWeek,
-                                color: categoryColor
+                                color: habitColor
                             )
                         }
 
@@ -70,7 +66,7 @@ struct WeekGridRow: View {
 
                         WeekProgressBar(
                             progress: progress,
-                            categoryColor: categoryColor
+                            habitColor: habitColor
                         )
                     }
                 }
@@ -82,7 +78,7 @@ struct WeekGridRow: View {
                 ForEach(daysInWeek, id: \.self) { date in
                     WeekGridCell(
                         state: cellState(for: date),
-                        categoryColor: categoryColor,
+                        habitColor: habitColor,
                         onTap: { onToggle(date) }
                     )
                 }
@@ -97,12 +93,12 @@ struct WeekGridRow: View {
         .background(AppColor.surface)
         .overlay(alignment: .leading) {
             Rectangle()
-                .fill(categoryColor)
+                .fill(habitColor)
                 .frame(width: 5)
         }
         .overlay {
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(categoryColor.opacity(0.12), lineWidth: 1)
+                .stroke(habitColor.opacity(0.12), lineWidth: 1)
         }
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .shadow(color: AppColor.strongText.opacity(0.06), radius: 12, x: 0, y: 6)
@@ -111,10 +107,10 @@ struct WeekGridRow: View {
 
     private var subtitle: String {
         if habit.trackingKind == .quantity {
-            return "\(category.displayTitle) · \(habit.targetPerSessionText)"
+            return habit.targetPerSessionText
         }
 
-        return "\(category.displayTitle) · \(habit.scheduleSummaryText)"
+        return habit.scheduleSummaryText
     }
 
     private func cellState(for date: Date) -> WeekGridCell.State {

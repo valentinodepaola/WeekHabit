@@ -17,7 +17,7 @@ struct WeekGridCell: View {
     }
 
     let state: State
-    let categoryColor: Color
+    let habitColor: Color
     let onTap: () -> Void
 
     var body: some View {
@@ -34,7 +34,7 @@ struct WeekGridCell: View {
 
                 if state == .partial {
                     Circle()
-                        .fill(categoryColor)
+                        .fill(habitColor)
                         .frame(width: 8, height: 8)
                 }
 
@@ -57,21 +57,21 @@ struct WeekGridCell: View {
         switch state {
         case .completed:
             RoundedRectangle(cornerRadius: AppRadius.small)
-                .fill(categoryColor)
-                .shadow(color: categoryColor.opacity(0.24), radius: 7, x: 0, y: 4)
+                .fill(habitColor)
+                .shadow(color: habitColor.opacity(0.24), radius: 7, x: 0, y: 4)
         case .partial:
             RoundedRectangle(cornerRadius: AppRadius.small)
-                .fill(categoryColor.opacity(0.18))
+                .fill(habitColor.opacity(0.18))
                 .overlay {
                     RoundedRectangle(cornerRadius: AppRadius.small)
-                        .stroke(categoryColor.opacity(0.36), lineWidth: 1)
+                        .stroke(habitColor.opacity(0.36), lineWidth: 1)
                 }
         case .pending:
             RoundedRectangle(cornerRadius: AppRadius.small)
-                .fill(categoryColor.opacity(0.12))
+                .fill(habitColor.opacity(0.12))
                 .overlay {
                     RoundedRectangle(cornerRadius: AppRadius.small)
-                        .stroke(categoryColor.opacity(0.24), lineWidth: 1)
+                        .stroke(habitColor.opacity(0.24), lineWidth: 1)
                 }
         case .inactive:
             RoundedRectangle(cornerRadius: AppRadius.small)

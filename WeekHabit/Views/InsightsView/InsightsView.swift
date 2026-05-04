@@ -214,8 +214,8 @@ struct InsightsView: View {
 
             if let attention = habits.attentionHabit(reference: referenceDate) {
                 InsightSummaryCard(
-                    icon: attention.habit.displayCategory.icon,
-                    iconColor: attention.habit.displayCategory.color,
+                    icon: attention.habit.iconName,
+                    iconColor: attention.habit.habitColor,
                     title: "NECESITA ATENCIÓN",
                     value: attention.habit.title,
                     detail: attention.detail,

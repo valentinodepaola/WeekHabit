@@ -14,7 +14,6 @@ struct OnboardingView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var step: OnboardingStep = .intro
-    @State private var selectedAreas: Set<HabitCategory> = [.health, .personal]
     @State private var selectedTemplate: StarterHabitTemplate.ID = StarterHabitTemplate.defaultID
 
     let onFinish: () -> Void
@@ -69,12 +68,7 @@ struct OnboardingView: View {
                 title: "Tu semana es el terreno.",
                 accentTitle: "Tu ritmo hace el cambio.",
                 message: "WeekHabit te ayuda a mirar siete días a la vez: suficiente para avanzar, amable para volver a intentarlo.",
-                buttonTitle: "Elegir mis áreas",
-                onContinue: goForward
-            )
-        case .areas:
-            OnboardingAreasScreen(
-                selectedAreas: $selectedAreas,
+                buttonTitle: "Elegir mi primer hábito",
                 onContinue: goForward
             )
         case .notifications:
@@ -85,7 +79,7 @@ struct OnboardingView: View {
         case .starterHabit:
             OnboardingStarterHabitScreen(
                 selectedTemplateID: $selectedTemplate,
-                templates: starterTemplates,
+                templates: StarterHabitTemplate.all,
                 onStartWeek: createSelectedHabitAndFinish,
                 onCreateFromScratch: onFinish
             )
@@ -95,14 +89,6 @@ struct OnboardingView: View {
     private var screenTransition: AnyTransition {
         guard !reduceMotion else { return .opacity }
         return .opacity.combined(with: .move(edge: .trailing))
-    }
-
-    private var starterTemplates: [StarterHabitTemplate] {
-        let templates = StarterHabitTemplate.all
-        guard !selectedAreas.isEmpty else { return templates }
-
-        let filtered = templates.filter { selectedAreas.contains($0.category) }
-        return filtered.isEmpty ? templates : filtered
     }
 
     private func goForward() {

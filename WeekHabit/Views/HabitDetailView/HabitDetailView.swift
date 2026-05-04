@@ -16,10 +16,6 @@ struct HabitDetailView: View {
 
     @State private var editRoute: DetailEditHabitRoute?
 
-    private var category: HabitCategory {
-        habit.displayCategory
-    }
-
     private var trimmedNote: String? {
         guard let note = habit.note?.trimmingCharacters(in: .whitespacesAndNewlines),
               !note.isEmpty else {
@@ -107,7 +103,10 @@ struct HabitDetailView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 10) {
-            CategoryBadgeView(category: category)
+            IconComponent(
+                icon: habit.iconName,
+                color: habit.habitColor
+            )
 
             Text(habit.title)
                 .font(AppFont.title)
@@ -169,7 +168,8 @@ private struct DetailEditHabitRoute: Identifiable {
         habit: Habit(
             title: "Leer 20 páginas",
             note: "Antes de dormir, sin celular cerca.",
-            category: .learning,
+            iconName: "book.fill",
+            colorHex: "#5c89a8",
             targetDaysPerWeek: 4,
             activeDaysOfWeek: [.monday, .tuesday, .thursday, .sunday]
         )

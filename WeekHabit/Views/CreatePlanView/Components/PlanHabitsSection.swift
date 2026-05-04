@@ -51,11 +51,11 @@ private struct HabitSelectionRow: View {
             HStack(spacing: 12) {
                 ZStack {
                     Circle()
-                        .fill(habit.displayCategory.color.opacity(0.15))
+                        .fill(habit.habitColor.opacity(0.15))
                         .frame(width: 36, height: 36)
-                    Image(systemName: habit.displayCategory.icon)
+                    Image(systemName: habit.iconName)
                         .font(.system(size: 16))
-                        .foregroundStyle(habit.displayCategory.color)
+                        .foregroundStyle(habit.habitColor)
                 }
 
                 Text(habit.title)
