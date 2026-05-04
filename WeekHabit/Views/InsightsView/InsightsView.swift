@@ -37,8 +37,8 @@ struct InsightsView: View {
         experiments.activeHabitIDs(reference: referenceDate)
     }
 
-    private var suggestion: RhythmExperimentSuggestion? {
-        habits.rhythmExperimentSuggestion(
+    private var suggestions: [RankedRhythmSuggestion] {
+        habits.rhythmExperimentSuggestions(
             reference: referenceDate,
             excludingHabitIDs: activeExperimentIDs
         )
@@ -80,7 +80,7 @@ struct InsightsView: View {
                                 }
 
                                 RhythmExperimentCard(
-                                    suggestion: suggestion,
+                                    suggestions: suggestions,
                                     onStart: startExperiment
                                 )
 
@@ -216,31 +216,31 @@ struct InsightsView: View {
                 InsightSummaryCard(
                     icon: attention.habit.iconName,
                     iconColor: attention.habit.habitColor,
-                    title: "NECESITA ATENCIÓN",
+                    title: attention.failureType?.title.uppercased(with: Locale(identifier: "es_MX")) ?? "NECESITA ATENCIÓN",
                     value: attention.habit.title,
-                    detail: attention.detail,
+                    detail: attention.recommendation ?? attention.detail,
                     actionTitle: "Editar",
                     action: { editRoute = InsightsEditHabitRoute(habit: attention.habit) }
                 )
             }
 
-            if let bestDay = habits.bestWeekday(reference: referenceDate) {
+            if let bestDay = habits.contextualBestWeekday(reference: referenceDate) {
                 InsightSummaryCard(
                     icon: "calendar",
                     iconColor: AppColor.editAction,
                     title: "TU MEJOR DÍA",
-                    value: bestDay.weekday.displayName,
-                    detail: "\(Int((bestDay.ratio * 100).rounded()))% de cumplimiento promedio"
+                    value: bestDay.performance.weekday.displayName,
+                    detail: bestDay.contextText
                 )
             }
 
-            if let peakHour = habits.peakHour(reference: referenceDate) {
+            if let peakHour = habits.contextualPeakHour(reference: referenceDate) {
                 InsightSummaryCard(
                     icon: "clock",
                     iconColor: AppColor.highPurple,
                     title: "TU HORA PUNTA",
-                    value: peakHour.displayText,
-                    detail: "basada en \(peakHour.count) marcas reales"
+                    value: peakHour.window.displayText,
+                    detail: peakHour.contextText
                 )
             }
         }
