@@ -92,6 +92,8 @@ final class Habit {
     var targetValuePerSession: Double?
     var scheduleKindRaw: String?
     var endsAt: Date?
+    var isReminderEnabled: Bool = false
+    var reminderTime: Date? = nil
     var createdAt: Date
 
     @Relationship(deleteRule: .cascade)
@@ -153,6 +155,8 @@ final class Habit {
         targetValuePerSession: Double = 1,
         scheduleKind: HabitScheduleKind = .specificDays,
         endsAt: Date? = nil,
+        isReminderEnabled: Bool = false,
+        reminderTime: Date? = nil,
         createdAt: Date = .now
     ) {
         self.id = UUID()
@@ -169,6 +173,8 @@ final class Habit {
         self.targetValuePerSession = targetValuePerSession
         self.scheduleKindRaw = scheduleKind.rawValue
         self.endsAt = endsAt
+        self.isReminderEnabled = isReminderEnabled
+        self.reminderTime = reminderTime
         self.createdAt = createdAt
     }
 }
