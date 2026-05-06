@@ -24,6 +24,7 @@ struct CreateHabitView: View {
 
     @State private var habitName: String = ""
     @State private var note: String = ""
+    @State private var cue: String = ""
     @State private var selectedIconName: String = HabitAppearance.defaultIconName
     @State private var selectedColorHex: String = HabitAppearance.defaultColorHex
     @State private var trackingKind: HabitTrackingKind = .check
@@ -88,6 +89,7 @@ struct CreateHabitView: View {
 
         _habitName = State(initialValue: habitToEdit?.title ?? "")
         _note = State(initialValue: habitToEdit?.note ?? "")
+        _cue = State(initialValue: habitToEdit?.cue ?? "")
         _selectedIconName = State(initialValue: habitToEdit?.iconName ?? HabitAppearance.defaultIconName)
         _selectedColorHex = State(initialValue: habitToEdit?.colorHex ?? HabitAppearance.defaultColorHex)
         _trackingKind = State(initialValue: habitToEdit?.trackingKind ?? .check)
@@ -121,6 +123,7 @@ struct CreateHabitView: View {
                     HabitBasicInfoSection(
                         habitName: $habitName,
                         note: $note,
+                        cue: $cue,
                         selectedIconName: $selectedIconName,
                         selectedColorHex: $selectedColorHex
                     )
@@ -179,6 +182,7 @@ struct CreateHabitView: View {
 
         let trimmedName = habitName.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedNote = note.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedCue = cue.trimmingCharacters(in: .whitespacesAndNewlines)
         let normalizedTargetValue = trackingKind == .check ? 1 : parsedTargetValue
         let normalizedMeasurementUnit: HabitMeasurementUnit = trackingKind == .check ? .none : measurementUnit
         let normalizedEndsAt = hasEndDate ? AppCalendar.startOfDay(for: endsAt) : nil
@@ -195,6 +199,7 @@ struct CreateHabitView: View {
 
             habitToEdit.title = trimmedName
             habitToEdit.note = trimmedNote.isEmpty ? nil : trimmedNote
+            habitToEdit.cue = trimmedCue.isEmpty ? nil : trimmedCue
             habitToEdit.iconName = selectedIconName
             habitToEdit.colorHex = selectedColorHex
             habitToEdit.trackingKind = trackingKind
@@ -213,6 +218,7 @@ struct CreateHabitView: View {
             let habit = Habit(
                 title: trimmedName,
                 note: trimmedNote.isEmpty ? nil : trimmedNote,
+                cue: trimmedCue.isEmpty ? nil : trimmedCue,
                 iconName: selectedIconName,
                 colorHex: selectedColorHex,
                 targetDaysPerWeek: normalizedPlan.targetDaysPerWeek,

@@ -80,6 +80,7 @@ final class Habit {
     var id: UUID
     var title: String
     var note: String?
+    var cue: String?
     @Attribute(originalName: "category")
     var legacyArea: LegacyHabitArea?
     var iconNameRaw: String?
@@ -145,6 +146,7 @@ final class Habit {
     init(
         title: String,
         note: String? = nil,
+        cue: String? = nil,
         iconName: String = HabitAppearance.defaultIconName,
         colorHex: String = HabitAppearance.defaultColorHex,
         targetDaysPerWeek: Int,
@@ -162,6 +164,7 @@ final class Habit {
         self.id = UUID()
         self.title = title
         self.note = note
+        self.cue = cue
         self.legacyArea = nil
         self.iconNameRaw = iconName
         self.colorHexRaw = colorHex

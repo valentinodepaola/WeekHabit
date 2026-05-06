@@ -108,6 +108,7 @@ Entidad principal. Representa un hábito del usuario.
 | `id` | `UUID` | Identificador único |
 | `title` | `String` | Nombre del hábito |
 | `note` | `String?` | Nota opcional |
+| `cue` | `String?` | Señal contextual opcional para habit stacking |
 | `iconNameRaw` | `String?` | SF Symbol persistido para la apariencia del hábito |
 | `colorHexRaw` | `String?` | Color HEX persistido para la apariencia del hábito |
 | `targetDaysPerWeek` | `Int` | Meta de días por semana |
@@ -432,6 +433,7 @@ Formulario full-screen para crear un hábito nuevo o editar uno existente.
 - También puede recibir `initialDaysPerWeek` e `initialActiveDays` para flujos como "crear hábito para hoy"
 - El `init` pre-rellena los `@State` locales
 - `isSaveDisabled` bloquea guardar si falta nombre, meta o si días seleccionados no coincide con meta
+- Incluye campo opcional `Después de...` para guardar el cue visible en Today y Detalle
 - `onChange(of: daysPerWeek)` llama a `trimSelectedDays(to:)`
 - Al editar un hábito con experimento activo, el experimento se cancela antes de guardar cambios manuales
 
