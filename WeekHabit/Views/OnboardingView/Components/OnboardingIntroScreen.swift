@@ -39,7 +39,7 @@ struct OnboardingIntroScreen: View {
                 .padding(.horizontal, 28)
                 .padding(.bottom, 22)
 
-            Button("Ya tengo una cuenta", action: onSkip)
+            Button("Saltar introducción", action: onSkip)
                 .font(AppFont.captionApp)
                 .foregroundStyle(AppColor.subtleText)
                 .padding(.bottom, 32)

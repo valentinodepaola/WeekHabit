@@ -17,7 +17,7 @@ struct HabitPlansSection: View {
     var body: some View {
         CreateHabitFormSection(title: "Planes") {
             if activePlans.isEmpty {
-                Text("No tienes planes activos. Puedes crear uno desde la pantalla de Hábitos.")
+                Text("No tienes planes activos. Puedes crear uno desde el botón + de Hoy.")
                     .font(AppFont.body2)
                     .foregroundStyle(AppColor.subtleText)
                     .multilineTextAlignment(.leading)

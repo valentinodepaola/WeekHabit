@@ -42,7 +42,7 @@ struct TextFieldComponent: View {
 #Preview {
     TextFieldComponent(
         titleSection: "Nombre",
-        placeholder: "Ingresa el nombre del habito",
+        placeholder: "Ingresa el nombre del hábito",
         habitName: .constant(""),
         normalTextField: true
     )

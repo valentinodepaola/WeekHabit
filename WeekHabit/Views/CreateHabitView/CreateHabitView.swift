@@ -115,7 +115,7 @@ struct CreateHabitView: View {
                 )
 
                 VStack(alignment: .leading, spacing: 25) {
-                    Text(isEditing ? "Editar habito" : "Nuevo habito")
+                    Text(isEditing ? "Editar hábito" : "Nuevo hábito")
                         .font(AppFont.title)
                         .foregroundStyle(AppColor.strongText)
                         .padding(.bottom, 8)
