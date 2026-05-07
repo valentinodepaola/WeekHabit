@@ -11,6 +11,7 @@ struct InsightSummaryCard: View {
     let title: String
     let value: String
     let detail: String
+    var isProvisional: Bool = false
     var actionTitle: String?
     var action: (() -> Void)?
 
@@ -27,11 +28,17 @@ struct InsightSummaryCard: View {
             }
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(AppFont.formSectionText)
-                    .foregroundStyle(AppColor.mutedText)
-                    .tracking(1.2)
-                    .lineLimit(1)
+                HStack(spacing: 8) {
+                    Text(title)
+                        .font(AppFont.formSectionText)
+                        .foregroundStyle(AppColor.mutedText)
+                        .tracking(1.2)
+                        .lineLimit(1)
+
+                    if isProvisional {
+                        InsightProvisionalBadge()
+                    }
+                }
 
                 Text(value)
                     .font(AppFont.subtitle3)

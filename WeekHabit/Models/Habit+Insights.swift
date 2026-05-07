@@ -31,16 +31,30 @@ struct GlobalInsightSnapshot {
 
 struct InsightReadiness {
     static let defaultRequiredDays = 5
+    static let defaultStableDays = 21
 
     let elapsedDays: Int
     let requiredDays: Int
+    let stableDays: Int
 
     var isReady: Bool {
         elapsedDays >= requiredDays
     }
 
+    var isStable: Bool {
+        elapsedDays >= stableDays
+    }
+
+    var isProvisional: Bool {
+        isReady && !isStable
+    }
+
     var remainingDays: Int {
         max(0, requiredDays - elapsedDays)
+    }
+
+    var remainingStableDays: Int {
+        max(0, stableDays - elapsedDays)
     }
 
     var progress: Double {
@@ -261,6 +275,7 @@ struct ContextualWeekdayInsight: Identifiable {
 extension Habit {
     func insightReadiness(
         requiredDays: Int = InsightReadiness.defaultRequiredDays,
+        stableDays: Int = InsightReadiness.defaultStableDays,
         reference: Date = .now
     ) -> InsightReadiness {
         let referenceDay = AppCalendar.startOfDay(for: reference)
@@ -269,7 +284,8 @@ extension Habit {
 
         return InsightReadiness(
             elapsedDays: max(0, elapsedDays),
-            requiredDays: requiredDays
+            requiredDays: requiredDays,
+            stableDays: stableDays
         )
     }
 
@@ -452,6 +468,7 @@ extension Habit {
 extension Sequence where Element == Habit {
     func insightReadiness(
         requiredDays: Int = InsightReadiness.defaultRequiredDays,
+        stableDays: Int = InsightReadiness.defaultStableDays,
         reference: Date = .now
     ) -> InsightReadiness {
         let referenceDay = AppCalendar.startOfDay(for: reference)
@@ -462,7 +479,8 @@ extension Sequence where Element == Habit {
 
         return InsightReadiness(
             elapsedDays: Swift.max(0, elapsedDays),
-            requiredDays: requiredDays
+            requiredDays: requiredDays,
+            stableDays: stableDays
         )
     }
 
