@@ -134,11 +134,17 @@ struct TodayHabitComponent: View {
                 .monospacedDigit()
         }
         .foregroundStyle(streakColor)
-        .accessibilityLabel("Racha \(streakCount)")
+        .accessibilityLabel(streakAccessibilityLabel)
     }
 
     private var streakCount: Int {
         habit.displayStreak(reference: referenceDate)
+    }
+
+    private var streakAccessibilityLabel: String {
+        streakCount == 0
+            ? "Listo para volver a empezar"
+            : "\(streakCount) días seguidos"
     }
 
     private var streakColor: Color {

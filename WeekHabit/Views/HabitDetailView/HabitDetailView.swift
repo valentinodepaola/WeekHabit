@@ -75,7 +75,7 @@ struct HabitDetailView: View {
                         )
 
                         StatTileView(
-                            caption: "MEJOR RACHA",
+                            caption: "REFERENCIA",
                             value: "\(bestStreak)",
                             footer: bestStreakFooter
                         )
@@ -149,14 +149,14 @@ struct HabitDetailView: View {
 
     private var bestStreakFooter: String {
         if bestStreak == 0 {
-            return "aún sin récord"
+            return "lista para empezar"
         }
 
         if currentStreak == bestStreak {
-            return "hoy = récord"
+            return "la estás construyendo hoy"
         }
 
-        return "tu mejor marca"
+        return "tu marca para volver"
     }
 
     private var detailSummary: String {

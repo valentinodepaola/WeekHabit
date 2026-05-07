@@ -542,11 +542,11 @@ extension Sequence where Element == Habit {
 
             switch failureType {
             case .manualOnly:
-                recommendation = "Se está haciendo, pero se registra después. Conviene facilitar la marca en el momento."
+                recommendation = "Se está haciendo; hagamos más fácil marcarlo en el momento."
             case .notDone:
-                recommendation = "Conviene reducir fricción: menos días, mejor horario o un recordatorio distinto."
+                recommendation = "Bajemos la fricción: menos días, mejor horario o un recordatorio más amable."
             case nil:
-                recommendation = "Revisa si el horario actual sigue funcionando."
+                recommendation = "Revisa si este ritmo todavía te acompaña."
             }
 
             return HabitInsightSummary(

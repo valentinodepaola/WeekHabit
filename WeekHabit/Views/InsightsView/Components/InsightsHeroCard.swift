@@ -41,7 +41,7 @@ struct InsightsHeroCard: View {
         }
 
         if snapshot.deltaPercentagePoints < 0 {
-            return "Tu ritmo bajó un poco frente al periodo anterior."
+            return "Tu ritmo cambió frente al periodo anterior."
         }
 
         return "Te mantuviste estable frente al periodo anterior."
@@ -53,7 +53,7 @@ struct InsightsHeroCard: View {
         }
 
         if snapshot.current.scheduled == 0 { return "Empieza suave." }
-        return snapshot.deltaPercentagePoints >= 0 ? "Sigue así." : "Ajustemos el plan."
+        return snapshot.deltaPercentagePoints >= 0 ? "Sigue así." : "Volvamos con un paso pequeño."
     }
 
     var body: some View {
