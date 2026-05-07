@@ -208,7 +208,8 @@ struct InsightsView: View {
                     iconColor: AppColor.highPurple,
                     title: "EL MÁS CONSISTENTE",
                     value: top.habit.title,
-                    detail: top.detail
+                    detail: top.detail,
+                    isProvisional: top.habit.insightReadiness(reference: referenceDate).isProvisional
                 )
             }
 
@@ -219,6 +220,7 @@ struct InsightsView: View {
                     title: attention.failureType?.title.uppercased(with: Locale(identifier: "es_MX")) ?? "NECESITA ATENCIÓN",
                     value: attention.habit.title,
                     detail: attention.recommendation ?? attention.detail,
+                    isProvisional: attention.habit.insightReadiness(reference: referenceDate).isProvisional,
                     actionTitle: "Editar",
                     action: { editRoute = InsightsEditHabitRoute(habit: attention.habit) }
                 )
@@ -230,7 +232,8 @@ struct InsightsView: View {
                     iconColor: AppColor.editAction,
                     title: "TU MEJOR DÍA",
                     value: bestDay.performance.weekday.displayName,
-                    detail: bestDay.contextText
+                    detail: bestDay.contextText,
+                    isProvisional: readiness.isProvisional
                 )
             }
 
@@ -240,7 +243,8 @@ struct InsightsView: View {
                     iconColor: AppColor.highPurple,
                     title: "TU HORA PUNTA",
                     value: peakHour.window.displayText,
-                    detail: peakHour.contextText
+                    detail: peakHour.contextText,
+                    isProvisional: readiness.isProvisional
                 )
             }
         }

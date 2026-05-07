@@ -404,9 +404,14 @@ struct TodayView: View {
 
     private func deleteSelectedHabit() {
         guard let habitToDelete else { return }
+        let habitID = habitToDelete.id
 
         withAnimation(.easeInOut(duration: 0.2)) {
             modelContext.delete(habitToDelete)
+        }
+
+        Task {
+            await HabitReminderService.cancelReminder(forHabitID: habitID)
         }
 
         self.habitToDelete = nil

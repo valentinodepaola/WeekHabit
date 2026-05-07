@@ -21,7 +21,7 @@ struct CurrentStreakHeroCard: View {
                 .offset(x: 22, y: 10)
 
             VStack(alignment: .leading, spacing: 14) {
-                Text("RACHA ACTUAL")
+                Text("CONSTANCIA ACTUAL")
                     .font(AppFont.formSectionText2)
                     .fontWeight(.semibold)
 
@@ -48,14 +48,14 @@ struct CurrentStreakHeroCard: View {
 
     private var flavorText: String {
         if currentStreak == 0 {
-            return "Empieza hoy para arrancar tu racha."
+            return "Hoy también cuenta. Vuelve con una marca pequeña."
         }
 
         if currentStreak == bestStreak {
-            return "Tu mejor marca hasta ahora · nunca lo habías logrado."
+            return "Estás construyendo una referencia nueva, día a día."
         }
 
-        return "Sigue así para alcanzar tu récord de \(bestStreak) días."
+        return "Cada día que vuelves cuenta. Tu referencia: \(bestStreak) días."
     }
 }
 

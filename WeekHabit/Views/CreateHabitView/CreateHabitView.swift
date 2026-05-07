@@ -8,11 +8,13 @@
 import SwiftUI
 import SwiftData
 import Foundation
+import UserNotifications
 
 struct CreateHabitView: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.scenePhase) private var scenePhase
 
     @Query(sort: \HabitExperiment.startedAt, order: .reverse)
     private var experiments: [HabitExperiment]
@@ -22,6 +24,7 @@ struct CreateHabitView: View {
 
     @State private var habitName: String = ""
     @State private var note: String = ""
+    @State private var cue: String = ""
     @State private var selectedIconName: String = HabitAppearance.defaultIconName
     @State private var selectedColorHex: String = HabitAppearance.defaultColorHex
     @State private var trackingKind: HabitTrackingKind = .check
@@ -32,6 +35,9 @@ struct CreateHabitView: View {
     @State private var selectedActiveDays: Set<Weekday> = []
     @State private var hasEndDate: Bool = false
     @State private var endsAt: Date = .now
+    @State private var isReminderEnabled: Bool = false
+    @State private var reminderTime: Date = Self.defaultReminderTime()
+    @State private var notificationAuthorizationStatus: UNAuthorizationStatus = .notDetermined
     @State private var selectedPlans: Set<UUID> = []
 
     private let habitToEdit: Habit?
@@ -83,6 +89,7 @@ struct CreateHabitView: View {
 
         _habitName = State(initialValue: habitToEdit?.title ?? "")
         _note = State(initialValue: habitToEdit?.note ?? "")
+        _cue = State(initialValue: habitToEdit?.cue ?? "")
         _selectedIconName = State(initialValue: habitToEdit?.iconName ?? HabitAppearance.defaultIconName)
         _selectedColorHex = State(initialValue: habitToEdit?.colorHex ?? HabitAppearance.defaultColorHex)
         _trackingKind = State(initialValue: habitToEdit?.trackingKind ?? .check)
@@ -93,6 +100,8 @@ struct CreateHabitView: View {
         _selectedActiveDays = State(initialValue: habitToEdit?.activeDaysOfWeek ?? initialActiveDays)
         _hasEndDate = State(initialValue: habitToEdit?.endsAt != nil)
         _endsAt = State(initialValue: habitToEdit?.endsAt ?? .now)
+        _isReminderEnabled = State(initialValue: habitToEdit?.isReminderEnabled ?? false)
+        _reminderTime = State(initialValue: habitToEdit?.reminderTime ?? Self.defaultReminderTime())
         _selectedPlans = State(initialValue: Set(habitToEdit?.plans.map(\.id) ?? []))
     }
 
@@ -106,7 +115,7 @@ struct CreateHabitView: View {
                 )
 
                 VStack(alignment: .leading, spacing: 25) {
-                    Text(isEditing ? "Editar habito" : "Nuevo habito")
+                    Text(isEditing ? "Editar hábito" : "Nuevo hábito")
                         .font(AppFont.title)
                         .foregroundStyle(AppColor.strongText)
                         .padding(.bottom, 8)
@@ -114,6 +123,7 @@ struct CreateHabitView: View {
                     HabitBasicInfoSection(
                         habitName: $habitName,
                         note: $note,
+                        cue: $cue,
                         selectedIconName: $selectedIconName,
                         selectedColorHex: $selectedColorHex
                     )
@@ -135,6 +145,12 @@ struct CreateHabitView: View {
                         endsAt: $endsAt
                     )
 
+                    HabitReminderSection(
+                        isReminderEnabled: $isReminderEnabled,
+                        reminderTime: $reminderTime,
+                        authorizationStatus: notificationAuthorizationStatus
+                    )
+
                     HabitPlansSection(selectedPlans: $selectedPlans)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -147,6 +163,16 @@ struct CreateHabitView: View {
                         measurementUnit = .minutes
                     }
                 }
+                .task {
+                    await refreshNotificationAuthorizationStatus()
+                }
+                .onChange(of: scenePhase) { _, newValue in
+                    if newValue == .active {
+                        Task {
+                            await refreshNotificationAuthorizationStatus()
+                        }
+                    }
+                }
             }
         }
     }
@@ -156,12 +182,15 @@ struct CreateHabitView: View {
 
         let trimmedName = habitName.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedNote = note.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedCue = cue.trimmingCharacters(in: .whitespacesAndNewlines)
         let normalizedTargetValue = trackingKind == .check ? 1 : parsedTargetValue
         let normalizedMeasurementUnit: HabitMeasurementUnit = trackingKind == .check ? .none : measurementUnit
         let normalizedEndsAt = hasEndDate ? AppCalendar.startOfDay(for: endsAt) : nil
         let normalizedPlan = normalizedSchedulePlan()
+        let normalizedReminderEnabled = isReminderEnabled && notificationAuthorizationStatus.allowsReminderScheduling
 
         let linkedPlans = allPlans.filter { selectedPlans.contains($0.id) }
+        let savedHabit: Habit
 
         if let habitToEdit {
             if let activeExperiment = experiments.activeExperiment(for: habitToEdit.id) {
@@ -170,6 +199,7 @@ struct CreateHabitView: View {
 
             habitToEdit.title = trimmedName
             habitToEdit.note = trimmedNote.isEmpty ? nil : trimmedNote
+            habitToEdit.cue = trimmedCue.isEmpty ? nil : trimmedCue
             habitToEdit.iconName = selectedIconName
             habitToEdit.colorHex = selectedColorHex
             habitToEdit.trackingKind = trackingKind
@@ -180,11 +210,15 @@ struct CreateHabitView: View {
             habitToEdit.targetDaysPerWeek = normalizedPlan.targetDaysPerWeek
             habitToEdit.activeDaysOfWeek = normalizedPlan.activeDays
             habitToEdit.endsAt = normalizedEndsAt
+            habitToEdit.isReminderEnabled = normalizedReminderEnabled
+            habitToEdit.reminderTime = normalizedReminderEnabled ? reminderTime : nil
             habitToEdit.plans = linkedPlans
+            savedHabit = habitToEdit
         } else {
             let habit = Habit(
                 title: trimmedName,
                 note: trimmedNote.isEmpty ? nil : trimmedNote,
+                cue: trimmedCue.isEmpty ? nil : trimmedCue,
                 iconName: selectedIconName,
                 colorHex: selectedColorHex,
                 targetDaysPerWeek: normalizedPlan.targetDaysPerWeek,
@@ -194,10 +228,17 @@ struct CreateHabitView: View {
                 customUnitName: nil,
                 targetValuePerSession: normalizedTargetValue,
                 scheduleKind: scheduleKind,
-                endsAt: normalizedEndsAt
+                endsAt: normalizedEndsAt,
+                isReminderEnabled: normalizedReminderEnabled,
+                reminderTime: normalizedReminderEnabled ? reminderTime : nil
             )
             modelContext.insert(habit)
             habit.plans = linkedPlans
+            savedHabit = habit
+        }
+
+        Task {
+            await HabitReminderService.refreshReminder(for: savedHabit)
         }
 
         dismiss()
@@ -216,6 +257,24 @@ struct CreateHabitView: View {
 
     private static func normalizedInitialUnit(_ unit: HabitMeasurementUnit) -> HabitMeasurementUnit {
         unit == .custom ? .minutes : unit
+    }
+
+    private func refreshNotificationAuthorizationStatus() async {
+        let status = await HabitReminderService.authorizationStatus()
+        notificationAuthorizationStatus = status
+
+        if !status.allowsReminderScheduling {
+            isReminderEnabled = false
+        }
+    }
+
+    private static func defaultReminderTime() -> Date {
+        AppCalendar.current.date(
+            bySettingHour: 9,
+            minute: 0,
+            second: 0,
+            of: .now
+        ) ?? .now
     }
 }
 

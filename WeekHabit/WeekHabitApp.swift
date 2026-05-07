@@ -11,7 +11,7 @@ import SwiftData
 @main
 struct WeekHabitApp: App {
     let container: ModelContainer = {
-        let schema = Schema(versionedSchema: SchemaV6.self)
+        let schema = Schema(versionedSchema: SchemaV7.self)
         let config = ModelConfiguration(schema: schema)
         do {
             return try ModelContainer(
@@ -36,14 +36,35 @@ struct WeekHabitApp: App {
 
 private struct RootView: View {
     @AppStorage("hasCompletedAppOnboarding") private var hasCompletedAppOnboarding = false
+    @Environment(\.scenePhase) private var scenePhase
+
+    @Query(sort: \Habit.createdAt, order: .reverse)
+    private var habits: [Habit]
 
     var body: some View {
-        if hasCompletedAppOnboarding {
-            ContentView()
-        } else {
-            OnboardingView {
-                hasCompletedAppOnboarding = true
+        Group {
+            if hasCompletedAppOnboarding {
+                ContentView()
+            } else {
+                OnboardingView {
+                    hasCompletedAppOnboarding = true
+                }
             }
         }
+        .task {
+            await refreshHabitRemindersIfNeeded()
+        }
+        .onChange(of: scenePhase) { _, newValue in
+            if newValue == .active {
+                Task {
+                    await refreshHabitRemindersIfNeeded()
+                }
+            }
+        }
+    }
+
+    private func refreshHabitRemindersIfNeeded() async {
+        guard hasCompletedAppOnboarding else { return }
+        await HabitReminderService.refreshAllReminders(for: habits)
     }
 }

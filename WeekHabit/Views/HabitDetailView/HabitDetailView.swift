@@ -24,6 +24,15 @@ struct HabitDetailView: View {
         return note
     }
 
+    private var trimmedCue: String? {
+        guard let cue = habit.cue?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !cue.isEmpty else {
+            return nil
+        }
+
+        return cue
+    }
+
     private var currentStreak: Int {
         habit.currentStreak()
     }
@@ -66,7 +75,7 @@ struct HabitDetailView: View {
                         )
 
                         StatTileView(
-                            caption: "MEJOR RACHA",
+                            caption: "REFERENCIA",
                             value: "\(bestStreak)",
                             footer: bestStreakFooter
                         )
@@ -113,6 +122,10 @@ struct HabitDetailView: View {
                 .foregroundStyle(AppColor.strongText)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
+            if let trimmedCue {
+                cueLine(trimmedCue)
+            }
+
             if let trimmedNote {
                 Text(trimmedNote)
                     .font(AppFont.body2)
@@ -136,14 +149,14 @@ struct HabitDetailView: View {
 
     private var bestStreakFooter: String {
         if bestStreak == 0 {
-            return "aún sin récord"
+            return "lista para empezar"
         }
 
         if currentStreak == bestStreak {
-            return "hoy = récord"
+            return "la estás construyendo hoy"
         }
 
-        return "tu mejor marca"
+        return "tu marca para volver"
     }
 
     private var detailSummary: String {
@@ -152,6 +165,20 @@ struct HabitDetailView: View {
         }
 
         return habit.scheduleSummaryText
+    }
+
+    private func cueLine(_ cue: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 7) {
+            Image(systemName: "arrow.turn.down.right")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(habit.habitColor)
+
+            Text(cue)
+                .font(AppFont.body2)
+                .foregroundStyle(AppColor.mutedText)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
@@ -168,6 +195,7 @@ private struct DetailEditHabitRoute: Identifiable {
         habit: Habit(
             title: "Leer 20 páginas",
             note: "Antes de dormir, sin celular cerca.",
+            cue: "Después de lavarme los dientes",
             iconName: "book.fill",
             colorHex: "#5c89a8",
             targetDaysPerWeek: 4,

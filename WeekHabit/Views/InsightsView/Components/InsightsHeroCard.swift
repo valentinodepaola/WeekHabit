@@ -28,6 +28,10 @@ struct InsightsHeroCard: View {
             return "La gráfica ya reacciona a tus marcas, pero todavía estoy juntando contexto."
         }
 
+        if let readiness, readiness.isProvisional {
+            return "La señal ya es útil, pero todavía puede moverse con pocos datos."
+        }
+
         guard snapshot.current.scheduled > 0 else {
             return "Marca algunos hábitos para empezar a leer tu ritmo."
         }
@@ -41,7 +45,7 @@ struct InsightsHeroCard: View {
         }
 
         if snapshot.deltaPercentagePoints < 0 {
-            return "Tu ritmo bajó un poco frente al periodo anterior."
+            return "Tu ritmo cambió frente al periodo anterior."
         }
 
         return "Te mantuviste estable frente al periodo anterior."
@@ -53,15 +57,22 @@ struct InsightsHeroCard: View {
         }
 
         if snapshot.current.scheduled == 0 { return "Empieza suave." }
-        return snapshot.deltaPercentagePoints >= 0 ? "Sigue así." : "Ajustemos el plan."
+        return snapshot.deltaPercentagePoints >= 0 ? "Sigue así." : "Volvamos con un paso pequeño."
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            Text("CONSISTENCIA GLOBAL")
-                .font(AppFont.formSectionText)
-                .foregroundStyle(AppColor.mutedText)
-                .tracking(1.6)
+            HStack(spacing: 8) {
+                Text("CONSISTENCIA GLOBAL")
+                    .font(AppFont.formSectionText)
+                    .foregroundStyle(AppColor.mutedText)
+                    .tracking(1.6)
+                    .lineLimit(1)
+
+                if readiness?.isProvisional == true {
+                    InsightProvisionalBadge()
+                }
+            }
 
             HStack(alignment: .firstTextBaseline, spacing: 10) {
                 Text(consistencyText)
@@ -96,6 +107,11 @@ struct InsightsHeroCard: View {
 
             InsightsTrendBars(values: snapshot.trend)
                 .padding(.top, 6)
+
+            Text("Cada barra resume una parte de los últimos 30 días; más alta significa más cumplimiento.")
+                .font(AppFont.captionApp)
+                .foregroundStyle(AppColor.subtleText)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(24)

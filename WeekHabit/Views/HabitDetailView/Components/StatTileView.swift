@@ -40,7 +40,7 @@ struct StatTileView: View {
 #Preview {
     HStack {
         StatTileView(caption: "ESTA SEMANA", value: "3/5", footer: "60% de meta")
-        StatTileView(caption: "MEJOR RACHA", value: "8", footer: "tu mejor marca")
+        StatTileView(caption: "REFERENCIA", value: "8", footer: "tu marca para volver")
     }
     .padding()
     .background(AppColor.bgLight)

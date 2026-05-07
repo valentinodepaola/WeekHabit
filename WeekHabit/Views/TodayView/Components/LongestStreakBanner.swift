@@ -14,13 +14,13 @@ struct LongestStreakBanner: View {
     var allSameStreak: Bool = false
     
     private var caption: String {
-        allSameStreak ? "¡TODOS EN RACHA!" : "RACHA MÁS LARGA"
+        allSameStreak ? "TODOS VOLVIENDO" : "IMPULSO ACTUAL"
     }
     
     private var titleText: String {
         allSameStreak
-            ? "Todos tus hábitos · \(streakDays) días 🔥"
-            : "\(habitTitle) · \(streakDays) días 🔥"
+            ? "Todos tus hábitos · \(streakDays) días volviendo"
+            : "\(habitTitle) · \(streakDays) días volviendo"
     }
     
     var body: some View {

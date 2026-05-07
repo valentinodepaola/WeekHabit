@@ -80,6 +80,7 @@ final class Habit {
     var id: UUID
     var title: String
     var note: String?
+    var cue: String?
     @Attribute(originalName: "category")
     var legacyArea: LegacyHabitArea?
     var iconNameRaw: String?
@@ -92,6 +93,8 @@ final class Habit {
     var targetValuePerSession: Double?
     var scheduleKindRaw: String?
     var endsAt: Date?
+    var isReminderEnabled: Bool = false
+    var reminderTime: Date? = nil
     var createdAt: Date
 
     @Relationship(deleteRule: .cascade)
@@ -143,6 +146,7 @@ final class Habit {
     init(
         title: String,
         note: String? = nil,
+        cue: String? = nil,
         iconName: String = HabitAppearance.defaultIconName,
         colorHex: String = HabitAppearance.defaultColorHex,
         targetDaysPerWeek: Int,
@@ -153,11 +157,14 @@ final class Habit {
         targetValuePerSession: Double = 1,
         scheduleKind: HabitScheduleKind = .specificDays,
         endsAt: Date? = nil,
+        isReminderEnabled: Bool = false,
+        reminderTime: Date? = nil,
         createdAt: Date = .now
     ) {
         self.id = UUID()
         self.title = title
         self.note = note
+        self.cue = cue
         self.legacyArea = nil
         self.iconNameRaw = iconName
         self.colorHexRaw = colorHex
@@ -169,6 +176,8 @@ final class Habit {
         self.targetValuePerSession = targetValuePerSession
         self.scheduleKindRaw = scheduleKind.rawValue
         self.endsAt = endsAt
+        self.isReminderEnabled = isReminderEnabled
+        self.reminderTime = reminderTime
         self.createdAt = createdAt
     }
 }

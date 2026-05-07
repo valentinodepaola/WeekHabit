@@ -212,12 +212,13 @@ private struct PlanHabitRow: View {
                         HStack(spacing: 4) {
                             Image(systemName: "flame.fill")
                                 .font(.system(size: 10, weight: .semibold))
-                            Text("\(habit.currentStreak())")
+                            Text("\(streakCount)")
                                 .font(AppFont.formSectionText2)
                                 .fontWeight(.medium)
                                 .monospacedDigit()
                         }
                         .foregroundStyle(color)
+                        .accessibilityLabel(streakAccessibilityLabel)
                     }
 
                     HStack(spacing: 10) {
@@ -246,6 +247,14 @@ private struct PlanHabitRow: View {
         }
 
         return status
+    }
+
+    private var streakCount: Int {
+        habit.currentStreak()
+    }
+
+    private var streakAccessibilityLabel: String {
+        streakCount == 0 ? "Listo para volver" : "\(streakCount) días seguidos"
     }
 }
 

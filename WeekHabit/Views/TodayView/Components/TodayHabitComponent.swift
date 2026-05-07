@@ -15,7 +15,7 @@ struct TodayHabitComponent: View {
     let onToggle: () -> Void
     
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(alignment: .top, spacing: 12) {
             IconComponent(
                 icon: habit.iconName,
                 color: habit.habitColor
@@ -27,37 +27,52 @@ struct TodayHabitComponent: View {
                     .fontWeight(.semibold)
                     .foregroundStyle(AppColor.strongText)
                     .lineLimit(1)
-                
-                Text(subtitle)
-                    .font(AppFont.formSectionText2)
-                    .foregroundStyle(AppColor.mutedText)
-                    .lineLimit(1)
+
+                if let trimmedCue {
+                    cueLine(trimmedCue)
+                }
+
+                if let experimentSubtitle {
+                    Text(experimentSubtitle)
+                        .font(AppFont.formSectionText2)
+                        .foregroundStyle(AppColor.mutedText)
+                        .lineLimit(1)
+                } else if shouldShowScheduleFallback {
+                    Text(scheduleFallbackText)
+                        .font(AppFont.formSectionText2)
+                        .foregroundStyle(AppColor.mutedText)
+                        .lineLimit(1)
+                }
             }
             
             Spacer()
-            
-            Button {
-                self.onToggle()
-            } label: {
-                ZStack {
-                    Circle()
-                        .fill(self.isCompleted ? AppColor.accent : AppColor.surface)
-                        .frame(width: 35, height: 35)
-                        .overlay {
-                            Circle()
-                                .stroke(
-                                    self.isCompleted ? AppColor.accent : AppColor.subtleText.opacity(0.18),
-                                    lineWidth: 1
-                                )
+
+            VStack(alignment: .trailing, spacing: 8) {
+                streakIndicator
+
+                Button {
+                    self.onToggle()
+                } label: {
+                    ZStack {
+                        Circle()
+                            .fill(self.isCompleted ? AppColor.accent : AppColor.surface)
+                            .frame(width: 35, height: 35)
+                            .overlay {
+                                Circle()
+                                    .stroke(
+                                        self.isCompleted ? AppColor.accent : AppColor.subtleText.opacity(0.18),
+                                        lineWidth: 1
+                                    )
+                            }
+                        if self.isCompleted {
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundStyle(.white)
                         }
-                    if self.isCompleted {
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 13, weight: .bold))
-                            .foregroundStyle(.white)
                     }
                 }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
@@ -65,14 +80,79 @@ struct TodayHabitComponent: View {
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
-    private var subtitle: String {
-        guard let activeExperiment else {
-            if habit.trackingKind == .quantity {
-                return "\(habit.targetPerSessionText) · \(habit.scheduleSummaryText)"
-            }
+    private func cueLine(_ cue: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 5) {
+            Image(systemName: "arrow.turn.down.right")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(habit.habitColor)
 
-            return "\(habit.scheduleSummaryText) · racha \(habit.displayStreak())d"
+            Text(cue)
+                .font(AppFont.formSectionText2)
+                .foregroundStyle(AppColor.mutedText)
+                .lineLimit(2)
         }
+        .padding(.top, 1)
+    }
+
+    private var trimmedCue: String? {
+        guard let cue = habit.cue?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !cue.isEmpty else {
+            return nil
+        }
+
+        return cue
+    }
+
+    private var trimmedNote: String? {
+        guard let note = habit.note?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !note.isEmpty else {
+            return nil
+        }
+
+        return note
+    }
+
+    private var shouldShowScheduleFallback: Bool {
+        trimmedCue == nil
+    }
+
+    private var scheduleFallbackText: String {
+        if habit.trackingKind == .quantity {
+            return habit.targetPerSessionText
+        }
+
+        return "Diario"
+    }
+
+    private var streakIndicator: some View {
+        HStack(spacing: 4) {
+            Image(systemName: "flame.fill")
+                .font(.system(size: 12, weight: .semibold))
+
+            Text("\(streakCount)")
+                .font(AppFont.formSectionText)
+                .monospacedDigit()
+        }
+        .foregroundStyle(streakColor)
+        .accessibilityLabel(streakAccessibilityLabel)
+    }
+
+    private var streakCount: Int {
+        habit.displayStreak(reference: referenceDate)
+    }
+
+    private var streakAccessibilityLabel: String {
+        streakCount == 0
+            ? "Listo para volver a empezar"
+            : "\(streakCount) días seguidos"
+    }
+
+    private var streakColor: Color {
+        streakCount > 0 ? .orange : AppColor.subtleText
+    }
+
+    private var experimentSubtitle: String? {
+        guard let activeExperiment else { return nil }
 
         if activeExperiment.needsReview(reference: referenceDate) {
             return "Prueba lista para revisar en Insights"
@@ -91,6 +171,7 @@ struct TodayHabitComponent: View {
     TodayHabitComponent(
         habit: Habit(
             title: "Tender cama",
+            cue: "Después de servirme el café de la mañana",
             iconName: "sparkles",
             colorHex: "#c89046",
             targetDaysPerWeek: 3,
