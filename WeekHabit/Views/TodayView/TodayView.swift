@@ -53,27 +53,6 @@ struct TodayView: View {
             .uppercased(with: locale)
     }
 
-    private var contextualGreeting: String {
-        let hour = AppCalendar.current.component(.hour, from: referenceDate)
-        switch hour {
-        case 5..<12: return "Buenos días"
-        case 12..<19: return "Buenas tardes"
-        default: return "Buenas noches"
-        }
-    }
-
-    private var contextualSubtitle: String {
-        let today = todayHabits.count
-        let tomorrow = tomorrowHabitsCount
-
-        switch (today, tomorrow) {
-        case (0, 0): return "Una semana en blanco. Hoy puedes diseñar."
-        case (0, _): return "Hoy descansas. Mañana \(tomorrow == 1 ? "te espera 1." : "te esperan \(tomorrow).")"
-        case (_, 0): return "Hoy son \(today). Mañana descansas."
-        default: return "Hoy son \(today). Mañana \(tomorrow)."
-        }
-    }
-
     private var todayHabits: [Habit] {
         habits.filter { $0.isLoggable(on: referenceDate) }
     }
@@ -158,14 +137,9 @@ struct TodayView: View {
                     .foregroundStyle(AppColor.textTertiary)
                     .tracking(0.6)
 
-                Text(contextualGreeting)
-                    .font(AppFont.title)
+                Text("Hoy")
+                    .font(AppFont.title.bold())
                     .foregroundStyle(AppColor.textPrimary)
-
-                Text(contextualSubtitle)
-                    .font(AppFont.callout)
-                    .foregroundStyle(AppColor.textSecondary)
-                    .padding(.top, 2)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
