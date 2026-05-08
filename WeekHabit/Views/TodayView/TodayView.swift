@@ -8,6 +8,7 @@ import SwiftData
 
 struct TodayView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @Query(sort: \Habit.createdAt, order: .reverse)
     private var habits: [Habit]
@@ -26,6 +27,8 @@ struct TodayView: View {
     @State private var planToDelete: Plan?
     @State private var showDeletePlanAlert = false
     @State private var expandedPlans: Set<UUID> = []
+    @State private var outgoingHabitIDs: Set<UUID> = []
+    @State private var incomingHabitIDs: Set<UUID> = []
 
     private var referenceDate: Date { Date() }
 
@@ -55,6 +58,14 @@ struct TodayView: View {
 
     private var todayHabits: [Habit] {
         habits.filter { $0.isLoggable(on: referenceDate) }
+    }
+
+    private var pendingHabits: [Habit] {
+        todayHabits.filter { !isCompleteForTodayList($0) }
+    }
+
+    private var completedHabits: [Habit] {
+        todayHabits.filter { isCompleteForTodayList($0) }
     }
 
     private var tomorrowDate: Date {
@@ -176,35 +187,15 @@ struct TodayView: View {
 
     @ViewBuilder
     private var todayHabitsContent: some View {
-        DailyProgressCard(
-            progress: dailyProgress,
-            completedCount: completedTodayCount,
-            totalCount: todayHabits.count,
-            remainingCount: remainingTodayCount
-        )
-        .todayListRow()
+        sectionHeader(title: "Pendientes", count: pendingHabits.count)
+            .todayListRow(
+                EdgeInsets(top: AppSpacing.s, leading: AppSpacing.l, bottom: 0, trailing: AppSpacing.l)
+            )
 
-        FocusSessionLauncherCard(
-            remainingCount: remainingTodayCount,
-            onStart: { coverRoute = .focus(habits: todayHabits) }
-        )
-        .todayListRow()
-
-        HStack {
-            Text("Hábitos de hoy")
-                .font(AppFont.headline)
-                .foregroundStyle(AppColor.textPrimary)
-            Spacer()
-            Text(currentDayTitle)
-                .font(AppFont.callout)
-                .foregroundStyle(AppColor.textTertiary)
-        }
-        .todayListRow()
-
-        ForEach(todayHabits) { habit in
+        ForEach(pendingHabits) { habit in
             TodayHabitComponent(
                 habit: habit,
-                isCompleted: isCompleteForTodayList(habit),
+                isCompleted: false,
                 activeExperiment: experiments.activeExperiment(
                     for: habit.id,
                     reference: referenceDate
@@ -213,6 +204,7 @@ struct TodayView: View {
             ) {
                 toggleCompletion(for: habit)
             }
+            .todayCompletionTransition(transitionPhase(for: habit))
             .todayListRow()
             .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                 Button(role: .destructive) {
@@ -232,6 +224,45 @@ struct TodayView: View {
             }
         }
 
+        FocusSessionLauncherCard(
+            remainingCount: remainingTodayCount,
+            onStart: { coverRoute = .focus(habits: todayHabits) }
+        )
+        .todayListRow()
+
+        if !completedHabits.isEmpty {
+            sectionHeader(title: "Completados", count: completedHabits.count)
+                .padding(.top, AppSpacing.xl)
+                .todayListRow()
+
+            ForEach(completedHabits) { habit in
+                TodayCompletedHabitRow(
+                    habit: habit,
+                    metadata: completionMetadata(for: habit)
+                ) {
+                    toggleCompletion(for: habit)
+                }
+                .todayCompletionTransition(transitionPhase(for: habit))
+                .todayListRow()
+                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                    Button(role: .destructive) {
+                        habitToDelete = habit
+                        showDeleteHabitAlert = true
+                    } label: {
+                        Label("Borrar", systemImage: "trash")
+                    }
+                    .tint(AppColor.destructiveAction)
+
+                    Button {
+                        coverRoute = .habit(.edit(habit))
+                    } label: {
+                        Label("Editar", systemImage: "pencil")
+                    }
+                    .tint(AppColor.editAction)
+                }
+            }
+        }
+
         if let top = todayHabits.topStreakHabit(reference: referenceDate) {
             LongestStreakBanner(
                 habitTitle: top.habit.title,
@@ -240,6 +271,36 @@ struct TodayView: View {
             )
             .todayListRow()
         }
+    }
+
+    private func sectionHeader(title: String, count: Int) -> some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(title)
+                .font(AppFont.bodyEmphasis)
+                .foregroundStyle(AppColor.textPrimary)
+
+            Spacer()
+
+            Text(habitCountText(count))
+                .font(AppFont.label)
+                .foregroundStyle(AppColor.textSecondary)
+        }
+    }
+
+    private func habitCountText(_ count: Int) -> String {
+        count == 1 ? "1 hábito" : "\(count) hábitos"
+    }
+
+    private func transitionPhase(for habit: Habit) -> TodayCompletionTransitionPhase {
+        if outgoingHabitIDs.contains(habit.id) {
+            return .outgoing
+        }
+
+        if incomingHabitIDs.contains(habit.id) {
+            return .incoming
+        }
+
+        return .idle
     }
 
     @ViewBuilder
@@ -369,7 +430,7 @@ struct TodayView: View {
 
         let willComplete = entriesForToday.isEmpty
 
-        withAnimation(AppMotion.smooth) {
+        transitionHabitBetweenSections(habit.id) {
             if willComplete {
                 let entry = HabitEntry(
                     date: referenceDate,
@@ -386,7 +447,7 @@ struct TodayView: View {
 
         if willComplete && remainingTodayCount == 1 {
             // Era el último; cierre del día.
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
                 AppHaptics.play(.dayClosed)
             }
         }
@@ -399,6 +460,38 @@ struct TodayView: View {
         return habit.isCompleted(on: referenceDate)
     }
 
+    private func completionMetadata(for habit: Habit) -> String {
+        let entriesForToday = habit.entries.filter {
+            AppCalendar.isSameDay($0.date, referenceDate)
+        }
+
+        guard let entry = entriesForToday.sorted(by: { lhs, rhs in
+            (lhs.completedAt ?? lhs.date) > (rhs.completedAt ?? rhs.date)
+        }).first else {
+            return "Meta semanal alcanzada"
+        }
+
+        let sourceText: String
+        switch entry.source {
+        case .today:
+            sourceText = "marca confiable"
+        case .focusSession:
+            sourceText = "sesión de ritmo"
+        case .manual:
+            sourceText = "registrado después"
+        }
+
+        guard let completedAt = entry.completedAt else {
+            return sourceText
+        }
+
+        let formatter = DateFormatter()
+        formatter.calendar = AppCalendar.current
+        formatter.locale = Locale(identifier: "es_MX")
+        formatter.dateFormat = "HH:mm"
+        return "\(formatter.string(from: completedAt)) · \(sourceText)"
+    }
+
     private func upsertQuantityEntry(
         for habit: Habit,
         on date: Date,
@@ -409,7 +502,7 @@ struct TodayView: View {
             AppCalendar.isSameDay($0.date, date)
         }
 
-        withAnimation(AppMotion.smooth) {
+        withoutTodayListAnimation {
             if value <= 0 {
                 entriesForDay.forEach { modelContext.delete($0) }
                 return
@@ -433,6 +526,39 @@ struct TodayView: View {
                     )
                 )
             }
+        }
+    }
+
+    private func transitionHabitBetweenSections(_ habitID: UUID, mutation: @escaping () -> Void) {
+        guard !reduceMotion else {
+            withoutTodayListAnimation(mutation)
+            return
+        }
+
+        withAnimation(AppMotion.linearOut) {
+            _ = outgoingHabitIDs.insert(habitID)
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            withoutTodayListAnimation {
+                _ = incomingHabitIDs.insert(habitID)
+                mutation()
+                _ = outgoingHabitIDs.remove(habitID)
+            }
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.04) {
+                withAnimation(AppMotion.linearOut) {
+                    _ = incomingHabitIDs.remove(habitID)
+                }
+            }
+        }
+    }
+
+    private func withoutTodayListAnimation(_ mutation: () -> Void) {
+        var transaction = Transaction(animation: nil)
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
+            mutation()
         }
     }
 
@@ -499,6 +625,77 @@ private extension View {
         listRowBackground(Color.clear)
             .listRowSeparator(.hidden)
             .listRowInsets(insets)
+    }
+
+    func todayCompletionTransition(_ phase: TodayCompletionTransitionPhase) -> some View {
+        opacity(phase.opacity)
+            .scaleEffect(phase.scale, anchor: .center)
+            .allowsHitTesting(phase == .idle)
+    }
+}
+
+private enum TodayCompletionTransitionPhase {
+    case idle
+    case outgoing
+    case incoming
+
+    var opacity: Double {
+        switch self {
+        case .idle:
+            return 1
+        case .outgoing, .incoming:
+            return 0
+        }
+    }
+
+    var scale: CGFloat {
+        switch self {
+        case .idle:
+            return 1
+        case .outgoing:
+            return 0.97
+        case .incoming:
+            return 0.985
+        }
+    }
+}
+
+private struct TodayCompletedHabitRow: View {
+    let habit: Habit
+    let metadata: String
+    let onToggle: () -> Void
+
+    var body: some View {
+        HStack(alignment: .center, spacing: AppSpacing.m) {
+            Button(action: onToggle) {
+                Image(systemName: "checkmark")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(width: 32, height: 32)
+                    .background(habit.habitColor)
+                    .clipShape(RoundedRectangle(cornerRadius: AppRadius.s, style: .continuous))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Desmarcar \(habit.title)")
+
+            VStack(alignment: .leading, spacing: AppSpacing.xxs) {
+                Text(habit.title)
+                    .font(AppFont.bodyEmphasis)
+                    .foregroundStyle(AppColor.textSecondary)
+                    .strikethrough(true, color: AppColor.textSecondary)
+                    .lineLimit(1)
+
+                Text(metadata)
+                    .font(AppFont.label)
+                    .foregroundStyle(AppColor.textTertiary)
+                    .lineLimit(1)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, AppSpacing.l)
+        .padding(.vertical, AppSpacing.s)
+        .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
     }
 }
 

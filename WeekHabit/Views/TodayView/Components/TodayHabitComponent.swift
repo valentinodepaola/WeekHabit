@@ -15,15 +15,35 @@ struct TodayHabitComponent: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        HStack(alignment: .top, spacing: AppSpacing.m) {
-            iconBadge
+        HStack(alignment: .center, spacing: AppSpacing.m) {
+            completeToggle
+
+            textContent
+
+            Spacer(minLength: AppSpacing.s)
+
+            iconColumn
+        }
+        .padding(.horizontal, AppSpacing.l)
+        .padding(.vertical, AppSpacing.l)
+        .frame(maxWidth: .infinity, minHeight: 94, alignment: .leading)
+        .background(AppColor.bgElevated)
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous)
+                .strokeBorder(AppColor.divider, lineWidth: 1)
+        }
+        .appElevation(.low)
+    }
+
+    private var textContent: some View {
+        VStack(alignment: .leading, spacing: AppSpacing.xs) {
+            Text(habit.title)
+                .font(AppFont.bodyEmphasis)
+                .foregroundStyle(AppColor.textPrimary)
+                .lineLimit(1)
 
             VStack(alignment: .leading, spacing: AppSpacing.xxs) {
-                Text(habit.title)
-                    .font(AppFont.bodyEmphasis)
-                    .foregroundStyle(AppColor.textPrimary)
-                    .lineLimit(1)
-
                 if let trimmedCue {
                     cueLine(trimmedCue)
                 }
@@ -32,7 +52,7 @@ struct TodayHabitComponent: View {
                     Text(experimentSubtitle)
                         .font(AppFont.label)
                         .foregroundStyle(AppColor.info)
-                        .lineLimit(1)
+                        .lineLimit(2)
                 } else if shouldShowScheduleFallback {
                     Text(scheduleFallbackText)
                         .font(AppFont.label)
@@ -40,30 +60,27 @@ struct TodayHabitComponent: View {
                         .lineLimit(1)
                 }
             }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
 
-            Spacer(minLength: AppSpacing.s)
+    private var iconColumn: some View {
+        VStack(alignment: .trailing, spacing: AppSpacing.xs) {
+            iconBadge
 
-            VStack(alignment: .trailing, spacing: AppSpacing.s) {
+            if streakCount > 0 {
                 streakIndicator
-                completeToggle
             }
         }
-        .padding(.horizontal, AppSpacing.l)
-        .padding(.vertical, AppSpacing.m)
-        .background(AppColor.bgElevated)
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous))
-        .appElevation(.low)
+        .frame(width: 44, alignment: .trailing)
     }
 
     private var iconBadge: some View {
-        ZStack {
-            Circle()
-                .fill(habit.habitColor.opacity(0.18))
-            Image(systemName: habit.iconName)
-                .font(.system(size: 16, weight: .medium))
-                .foregroundStyle(habit.habitColor)
-        }
-        .frame(width: 40, height: 40)
+        Image(systemName: habit.iconName)
+            .font(.system(size: 22, weight: .semibold))
+            .foregroundStyle(habit.habitColor)
+            .frame(width: 36, height: 36)
+            .accessibilityHidden(true)
     }
 
     private func cueLine(_ cue: String) -> some View {
@@ -83,10 +100,10 @@ struct TodayHabitComponent: View {
     private var streakIndicator: some View {
         HStack(spacing: AppSpacing.xs) {
             Image(systemName: "flame.fill")
-                .font(.system(size: 11, weight: .semibold))
+                .font(.system(size: 10, weight: .semibold))
 
             Text("\(streakCount)")
-                .font(AppFont.label)
+                .font(AppFont.micro)
                 .monospacedDigit()
         }
         .foregroundStyle(streakColor)
@@ -97,11 +114,11 @@ struct TodayHabitComponent: View {
     private var completeToggle: some View {
         Button(action: handleToggle) {
             ZStack {
-                Circle()
-                    .fill(isCompleted ? habit.habitColor : AppColor.bgSunken)
-                    .frame(width: 36, height: 36)
+                RoundedRectangle(cornerRadius: AppRadius.s, style: .continuous)
+                    .fill(isCompleted ? habit.habitColor : AppColor.bgElevated)
+                    .frame(width: 34, height: 34)
                     .overlay {
-                        Circle()
+                        RoundedRectangle(cornerRadius: AppRadius.s, style: .continuous)
                             .strokeBorder(
                                 isCompleted ? habit.habitColor : AppColor.divider,
                                 lineWidth: 1
@@ -117,6 +134,7 @@ struct TodayHabitComponent: View {
         }
         .buttonStyle(.plain)
         .animation(AppMotion.respectful(AppMotion.celebration, reduceMotion), value: isCompleted)
+        .accessibilityLabel(isCompleted ? "Desmarcar hábito" : "Marcar hábito")
     }
 
     private func handleToggle() {
