@@ -34,7 +34,7 @@ struct InsightConfidenceCard: View {
         HStack(spacing: 14) {
             ZStack {
                 Circle()
-                    .fill(color.opacity(0.14))
+                    .fill(color.opacity(0.12))
                     .frame(width: 46, height: 46)
 
                 Image(systemName: icon)
@@ -63,7 +63,11 @@ struct InsightConfidenceCard: View {
         }
         .padding(16)
         .background(AppColor.surface)
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.large, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 17, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 17, style: .continuous)
+                .stroke(Color(hex: "#e8dcc8"), lineWidth: 1)
+        }
     }
 }
 

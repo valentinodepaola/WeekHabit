@@ -11,233 +11,194 @@ struct PlanAccordion: View {
     let onToggle: () -> Void
     let onHabitTap: (Habit) -> Void
 
-    private var planColor: Color { AppColor.accent }
-    private var progress: Double { plan.progress() }
     private var sortedHabits: [Habit] {
         plan.habits.sorted(by: { $0.createdAt > $1.createdAt })
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            planHeader
+        VStack(alignment: .leading, spacing: 0) {
+            Button(action: onToggle) {
+                planSummary
+            }
+            .buttonStyle(PlanPressStyle())
 
             if isExpanded {
-                planHabits
+                expandedContent
                     .transition(
                         .asymmetric(
                             insertion: .opacity
-                                .combined(with: .scale(scale: 0.97, anchor: .top))
                                 .combined(with: .move(edge: .top)),
                             removal: .opacity
-                                .combined(with: .scale(scale: 0.98, anchor: .top))
                         )
                     )
             }
         }
         .background(AppColor.surface)
-        .overlay(alignment: .leading) {
-            Rectangle()
-                .fill(planColor)
-                .frame(width: 5)
-        }
+        .clipShape(RoundedRectangle(cornerRadius: 17, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(planColor.opacity(isExpanded ? 0.24 : 0.12), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 17, style: .continuous)
+                .stroke(Color(hex: "#e8dcc8"), lineWidth: 1)
         }
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .shadow(color: AppColor.strongText.opacity(isExpanded ? 0.10 : 0.05), radius: isExpanded ? 16 : 8, x: 0, y: isExpanded ? 10 : 4)
-        .animation(.spring(response: 0.42, dampingFraction: 0.86), value: isExpanded)
+        .animation(.spring(response: 0.38, dampingFraction: 0.86), value: isExpanded)
     }
 
-    private var planHeader: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(spacing: 12) {
-                Button(action: onToggle) {
-                    HStack(spacing: 12) {
-                        ZStack {
-                            Circle()
-                                .fill(planColor.opacity(0.15))
-                                .frame(width: 44, height: 44)
-
-                            Image(systemName: "target")
-                                .font(.system(size: 18, weight: .semibold))
-                                .foregroundStyle(planColor)
-                        }
-
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(plan.title)
-                                .font(AppFont.body2)
-                                .fontWeight(.semibold)
-                                .foregroundStyle(AppColor.strongText)
-                                .lineLimit(1)
-
-                            Text(plan.daysRemainingText)
-                                .font(AppFont.formSectionText2)
-                                .foregroundStyle(AppColor.subtleText)
-                                .lineLimit(1)
-                        }
-                    }
-                }
-                .buttonStyle(PlanHeaderButtonStyle())
+    private var planSummary: some View {
+        VStack(alignment: .leading, spacing: 17) {
+            HStack(alignment: .firstTextBaseline, spacing: 12) {
+                Text(plan.title)
+                    .font(.system(size: 22, weight: .semibold, design: .serif).italic())
+                    .foregroundStyle(AppColor.strongText)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.82)
 
                 Spacer(minLength: 8)
 
-                Button(action: onToggle) {
-                    ZStack {
-                        Circle()
-                            .fill(AppColor.surfaceMuted)
-                            .frame(width: 30, height: 30)
-
-                        Image(systemName: "chevron.down")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundStyle(AppColor.subtleText)
-                            .rotationEffect(.degrees(isExpanded ? 180 : 0))
-                    }
-                }
-                .buttonStyle(PlanHeaderButtonStyle())
-            }
-
-            Button(action: onToggle) {
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(alignment: .firstTextBaseline) {
-                        Text("\(Int(progress * 100))%")
-                            .font(AppFont.subtitle2)
-                            .foregroundStyle(progressColor)
-                            .monospacedDigit()
-
-                        Text("de avance")
-                            .font(AppFont.formSectionText2)
-                            .foregroundStyle(AppColor.mutedText)
-
-                        Spacer()
-
-                        PlanMetricPill(
-                            icon: "checklist",
-                            text: "\(plan.habits.count) \(plan.habits.count == 1 ? "hábito" : "hábitos")",
-                            color: planColor
-                        )
-                    }
-
-                    PlanProgressBar(
-                        progress: progress,
-                        goal: plan.targetCompletionRate,
-                        color: planColor
-                    )
-                    .frame(height: 7)
-                }
-            }
-            .buttonStyle(PlanHeaderButtonStyle())
-        }
-        .padding(.leading, 20)
-        .padding(.trailing, 16)
-        .padding(.vertical, 16)
-    }
-
-    private var planHabits: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("Hábitos del plan")
-                    .font(AppFont.formSectionText)
-                    .foregroundStyle(AppColor.mutedText)
-
-                Spacer()
-
-                Text(plan.daysRemainingText)
-                    .font(AppFont.formSectionText2)
+                Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
+                    .font(.system(size: 14, weight: .bold))
                     .foregroundStyle(AppColor.subtleText)
             }
-            .padding(.horizontal, 16)
+
+            Text(planSubtitle)
+                .font(AppFont.captionApp)
+                .fontWeight(.medium)
+                .foregroundStyle(AppColor.mutedText)
+                .lineLimit(2)
+                .multilineTextAlignment(.leading)
+
+            HStack(spacing: 13) {
+                PlanTimelineBar(progress: timelineProgress)
+                    .frame(height: 4)
+
+                Text(timelineText)
+                    .font(AppFont.formSectionText)
+                    .fontWeight(.medium)
+                    .foregroundStyle(AppColor.mutedText)
+                    .lineLimit(1)
+                    .monospacedDigit()
+            }
+        }
+        .padding(.horizontal, 22)
+        .padding(.vertical, 20)
+        .contentShape(RoundedRectangle(cornerRadius: 17, style: .continuous))
+    }
+
+    private var expandedContent: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Divider()
+                .overlay(Color(hex: "#e8dcc8"))
 
             if sortedHabits.isEmpty {
-                PlanEmptyHabitRow(color: planColor)
+                PlanEmptyHabitRow()
             } else {
                 VStack(spacing: 0) {
                     ForEach(Array(sortedHabits.enumerated()), id: \.element.id) { index, habit in
-                        PlanHabitRow(
-                            habit: habit,
-                            color: planColor
-                        ) {
+                        PlanHabitRow(habit: habit) {
                             onHabitTap(habit)
                         }
 
                         if index < sortedHabits.count - 1 {
                             Divider()
-                                .padding(.leading, 60)
+                                .padding(.leading, 54)
+                                .overlay(Color(hex: "#efe5d5"))
                         }
                     }
                 }
-                .background(AppColor.surfaceMuted.opacity(0.58))
-                .clipShape(RoundedRectangle(cornerRadius: AppRadius.large, style: .continuous))
-                .padding(.horizontal, 12)
+                .background(Color(hex: "#fbf6ed"))
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             }
         }
-        .padding(.top, 2)
+        .padding(.horizontal, 14)
         .padding(.bottom, 14)
     }
 
-    private var progressColor: Color {
-        plan.meetsGoal() ? AppColor.accent : AppColor.strongText
+    private var planSubtitle: String {
+        guard let motivation = plan.motivation?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !motivation.isEmpty else {
+            return plan.daysRemainingText
+        }
+
+        return motivation
+    }
+
+    private var timelineText: String {
+        "\(elapsedPlanDays) / \(totalPlanDays) días"
+    }
+
+    private var totalPlanDays: Int {
+        let start = AppCalendar.startOfDay(for: plan.startedAt)
+        let end = AppCalendar.startOfDay(for: plan.endsAt)
+        let days = AppCalendar.current.dateComponents([.day], from: start, to: end).day ?? 0
+        return max(days + 1, 1)
+    }
+
+    private var elapsedPlanDays: Int {
+        let start = AppCalendar.startOfDay(for: plan.startedAt)
+        let today = AppCalendar.startOfDay(for: .now)
+        let days = AppCalendar.current.dateComponents([.day], from: start, to: today).day ?? 0
+        return min(max(days + 1, 1), totalPlanDays)
+    }
+
+    private var timelineProgress: Double {
+        Double(elapsedPlanDays) / Double(totalPlanDays)
+    }
+}
+
+private struct PlanTimelineBar: View {
+    let progress: Double
+
+    var body: some View {
+        GeometryReader { geo in
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(AppColor.surfaceMuted)
+
+                Capsule()
+                    .fill(AppColor.strongText)
+                    .frame(width: geo.size.width * CGFloat(min(max(progress, 0), 1)))
+            }
+        }
     }
 }
 
 private struct PlanHabitRow: View {
     let habit: Habit
-    let color: Color
     let onTap: () -> Void
 
     var body: some View {
         Button(action: onTap) {
             HStack(alignment: .center, spacing: 12) {
                 ZStack {
-                    Circle()
-                        .fill(habit.habitColor.opacity(0.16))
-                        .frame(width: 36, height: 36)
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(habit.habitColor.opacity(0.14))
+                        .frame(width: 34, height: 34)
 
                     Image(systemName: habit.iconName)
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(habit.habitColor)
                 }
 
-                VStack(alignment: .leading, spacing: 7) {
-                    HStack(alignment: .firstTextBaseline, spacing: 8) {
-                        Text(habit.title)
-                            .font(AppFont.body2)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(AppColor.strongText)
-                            .lineLimit(1)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(habit.title)
+                        .font(AppFont.body2)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(AppColor.strongText)
+                        .lineLimit(1)
 
-                        Spacer(minLength: 8)
-
-                        HStack(spacing: 4) {
-                            Image(systemName: "flame.fill")
-                                .font(.system(size: 10, weight: .semibold))
-                            Text("\(streakCount)")
-                                .font(AppFont.formSectionText2)
-                                .fontWeight(.medium)
-                                .monospacedDigit()
-                        }
-                        .foregroundStyle(color)
-                        .accessibilityLabel(streakAccessibilityLabel)
-                    }
-
-                    HStack(spacing: 10) {
-                        Text(cardSubtitle)
-                            .font(AppFont.formSectionText2)
-                            .foregroundStyle(AppColor.subtleText)
-                            .lineLimit(1)
-
-                        Spacer(minLength: 8)
-
-                        PlanHabitWeekDots(habit: habit)
-                    }
+                    Text(cardSubtitle)
+                        .font(AppFont.formSectionText2)
+                        .foregroundStyle(AppColor.mutedText)
+                        .lineLimit(1)
                 }
+
+                Spacer(minLength: 8)
+
+                PlanHabitWeekDots(habit: habit)
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 12)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 11)
             .contentShape(Rectangle())
         }
-        .buttonStyle(PlanHabitRowButtonStyle())
+        .buttonStyle(PlanRowPressStyle())
     }
 
     private var cardSubtitle: String {
@@ -248,35 +209,24 @@ private struct PlanHabitRow: View {
 
         return status
     }
-
-    private var streakCount: Int {
-        habit.currentStreak()
-    }
-
-    private var streakAccessibilityLabel: String {
-        streakCount == 0 ? "Listo para volver" : "\(streakCount) días seguidos"
-    }
 }
 
 private struct PlanEmptyHabitRow: View {
-    let color: Color
-
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: "plus.circle")
                 .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(color)
+                .foregroundStyle(AppColor.accent)
 
             Text("Sin hábitos asignados")
                 .font(AppFont.body2)
-                .foregroundStyle(AppColor.subtleText)
+                .foregroundStyle(AppColor.mutedText)
 
             Spacer()
         }
         .padding(14)
-        .background(AppColor.surfaceMuted.opacity(0.58))
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.large, style: .continuous))
-        .padding(.horizontal, 12)
+        .background(Color(hex: "#fbf6ed"))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 }
 
@@ -288,31 +238,19 @@ private struct PlanHabitWeekDots: View {
 
         HStack(spacing: 4) {
             ForEach(Weekday.ordered) { weekday in
-                PlanHabitDot(
-                    isCompleted: completedWeekdays.contains(weekday),
-                    isActive: habit.scheduleKind == .timesPerWeek || habit.activeDaysOfWeek.contains(weekday)
-                )
+                Circle()
+                    .fill(dotColor(weekday: weekday, completedWeekdays: completedWeekdays))
+                    .frame(width: 6, height: 6)
             }
         }
     }
-}
 
-private struct PlanHabitDot: View {
-    let isCompleted: Bool
-    let isActive: Bool
-
-    var body: some View {
-        Circle()
-            .fill(fillColor)
-            .frame(width: 7, height: 7)
-    }
-
-    private var fillColor: Color {
-        if isCompleted {
+    private func dotColor(weekday: Weekday, completedWeekdays: Set<Weekday>) -> Color {
+        if completedWeekdays.contains(weekday) {
             return AppColor.accent
         }
 
-        if isActive {
+        if habit.scheduleKind == .timesPerWeek || habit.activeDaysOfWeek.contains(weekday) {
             return AppColor.subtleText.opacity(0.34)
         }
 
@@ -320,65 +258,19 @@ private struct PlanHabitDot: View {
     }
 }
 
-private struct PlanMetricPill: View {
-    let icon: String
-    let text: String
-    let color: Color
-
-    var body: some View {
-        HStack(spacing: 5) {
-            Image(systemName: icon)
-                .font(.system(size: 11, weight: .semibold))
-
-            Text(text)
-                .font(AppFont.formSectionText2)
-                .fontWeight(.medium)
-        }
-        .foregroundStyle(color)
-        .padding(.horizontal, 9)
-        .padding(.vertical, 5)
-        .background(color.opacity(0.12))
-        .clipShape(Capsule())
-    }
-}
-
-private struct PlanProgressBar: View {
-    let progress: Double
-    let goal: Double
-    let color: Color
-
-    var body: some View {
-        GeometryReader { geo in
-            ZStack(alignment: .leading) {
-                Capsule()
-                    .fill(AppColor.surfaceMuted)
-
-                Capsule()
-                    .fill(color)
-                    .frame(width: geo.size.width * CGFloat(min(progress, 1)))
-
-                Rectangle()
-                    .fill(AppColor.strongText.opacity(0.28))
-                    .frame(width: 1.5, height: geo.size.height + 3)
-                    .offset(x: geo.size.width * CGFloat(goal) - 0.75)
-            }
-        }
-    }
-}
-
-private struct PlanHeaderButtonStyle: ButtonStyle {
+private struct PlanPressStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .scaleEffect(configuration.isPressed ? 0.99 : 1)
-            .opacity(configuration.isPressed ? 0.92 : 1)
-            .animation(.easeOut(duration: 0.1), value: configuration.isPressed)
+            .opacity(configuration.isPressed ? 0.93 : 1)
+            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
     }
 }
 
-private struct PlanHabitRowButtonStyle: ButtonStyle {
+private struct PlanRowPressStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .background(configuration.isPressed ? AppColor.surface.opacity(0.65) : Color.clear)
+            .background(configuration.isPressed ? AppColor.surfaceMuted.opacity(0.38) : Color.clear)
             .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
     }
 }

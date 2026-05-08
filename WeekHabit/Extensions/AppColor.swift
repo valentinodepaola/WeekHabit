@@ -12,17 +12,17 @@ import UIKit
 #endif
 
 enum AppColor {
-    static let accent       = Color(hex: "#c2573c")
-    static let accentSoft   = adaptive(light: "#f3d9cf", dark: "#3a201a")
-    static let strongText   = adaptive(light: "#1c1812", dark: "#f5eee6")
-    static let mutedText    = adaptive(light: "#6b6458", dark: "#c9bfb1")
-    static let subtleText   = adaptive(light: "#a8a091", dark: "#8b8175")
-    static let surface      = adaptive(light: "#ffffff", dark: "#211b18")
-    static let surfaceMuted = adaptive(light: "#fbf7f0", dark: "#2a231f")
-    static let bgLight      = adaptive(light: "#f5f1ea", dark: "#181312")
+    static let accent       = Color(hex: "#c45f36")
+    static let accentSoft   = adaptive(light: "#ead8bf", dark: "#3a201a")
+    static let strongText   = adaptive(light: "#211d19", dark: "#f5eee6")
+    static let mutedText    = adaptive(light: "#7a6d59", dark: "#c9bfb1")
+    static let subtleText   = adaptive(light: "#a99b83", dark: "#8b8175")
+    static let surface      = adaptive(light: "#fffdf8", dark: "#211b18")
+    static let surfaceMuted = adaptive(light: "#eee6d7", dark: "#2a231f")
+    static let bgLight      = adaptive(light: "#f8f1e6", dark: "#181312")
     static let bgDark       = Color(hex: "#121010")
     static let lowPurple    = adaptive(light: "#eae4f4", dark: "#30293b")
-    static let highPurple   = adaptive(light: "#8b7fb0", dark: "#b8a8df")
+    static let highPurple   = adaptive(light: "#7065d4", dark: "#b8a8df")
 
     // Row actions
     static let editAction        = Color(hex: "#5c89a8")

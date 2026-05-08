@@ -31,17 +31,17 @@ struct CustomTabBar: View {
         }
         .padding(7)
         .frame(maxWidth: .infinity)
-        .frame(height: 68)
+        .frame(height: 72)
         .background {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
+            RoundedRectangle(cornerRadius: 21, style: .continuous)
                 .fill(tabBarFill)
                 .shadow(color: shadowColor, radius: 24, x: 0, y: 12)
                 .overlay {
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    RoundedRectangle(cornerRadius: 21, style: .continuous)
                         .stroke(borderColor, lineWidth: 1)
                 }
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 24)
         .padding(.bottom, 24)
         .background {
             VStack(spacing: 0) {
@@ -82,13 +82,13 @@ struct CustomTabBar: View {
     private var tabBarFill: AnyShapeStyle {
         colorScheme == .dark
             ? AnyShapeStyle(AppColor.surface.opacity(0.9))
-            : AnyShapeStyle(.ultraThinMaterial)
+            : AnyShapeStyle(AppColor.surface)
     }
 
     private var borderColor: Color {
         colorScheme == .dark
             ? Color.white.opacity(0.08)
-            : Color.white.opacity(0.72)
+            : Color(hex: "#e8dcc8")
     }
 
     private var shadowColor: Color {

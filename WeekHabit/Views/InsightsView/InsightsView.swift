@@ -98,8 +98,8 @@ struct InsightsView: View {
                             }
                         }
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 15)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 22)
                     .padding(.bottom, 120)
                 }
             }
@@ -114,12 +114,18 @@ struct InsightsView: View {
             Text("ÚLTIMOS 30 DÍAS")
                 .font(AppFont.captionApp)
                 .fontWeight(.bold)
-                .foregroundStyle(AppColor.subtleText)
-                .tracking(2)
+                .foregroundStyle(AppColor.mutedText)
+                .tracking(1.8)
 
-            Text("Tu ritmo")
-                .font(AppFont.title)
-                .foregroundStyle(AppColor.strongText)
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text("Insights")
+                    .font(.system(size: 27, weight: .bold, design: .default))
+                    .foregroundStyle(AppColor.strongText)
+
+                Text(readiness.isReady ? "en lectura" : "formándose")
+                    .font(.system(size: 17, weight: .semibold, design: .serif).italic())
+                    .foregroundStyle(AppColor.mutedText)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -176,7 +182,11 @@ struct InsightsView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(18)
         .background(AppColor.surface)
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.large, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 17, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 17, style: .continuous)
+                .stroke(Color(hex: "#e8dcc8"), lineWidth: 1)
+        }
     }
 
     private var emptyState: some View {
@@ -197,7 +207,11 @@ struct InsightsView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(22)
         .background(AppColor.surface)
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 17, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 17, style: .continuous)
+                .stroke(Color(hex: "#e8dcc8"), lineWidth: 1)
+        }
     }
 
     private var summaryCards: some View {

@@ -76,7 +76,7 @@ struct InsightsHeroCard: View {
 
             HStack(alignment: .firstTextBaseline, spacing: 10) {
                 Text(consistencyText)
-                    .font(.system(size: 64, weight: .regular, design: .serif))
+                    .font(.system(size: 56, weight: .semibold, design: .default))
                     .foregroundStyle(AppColor.strongText)
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
@@ -114,9 +114,13 @@ struct InsightsHeroCard: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(24)
+        .padding(22)
         .background(AppColor.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(Color(hex: "#e8dcc8"), lineWidth: 1)
+        }
     }
 }
 

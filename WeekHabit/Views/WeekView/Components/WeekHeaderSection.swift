@@ -15,29 +15,47 @@ struct WeekHeaderSection: View {
     
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 6) {
             Text(monthYearLabel)
-                .font(AppFont.formSectionText)
+                .font(AppFont.captionApp)
+                .fontWeight(.bold)
+                .tracking(1.4)
                 .foregroundStyle(AppColor.mutedText)
 
-            HStack(spacing: 16) {
-                Text("Semana \(weekNumber)")
-                    .font(AppFont.title)
-                    .foregroundStyle(AppColor.strongText)
+            HStack(alignment: .center, spacing: 14) {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text("Semana \(weekNumber)")
+                        .font(.system(size: 27, weight: .bold, design: .default))
+                        .foregroundStyle(AppColor.strongText)
+
+                    Text(statusText)
+                        .font(.system(size: 17, weight: .semibold, design: .serif).italic())
+                        .foregroundStyle(AppColor.mutedText)
+                        .lineLimit(1)
+                }
+                .minimumScaleFactor(0.86)
 
                 Spacer()
 
                 if weekOffset != 0 {
-                    Button("Hoy") {
+                    Button {
                         withAnimation(.spring(duration: 0.35)) {
                             weekOffset = 0
                         }
+                    } label: {
+                        Text("Hoy")
+                            .font(AppFont.formSectionText)
+                            .fontWeight(.bold)
                     }
-                    .font(AppFont.formSectionText)
                     .foregroundStyle(AppColor.accent)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(AppColor.accentSoft, in: Capsule())
+                    .padding(.horizontal, 11)
+                    .padding(.vertical, 9)
+                    .background(AppColor.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 13, style: .continuous)
+                            .stroke(Color(hex: "#e8dcc8"), lineWidth: 1)
+                    }
                 }
 
                 HStack(spacing: 8) {
@@ -56,9 +74,15 @@ struct WeekHeaderSection: View {
                 }
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.top, 16)
-        .padding(.bottom, 18)
+        .padding(.horizontal, 24)
+        .padding(.top, 22)
+        .padding(.bottom, 20)
+    }
+
+    private var statusText: String {
+        if weekOffset == 0 { return "en curso" }
+        if weekOffset == -1 { return "semana pasada" }
+        return "hace \(abs(weekOffset)) semanas"
     }
 }
 
@@ -69,10 +93,10 @@ private func navButton(systemName: String, action: @escaping () -> Void) -> some
             .foregroundStyle(AppColor.strongText)
             .frame(width: 40, height: 40)
             .background(AppColor.surface)
-            .clipShape(Circle())
+            .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
             .overlay {
-                Circle()
-                    .stroke(AppColor.subtleText.opacity(0.12), lineWidth: 1)
+                RoundedRectangle(cornerRadius: 13, style: .continuous)
+                    .stroke(Color(hex: "#e8dcc8"), lineWidth: 1)
             }
     }
     .buttonStyle(.plain)

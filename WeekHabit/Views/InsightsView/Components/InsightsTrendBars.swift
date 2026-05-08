@@ -25,9 +25,9 @@ struct InsightsTrendBars: View {
     }
 
     private func color(for index: Int, value: Double) -> Color {
-        guard value > 0 else { return AppColor.bgLight }
+        guard value > 0 else { return AppColor.surfaceMuted }
         let isRecent = index >= max(values.count - 3, 0)
-        return isRecent ? AppColor.accent : AppColor.bgLight
+        return isRecent ? AppColor.accent : AppColor.surfaceMuted
     }
 }
 

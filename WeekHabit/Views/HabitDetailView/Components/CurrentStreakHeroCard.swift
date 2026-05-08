@@ -11,39 +11,40 @@ struct CurrentStreakHeroCard: View {
     let bestStreak: Int
 
     var body: some View {
-        ZStack(alignment: .trailing) {
-            RoundedRectangle(cornerRadius: AppRadius.large, style: .continuous)
-                .fill(currentStreak == 0 ? .gray : .orange)
-
-            Image(systemName: "flame.fill")
-                .font(.system(size: 118, weight: .bold))
-                .foregroundStyle(.white.opacity(0.15))
-                .offset(x: 22, y: 10)
-
+        VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 14) {
                 Text("CONSTANCIA ACTUAL")
                     .font(AppFont.formSectionText2)
                     .fontWeight(.semibold)
+                    .foregroundStyle(AppColor.mutedText)
+                    .tracking(1.1)
 
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text("\(currentStreak)")
-                        .font(.system(size: 56, weight: .bold, design: .rounded))
+                        .font(.system(size: 52, weight: .semibold, design: .default))
+                        .foregroundStyle(AppColor.strongText)
+                        .monospacedDigit()
 
                     Text("días")
-                        .font(AppFont.subtitle)
+                        .font(AppFont.subtitle3)
+                        .foregroundStyle(AppColor.mutedText)
                 }
 
                 Text(flavorText)
-                    .font(AppFont.captionApp)
-                    .fontWeight(.medium)
+                    .font(.system(size: 18, weight: .semibold, design: .serif).italic())
+                    .foregroundStyle(AppColor.strongText)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .foregroundStyle(.white)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(20)
         }
-        .frame(maxWidth: .infinity, minHeight: 178)
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.large, style: .continuous))
+        .padding(22)
+        .frame(maxWidth: .infinity, minHeight: 164, alignment: .leading)
+        .background(AppColor.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(Color(hex: "#e8dcc8"), lineWidth: 1)
+        }
     }
 
     private var flavorText: String {

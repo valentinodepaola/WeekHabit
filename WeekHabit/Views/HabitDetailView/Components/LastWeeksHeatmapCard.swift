@@ -42,7 +42,11 @@ struct LastWeeksHeatmapCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
         .background(AppColor.surface)
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 17, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 17, style: .continuous)
+                .stroke(Color(hex: "#e8dcc8"), lineWidth: 1)
+        }
     }
 
     private var heatmapGrid: some View {
@@ -84,7 +88,7 @@ struct LastWeeksHeatmapCard: View {
         case .missed:
             return habit.habitColor.opacity(0.10)
         case .inactive, .future:
-            return AppColor.bgLight
+            return AppColor.surfaceMuted
         }
     }
 }

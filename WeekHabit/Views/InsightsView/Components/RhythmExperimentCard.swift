@@ -51,7 +51,11 @@ struct RhythmExperimentCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(18)
         .background(AppColor.surface)
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.large, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 17, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 17, style: .continuous)
+                .stroke(Color(hex: "#e8dcc8"), lineWidth: 1)
+        }
     }
 
     private func suggestionContent(_ rankedSuggestion: RankedRhythmSuggestion, isPrimary: Bool) -> some View {
@@ -110,15 +114,19 @@ struct RhythmExperimentCard: View {
                     .padding(.vertical, isPrimary ? 12 : 10)
                     .background(isPrimary ? AppColor.accent : AppColor.accent.opacity(0.12))
                     .foregroundStyle(isPrimary ? .white : AppColor.accent)
-                    .clipShape(RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
             }
             .buttonStyle(.plain)
         }
         .padding(isPrimary ? 0 : 12)
         .background {
             if !isPrimary {
-                RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous)
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
                     .fill(AppColor.bgLight.opacity(0.72))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .stroke(Color(hex: "#e8dcc8").opacity(0.8), lineWidth: 1)
+                    }
             }
         }
     }
@@ -135,7 +143,7 @@ private struct RhythmChip: View {
             .lineLimit(1)
             .padding(.horizontal, 10)
             .padding(.vertical, 7)
-            .background(AppColor.bgLight)
+            .background(AppColor.surfaceMuted)
             .clipShape(Capsule())
     }
 }

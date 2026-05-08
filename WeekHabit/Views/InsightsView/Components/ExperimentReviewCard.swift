@@ -56,8 +56,8 @@ struct ExperimentReviewCard: View {
                 .foregroundStyle(AppColor.mutedText)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 11)
-                .background(AppColor.bgLight)
-                .clipShape(RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous))
+                .background(AppColor.surfaceMuted)
+                .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
 
                 Button("Conservar") {
                     onKeep()
@@ -68,13 +68,17 @@ struct ExperimentReviewCard: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 11)
                 .background(AppColor.accent)
-                .clipShape(RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
             }
             .buttonStyle(.plain)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(18)
         .background(AppColor.surface)
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.large, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 17, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 17, style: .continuous)
+                .stroke(Color(hex: "#e8dcc8"), lineWidth: 1)
+        }
     }
 }

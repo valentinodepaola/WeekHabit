@@ -25,7 +25,7 @@ struct ActiveExperimentCard: View {
         HStack(spacing: 14) {
             ZStack {
                 Circle()
-                    .fill(AppColor.accent.opacity(0.14))
+                    .fill(AppColor.accent.opacity(0.12))
                     .frame(width: 46, height: 46)
 
                 Image(systemName: "flask")
@@ -54,8 +54,12 @@ struct ActiveExperimentCard: View {
             Spacer()
         }
         .padding(16)
-        .background(AppColor.accent.opacity(0.08))
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.large, style: .continuous))
+        .background(AppColor.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 17, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 17, style: .continuous)
+                .stroke(Color(hex: "#e8dcc8"), lineWidth: 1)
+        }
     }
 
     private var detailText: String {

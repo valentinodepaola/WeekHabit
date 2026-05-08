@@ -41,7 +41,11 @@ struct WeekDotsCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
         .background(AppColor.surface)
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 17, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 17, style: .continuous)
+                .stroke(Color(hex: "#e8dcc8"), lineWidth: 1)
+        }
     }
 
     private func date(for dayIndex: Int) -> Date {
@@ -80,7 +84,7 @@ private struct WeekDot: View {
         }
 
         if isActive {
-            return AppColor.surface
+            return Color(hex: "#ece2cc")
         }
 
         return AppColor.subtleText.opacity(0.08)

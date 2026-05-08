@@ -20,10 +20,10 @@ struct InsightSummaryCard: View {
             ZStack {
                 RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous)
                     .fill(iconColor.opacity(0.12))
-                    .frame(width: 60, height: 60)
+                    .frame(width: 52, height: 52)
 
                 Image(systemName: icon)
-                    .font(.system(size: 22, weight: .semibold))
+                    .font(.system(size: 20, weight: .semibold))
                     .foregroundStyle(iconColor)
             }
 
@@ -64,7 +64,11 @@ struct InsightSummaryCard: View {
         .padding(.horizontal, 18)
         .padding(.vertical, 16)
         .background(AppColor.surface)
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.large, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 17, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 17, style: .continuous)
+                .stroke(Color(hex: "#e8dcc8"), lineWidth: 1)
+        }
     }
 }
 

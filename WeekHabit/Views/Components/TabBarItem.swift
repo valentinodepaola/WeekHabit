@@ -18,30 +18,26 @@ struct TabBarItem: View {
         Button(action: action) {
             ZStack {
                 if isSelected {
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .fill(AppColor.accentSoft)
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(AppColor.strongText)
                         .matchedGeometryEffect(id: "tab-selection", in: namespace)
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                .stroke(AppColor.accent.opacity(0.16), lineWidth: 1)
-                        }
                 }
 
                 VStack(spacing: 4) {
                     Image(systemName: icon)
-                        .font(.system(size: isSelected ? 21 : 20, weight: isSelected ? .semibold : .regular))
+                        .font(.system(size: isSelected ? 20 : 19, weight: isSelected ? .semibold : .regular))
                         .symbolEffect(.bounce, value: isSelected)
 
                     Text(text)
-                        .font(.system(size: 10.5, weight: isSelected ? .semibold : .medium, design: .default))
+                        .font(.system(size: 10.5, weight: isSelected ? .bold : .semibold, design: .default))
                         .lineLimit(1)
                         .minimumScaleFactor(0.86)
                 }
-                .foregroundStyle(isSelected ? AppColor.accent : AppColor.mutedText)
+                .foregroundStyle(isSelected ? AppColor.surface : AppColor.mutedText)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .contentShape(Rectangle())
             }
-            .frame(maxWidth: .infinity, minHeight: 54)
+            .frame(maxWidth: .infinity, minHeight: 58)
         }
         .buttonStyle(TabBarPressStyle())
         .accessibilityLabel(text)

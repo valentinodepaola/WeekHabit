@@ -85,8 +85,8 @@ struct HabitDetailView: View {
 
                     LastWeeksHeatmapCard(habit: habit)
                 }
-                .padding(.horizontal, 16)
-                .padding(.top, 15)
+                .padding(.horizontal, 24)
+                .padding(.top, 18)
                 .padding(.bottom, 120)
             }
         }
@@ -118,7 +118,7 @@ struct HabitDetailView: View {
             )
 
             Text(habit.title)
-                .font(AppFont.title)
+                .font(.system(size: 30, weight: .bold, design: .default))
                 .foregroundStyle(AppColor.strongText)
                 .frame(maxWidth: .infinity, alignment: .leading)
 

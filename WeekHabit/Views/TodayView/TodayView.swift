@@ -32,6 +32,8 @@ struct TodayView: View {
     @State private var expandedPlans: Set<UUID> = []
     @State private var isShowingFocusSession = false
     @State private var quantityHabit: Habit?
+    @State private var isSearchVisible = false
+    @State private var searchText = ""
 
     private var referenceDate: Date {
         Date()
@@ -54,11 +56,13 @@ struct TodayView: View {
         let formatter = DateFormatter()
         formatter.calendar = AppCalendar.current
         formatter.locale = locale
-        formatter.dateFormat = "EEEE d 'DE' MMMM"
-        return formatter
+        formatter.dateFormat = "EEEE d"
+        let dayText = formatter
             .string(from: referenceDate)
             .folding(options: .diacriticInsensitive, locale: locale)
             .uppercased(with: locale)
+        let weekNumber = AppCalendar.current.component(.weekOfYear, from: referenceDate)
+        return "\(dayText) · SEMANA \(weekNumber)"
     }
     
     private var todayHabits: [Habit] {
@@ -90,14 +94,53 @@ struct TodayView: View {
         return Double(completedTodayCount) / Double(todayHabits.count)
     }
 
+    private var normalizedSearchText: String {
+        searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var visibleTodayHabits: [Habit] {
+        guard !normalizedSearchText.isEmpty else { return todayHabits }
+
+        return todayHabits.filter { habit in
+            searchMatches([habit.title, habit.cue, habit.note])
+        }
+    }
+
+    private var pendingTodayHabits: [Habit] {
+        visibleTodayHabits.filter { !isCompleteForTodayList($0) }
+    }
+
+    private var completedTodayHabits: [Habit] {
+        visibleTodayHabits.filter { isCompleteForTodayList($0) }
+    }
+
+    private var visiblePlans: [Plan] {
+        guard !normalizedSearchText.isEmpty else { return plans }
+
+        return plans.filter { plan in
+            searchMatches([plan.title, plan.motivation])
+        }
+    }
+
+    private var topStreakDays: Int {
+        todayHabits.topStreakHabit(reference: referenceDate)?.streak ?? 0
+    }
+
     var body: some View {
         NavigationStack {
             AppBackground {
                 List {
                     header
                         .todayListRow(
-                            EdgeInsets(top: 15, leading: 16, bottom: 0, trailing: 16)
+                            EdgeInsets(top: 18, leading: 24, bottom: 0, trailing: 24)
                         )
+
+                    if isSearchVisible {
+                        searchField
+                            .todayListRow(
+                                EdgeInsets(top: 10, leading: 24, bottom: 2, trailing: 24)
+                            )
+                    }
 
                     if todayHabits.isEmpty {
                         emptyTodayContent
@@ -106,12 +149,12 @@ struct TodayView: View {
                         todayHabitsContent
                     }
 
-                    if !plans.isEmpty {
+                    if !visiblePlans.isEmpty {
                         plansSection
                     }
                 }
                 .listStyle(.plain)
-                .listRowSpacing(18)
+                .listRowSpacing(8)
                 .scrollContentBackground(.hidden)
                 .contentMargins(.bottom, 120, for: .scrollContent)
             }
@@ -167,16 +210,41 @@ struct TodayView: View {
     }
 
     private var header: some View {
-        HStack(alignment: .center, spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
+        HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 5) {
                 Text(currentDateTitle)
                     .font(AppFont.captionApp)
+                    .fontWeight(.bold)
+                    .tracking(1.8)
                     .foregroundStyle(AppColor.mutedText)
 
-                Text("Buenos días")
-                    .font(AppFont.title)
+                Text("Hoy")
+                    .font(.system(size: 27, weight: .bold, design: .default))
+                    .foregroundStyle(AppColor.strongText)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+
+            Button {
+                withAnimation(.spring(response: 0.32, dampingFraction: 0.88)) {
+                    isSearchVisible.toggle()
+                    if !isSearchVisible {
+                        searchText = ""
+                    }
+                }
+            } label: {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(AppColor.mutedText)
+                    .frame(width: 44, height: 44)
+                    .background(AppColor.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .stroke(AppColor.surfaceMuted, lineWidth: 1)
+                    }
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Buscar")
 
             Menu {
                 Button {
@@ -192,13 +260,45 @@ struct TodayView: View {
                 }
             } label: {
                 Image(systemName: "plus")
-                    .font(.system(size: 20).bold())
+                    .font(.system(size: 20, weight: .bold))
                     .foregroundStyle(.white)
-                    .frame(width: 38, height: 38)
-                    .background(AppColor.accent)
-                    .clipShape(Circle())
+                    .frame(width: 44, height: 44)
+                    .background(AppColor.strongText)
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             }
             .accessibilityLabel("Crear")
+        }
+    }
+
+    private var searchField: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(AppColor.subtleText)
+
+            TextField("Buscar hábitos o planes", text: $searchText)
+                .font(AppFont.body2)
+                .textInputAutocapitalization(.never)
+
+            if !searchText.isEmpty {
+                Button {
+                    searchText = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(AppColor.subtleText)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Limpiar búsqueda")
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(AppColor.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(AppColor.surfaceMuted, lineWidth: 1)
         }
     }
 
@@ -219,27 +319,17 @@ struct TodayView: View {
             progress: dailyProgress,
             completedCount: completedTodayCount,
             totalCount: todayHabits.count,
-            remainingCount: remainingTodayCount
-        )
-        .todayListRow()
-
-        FocusSessionLauncherCard(
             remainingCount: remainingTodayCount,
-            onStart: { isShowingFocusSession = true }
+            streakDays: topStreakDays
         )
         .todayListRow()
 
-        HStack {
-            Text("Hábitos de hoy")
-                .font(AppFont.subtitle2)
-            Spacer()
-            Text(self.currentDayTitle)
-                .font(AppFont.body2)
-                .foregroundStyle(AppColor.mutedText)
-        }
-        .todayListRow()
+        sectionHeader("Pendientes", count: pendingTodayHabits.count)
+            .todayListRow(
+                EdgeInsets(top: 22, leading: 24, bottom: 2, trailing: 24)
+            )
 
-        ForEach(todayHabits) { habit in
+        ForEach(pendingTodayHabits) { habit in
             TodayHabitComponent(
                 habit: habit,
                 isCompleted: isCompleteForTodayList(habit),
@@ -270,26 +360,115 @@ struct TodayView: View {
             }
         }
 
-        if let top = todayHabits.topStreakHabit(reference: referenceDate) {
-            LongestStreakBanner(
-                habitTitle: top.habit.title,
-                streakDays: top.streak,
-                allSameStreak: todayHabits.allShareSameCurrentStreak(reference: referenceDate)
-            )
-            .todayListRow()
+        FocusSessionLauncherCard(
+            remainingCount: remainingTodayCount,
+            onStart: { isShowingFocusSession = true }
+        )
+        .todayListRow(EdgeInsets(top: 4, leading: 24, bottom: 10, trailing: 24))
+
+        if !completedTodayHabits.isEmpty {
+            sectionHeader("Completado", count: completedTodayHabits.count)
+                .todayListRow(
+                    EdgeInsets(top: 18, leading: 24, bottom: 8, trailing: 24)
+                )
+
+            ForEach(completedTodayHabits) { habit in
+                TodayHabitComponent(
+                    habit: habit,
+                    isCompleted: isCompleteForTodayList(habit),
+                    activeExperiment: experiments.activeExperiment(
+                        for: habit.id,
+                        reference: referenceDate
+                    ),
+                    referenceDate: referenceDate
+                ) {
+                    toggleCompletion(for: habit)
+                }
+                .todayListRow(EdgeInsets(top: 0, leading: 24, bottom: 0, trailing: 24))
+                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                    Button(role: .destructive) {
+                        habitToDelete = habit
+                        showDeleteHabitAlert = true
+                    } label: {
+                        Label("Borrar", systemImage: "trash")
+                    }
+                    .tint(AppColor.destructiveAction)
+
+                    Button {
+                        editHabitRoute = TodayEditHabitRoute(habit: habit)
+                    } label: {
+                        Label("Editar", systemImage: "pencil")
+                    }
+                    .tint(AppColor.editAction)
+                }
+            }
+        }
+
+        if !normalizedSearchText.isEmpty && visibleTodayHabits.isEmpty {
+            Text("Sin hábitos para esta búsqueda.")
+                .font(AppFont.body2)
+                .foregroundStyle(AppColor.mutedText)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .todayListRow(EdgeInsets(top: 2, leading: 24, bottom: 4, trailing: 24))
         }
     }
 
     @ViewBuilder
     private var plansSection: some View {
-        Text("Planes")
-            .font(AppFont.subtitle2)
-            .foregroundStyle(AppColor.strongText)
-            .padding(.top, 10)
-            .todayListRow()
+        sectionHeader("Plan en curso", detail: plansHeaderDetail)
+            .todayListRow(
+                EdgeInsets(top: 20, leading: 24, bottom: 2, trailing: 24)
+            )
 
-        ForEach(plans) { plan in
+        ForEach(visiblePlans) { plan in
             planRow(plan)
+        }
+    }
+
+    private func sectionHeader(_ title: String, count: Int) -> some View {
+        sectionHeader(title, detail: habitCountText(count))
+    }
+
+    private func sectionHeader(_ title: String, detail: String) -> some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(title)
+                .font(.system(size: 16, weight: .bold, design: .default))
+                .foregroundStyle(AppColor.strongText)
+
+            Spacer(minLength: 12)
+
+            Text(detail)
+                .font(AppFont.formSectionText)
+                .foregroundStyle(AppColor.mutedText)
+        }
+    }
+
+    private var plansHeaderDetail: String {
+        if visiblePlans.count == 1, let plan = visiblePlans.first {
+            return plan.daysRemainingText
+        }
+
+        return "\(visiblePlans.count) \(visiblePlans.count == 1 ? "plan" : "planes")"
+    }
+
+    private func habitCountText(_ count: Int) -> String {
+        "\(count) \(count == 1 ? "hábito" : "hábitos")"
+    }
+
+    private func searchMatches(_ fields: [String?]) -> Bool {
+        let query = normalizedSearchText.folding(
+            options: [.diacriticInsensitive, .caseInsensitive],
+            locale: Locale(identifier: "es_MX")
+        )
+
+        return fields.contains { field in
+            guard let field else { return false }
+            return field
+                .folding(
+                    options: [.diacriticInsensitive, .caseInsensitive],
+                    locale: Locale(identifier: "es_MX")
+                )
+                .contains(query)
         }
     }
 
@@ -453,7 +632,7 @@ private struct TodayEditPlanRoute: Identifiable {
 }
 
 private extension View {
-    func todayListRow(_ insets: EdgeInsets = EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16)) -> some View {
+    func todayListRow(_ insets: EdgeInsets = EdgeInsets(top: 0, leading: 24, bottom: 0, trailing: 24)) -> some View {
         listRowBackground(Color.clear)
             .listRowSeparator(.hidden)
             .listRowInsets(insets)

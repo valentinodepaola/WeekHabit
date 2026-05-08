@@ -50,7 +50,11 @@ struct HabitExperimentStatusCard: View {
             Spacer()
         }
         .padding(12)
-        .background(AppColor.accent.opacity(0.08))
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous))
+        .background(AppColor.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(Color(hex: "#e8dcc8"), lineWidth: 1)
+        }
     }
 }
