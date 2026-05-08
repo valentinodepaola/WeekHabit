@@ -128,7 +128,8 @@ struct WeekView: View {
                         referenceDate: referenceDate,
                         today: .now,
                         onSelectHabit: { selectedHabit = habit },
-                        onToggle: { date in toggleCompletion(for: habit, on: date) }
+                        onToggle: { date in toggleCompletion(for: habit, on: date) },
+                        onSkip: { date in toggleRest(for: habit, on: date) }
                     )
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
@@ -222,7 +223,7 @@ struct WeekView: View {
             case .plan:
                 coverRoute = .plan(.create)
             case .focus:
-                let todayHabits = habits.filter { $0.isLoggable(on: .now) }
+                let todayHabits = habits.filter { $0.isLoggable(on: .now) && !$0.isSkipped(on: .now) }
                 coverRoute = .focus(habits: todayHabits)
             }
         }
@@ -239,10 +240,11 @@ struct WeekView: View {
         let entriesForDay = habit.entries.filter {
             AppCalendar.isSameDay($0.date, date)
         }
-        let willMark = entriesForDay.isEmpty
+        let willMark = !habit.isCompleted(on: date)
 
         withAnimation(AppMotion.respectful(AppMotion.smooth, reduceMotion)) {
             if willMark {
+                entriesForDay.forEach { modelContext.delete($0) }
                 modelContext.insert(
                     HabitEntry(
                         date: date,
@@ -269,6 +271,7 @@ struct WeekView: View {
             if value <= 0 {
                 entriesForDay.forEach { modelContext.delete($0) }
             } else if let entry = entriesForDay.first {
+                entry.kind = .completed
                 entry.value = value
                 entry.completedCount = Int(value.rounded())
                 entry.completedAt = nil
@@ -282,6 +285,33 @@ struct WeekView: View {
                         source: .manual,
                         completedCount: Int(value.rounded()),
                         value: value,
+                        habit: habit
+                    )
+                )
+            }
+        }
+
+        AppHaptics.play(.selection)
+    }
+
+    private func toggleRest(for habit: Habit, on date: Date) {
+        let entriesForDay = habit.entries.filter {
+            AppCalendar.isSameDay($0.date, date)
+        }
+        let willSkip = !habit.isSkipped(on: date)
+
+        withAnimation(AppMotion.respectful(AppMotion.smooth, reduceMotion)) {
+            entriesForDay.forEach { modelContext.delete($0) }
+
+            if willSkip {
+                modelContext.insert(
+                    HabitEntry(
+                        date: date,
+                        completedAt: nil,
+                        source: AppCalendar.isSameDay(date, .now) ? .today : .manual,
+                        kind: .skipped,
+                        completedCount: 0,
+                        value: 0,
                         habit: habit
                     )
                 )

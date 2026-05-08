@@ -315,7 +315,9 @@ extension Habit {
                 let weekEnd = AppCalendar.current.date(byAdding: .day, value: 6, to: weekStart) ?? weekStart
                 let visibleStart = max(max(weekStart, start), creationDay)
                 let visibleEnd = min(min(weekEnd, end), endsAt.map { AppCalendar.startOfDay(for: $0) } ?? end)
-                let loggableDays = visibleStart <= visibleEnd ? insightDays(from: visibleStart, to: visibleEnd) : []
+                let loggableDays = visibleStart <= visibleEnd
+                    ? insightDays(from: visibleStart, to: visibleEnd).filter { !isSkipped(on: $0) }
+                    : []
                 let weeklyTarget = min(targetDaysPerWeek, loggableDays.count)
                 scheduled += weeklyTarget
                 completed += min(weeklyTarget, loggableDays.filter { isTrustedCompleted(on: $0) }.count)
@@ -329,7 +331,7 @@ extension Habit {
             return HabitCompletionStats(completed: completed, scheduled: scheduled)
         }
 
-        for day in insightDays(from: start, to: end) where day >= creationDay && isLoggable(on: day) {
+        for day in insightDays(from: start, to: end) where day >= creationDay && isLoggable(on: day) && !isSkipped(on: day) {
             scheduled += 1
             if isTrustedCompleted(on: day) {
                 completed += 1
@@ -354,7 +356,8 @@ extension Habit {
             for day in insightDays(from: start, to: end)
             where day >= AppCalendar.startOfDay(for: createdAt)
                 && AppCalendar.weekday(of: day) == weekday
-                && isLoggable(on: day) {
+                && isLoggable(on: day)
+                && !isSkipped(on: day) {
                 scheduled += 1
                 if isTrustedCompleted(on: day) {
                     completed += 1
@@ -369,7 +372,7 @@ extension Habit {
         let range = insightDateRange(days: lastDays, reference: reference)
         var counts: [Int: Int] = [:]
 
-        for entry in entries where range.contains(entry.date) && entry.source.isTrustedForInsights {
+        for entry in entries where range.contains(entry.date) && entry.kind == .completed && entry.source.isTrustedForInsights {
             guard let completedAt = entry.completedAt else { continue }
             let hour = AppCalendar.current.component(.hour, from: completedAt)
             counts[hour, default: 0] += 1
@@ -399,7 +402,7 @@ extension Habit {
 
     func isTrustedCompleted(on date: Date) -> Bool {
         let trustedValue = entries
-            .filter { AppCalendar.isSameDay($0.date, date) && $0.source.isTrustedForInsights }
+            .filter { AppCalendar.isSameDay($0.date, date) && $0.kind == .completed && $0.source.isTrustedForInsights }
             .reduce(0) { partial, entry in
                 partial + (entry.value ?? Double(entry.completedCount))
             }
@@ -409,7 +412,7 @@ extension Habit {
 
     func isManualCompleted(on date: Date) -> Bool {
         let manualValue = entries
-            .filter { AppCalendar.isSameDay($0.date, date) && $0.source == .manual }
+            .filter { AppCalendar.isSameDay($0.date, date) && $0.kind == .completed && $0.source == .manual }
             .reduce(0) { partial, entry in
                 partial + (entry.value ?? Double(entry.completedCount))
             }
@@ -424,6 +427,7 @@ extension Habit {
         var focusSessionMarks = 0
 
         for entry in entries where range.contains(entry.date) {
+            guard entry.kind == .completed else { continue }
             totalMarks += 1
 
             if entry.source.isTrustedForInsights {
@@ -448,7 +452,7 @@ extension Habit {
         var manualOnlyCount = 0
 
         for day in insightDays(from: range.lowerBound, to: range.upperBound)
-        where day >= AppCalendar.startOfDay(for: createdAt) && isLoggable(on: day) {
+        where day >= AppCalendar.startOfDay(for: createdAt) && isLoggable(on: day) && !isSkipped(on: day) {
             if isTrustedCompleted(on: day) {
                 continue
             }
@@ -524,6 +528,7 @@ extension Sequence where Element == Habit {
 
         for habit in self {
             for entry in habit.entries where range.contains(entry.date) {
+                guard entry.kind == .completed else { continue }
                 totalMarks += 1
 
                 if entry.source.isTrustedForInsights {
@@ -623,7 +628,9 @@ extension Sequence where Element == Habit {
             for day in insightDays(from: range.lowerBound, to: range.upperBound)
             where AppCalendar.weekday(of: day) == weekday {
                 for habit in habits
-                where day >= AppCalendar.startOfDay(for: habit.createdAt) && habit.isLoggable(on: day) {
+                where day >= AppCalendar.startOfDay(for: habit.createdAt)
+                    && habit.isLoggable(on: day)
+                    && !habit.isSkipped(on: day) {
                     scheduled += 1
                     if habit.isTrustedCompleted(on: day) {
                         completed += 1
@@ -647,7 +654,7 @@ extension Sequence where Element == Habit {
         var counts: [Int: Int] = [:]
 
         for habit in self {
-            for entry in habit.entries where range.contains(entry.date) && entry.source.isTrustedForInsights {
+            for entry in habit.entries where range.contains(entry.date) && entry.kind == .completed && entry.source.isTrustedForInsights {
                 guard let completedAt = entry.completedAt else { continue }
                 let hour = AppCalendar.current.component(.hour, from: completedAt)
                 counts[hour, default: 0] += 1
@@ -672,6 +679,7 @@ extension Sequence where Element == Habit {
         for habit in self {
             let count = habit.entries.filter { entry in
                 guard range.contains(entry.date),
+                      entry.kind == .completed,
                       entry.source.isTrustedForInsights,
                       let completedAt = entry.completedAt else {
                     return false

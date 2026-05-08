@@ -31,6 +31,7 @@ struct WeekDotsCard: View {
 
                         WeekDot(
                             isCompleted: habit.isCompleted(on: dayDate),
+                            isSkipped: habit.isSkipped(on: dayDate),
                             isActive: habit.isLoggable(on: dayDate),
                             isRetroactive: isRetroactive(on: dayDate),
                             color: habit.habitColor
@@ -60,6 +61,7 @@ struct WeekDotsCard: View {
 
 private struct WeekDot: View {
     let isCompleted: Bool
+    let isSkipped: Bool
     let isActive: Bool
     let isRetroactive: Bool
     let color: Color
@@ -79,6 +81,10 @@ private struct WeekDot: View {
                 Image(systemName: "checkmark")
                     .font(.system(size: 11, weight: .bold))
                     .foregroundStyle(.white)
+            } else if isSkipped && isActive {
+                Image(systemName: "pause.fill")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(color)
             }
         }
         .frame(width: size, height: size)
@@ -88,6 +94,9 @@ private struct WeekDot: View {
         if isCompleted && isActive {
             return isRetroactive ? color.opacity(0.7) : color
         }
+        if isSkipped && isActive {
+            return color.opacity(0.12)
+        }
         if isActive {
             return AppColor.bgSunken
         }
@@ -96,11 +105,15 @@ private struct WeekDot: View {
 
     private var borderColor: Color {
         if isCompleted && isActive { return color }
+        if isSkipped && isActive { return color.opacity(0.45) }
         if isActive { return color.opacity(0.45) }
         return AppColor.divider
     }
 
     private var borderStyle: StrokeStyle {
+        if isSkipped && isActive {
+            return StrokeStyle(lineWidth: 1.2, dash: [3, 2])
+        }
         if isCompleted && isRetroactive {
             return StrokeStyle(lineWidth: 1.2, dash: [2.5, 2])
         }

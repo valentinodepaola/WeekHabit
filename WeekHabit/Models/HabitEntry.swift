@@ -23,6 +23,11 @@ enum HabitEntrySource: String, Codable, CaseIterable {
     }
 }
 
+enum EntryKind: String, Codable, CaseIterable {
+    case completed
+    case skipped
+}
+
 @Model
 final class HabitEntry {
     var id: UUID
@@ -31,6 +36,7 @@ final class HabitEntry {
     /// Real timestamp for same-day marks. Retroactive marks keep this nil.
     var completedAt: Date?
     var sourceRaw: String?
+    var kindRaw: String?
     var focusSessionID: UUID?
     var completedCount: Int
     var value: Double?
@@ -49,10 +55,24 @@ final class HabitEntry {
         }
     }
 
+    var kind: EntryKind {
+        get {
+            if let kindRaw, let kind = EntryKind(rawValue: kindRaw) {
+                return kind
+            }
+
+            return .completed
+        }
+        set {
+            kindRaw = newValue.rawValue
+        }
+    }
+
     init(
         date: Date,
         completedAt: Date? = nil,
         source: HabitEntrySource = .manual,
+        kind: EntryKind = .completed,
         focusSessionID: UUID? = nil,
         completedCount: Int = 1,
         value: Double? = nil,
@@ -62,6 +82,7 @@ final class HabitEntry {
         self.date = AppCalendar.startOfDay(for: date)
         self.completedAt = completedAt
         self.sourceRaw = source.rawValue
+        self.kindRaw = kind.rawValue
         self.focusSessionID = focusSessionID
         self.completedCount = completedCount
         self.value = value ?? Double(completedCount)

@@ -27,7 +27,7 @@ struct FocusSessionView: View {
         self.habits = habits
 
         let incompleteIDs = habits
-            .filter { !$0.isCompleted(on: .now) }
+            .filter { !$0.isCompleted(on: .now) && !$0.isSkipped(on: .now) }
             .map(\.id)
         let initialIDs = incompleteIDs.isEmpty ? habits.map(\.id) : incompleteIDs
         _selectedHabitIDs = State(initialValue: Set(initialIDs))
@@ -215,6 +215,7 @@ struct FocusSessionView: View {
         }
 
         if let firstEntry = entriesForDay.first {
+            firstEntry.kind = .completed
             firstEntry.completedAt = completedAt
             firstEntry.source = .focusSession
             firstEntry.focusSessionID = sessionID

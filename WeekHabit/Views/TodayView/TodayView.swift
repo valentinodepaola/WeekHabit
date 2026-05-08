@@ -61,11 +61,15 @@ struct TodayView: View {
     }
 
     private var pendingHabits: [Habit] {
-        todayHabits.filter { !isCompleteForTodayList($0) }
+        todayHabits.filter { !isCompleteForTodayList($0) && !$0.isSkipped(on: referenceDate) }
     }
 
     private var completedHabits: [Habit] {
-        todayHabits.filter { isCompleteForTodayList($0) }
+        todayHabits.filter { isCompleteForTodayList($0) && !$0.isSkipped(on: referenceDate) }
+    }
+
+    private var skippedHabits: [Habit] {
+        todayHabits.filter { $0.isSkipped(on: referenceDate) }
     }
 
     private var tomorrowDate: Date {
@@ -80,13 +84,17 @@ struct TodayView: View {
         todayHabits.filter { isCompleteForTodayList($0) }.count
     }
 
+    private var activeTodayCount: Int {
+        max(todayHabits.count - skippedHabits.count, 0)
+    }
+
     private var remainingTodayCount: Int {
-        max(todayHabits.count - completedTodayCount, 0)
+        max(activeTodayCount - completedTodayCount, 0)
     }
 
     private var dailyProgress: Double {
-        guard !todayHabits.isEmpty else { return 0 }
-        return Double(completedTodayCount) / Double(todayHabits.count)
+        guard activeTodayCount > 0 else { return 0 }
+        return Double(completedTodayCount) / Double(activeTodayCount)
     }
 
     var body: some View {
@@ -187,6 +195,16 @@ struct TodayView: View {
 
     @ViewBuilder
     private var todayHabitsContent: some View {
+        DailyProgressCard(
+            progress: dailyProgress,
+            completedCount: completedTodayCount,
+            totalCount: activeTodayCount,
+            remainingCount: remainingTodayCount
+        )
+        .todayListRow(
+            EdgeInsets(top: AppSpacing.s, leading: AppSpacing.l, bottom: AppSpacing.s, trailing: AppSpacing.l)
+        )
+
         sectionHeader(title: "Pendientes", count: pendingHabits.count)
             .todayListRow(
                 EdgeInsets(top: AppSpacing.s, leading: AppSpacing.l, bottom: 0, trailing: AppSpacing.l)
@@ -203,6 +221,8 @@ struct TodayView: View {
                 referenceDate: referenceDate
             ) {
                 toggleCompletion(for: habit)
+            } onSkip: {
+                toggleRest(for: habit)
             }
             .todayCompletionTransition(transitionPhase(for: habit))
             .todayListRow()
@@ -226,7 +246,7 @@ struct TodayView: View {
 
         FocusSessionLauncherCard(
             remainingCount: remainingTodayCount,
-            onStart: { coverRoute = .focus(habits: todayHabits) }
+            onStart: { coverRoute = .focus(habits: todayHabits.filter { !$0.isSkipped(on: referenceDate) }) }
         )
         .todayListRow()
 
@@ -238,9 +258,51 @@ struct TodayView: View {
             ForEach(completedHabits) { habit in
                 TodayCompletedHabitRow(
                     habit: habit,
-                    metadata: completionMetadata(for: habit)
+                    metadata: completionMetadata(for: habit),
+                    onSkip: { toggleRest(for: habit) }
                 ) {
                     toggleCompletion(for: habit)
+                }
+                .todayCompletionTransition(transitionPhase(for: habit))
+                .todayListRow()
+                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                    Button(role: .destructive) {
+                        habitToDelete = habit
+                        showDeleteHabitAlert = true
+                    } label: {
+                        Label("Borrar", systemImage: "trash")
+                    }
+                    .tint(AppColor.destructiveAction)
+
+                    Button {
+                        coverRoute = .habit(.edit(habit))
+                    } label: {
+                        Label("Editar", systemImage: "pencil")
+                    }
+                    .tint(AppColor.editAction)
+                }
+            }
+        }
+
+        if !skippedHabits.isEmpty {
+            sectionHeader(title: "Descansos", count: skippedHabits.count)
+                .padding(.top, AppSpacing.xl)
+                .todayListRow()
+
+            ForEach(skippedHabits) { habit in
+                TodayHabitComponent(
+                    habit: habit,
+                    isCompleted: false,
+                    isSkipped: true,
+                    activeExperiment: experiments.activeExperiment(
+                        for: habit.id,
+                        reference: referenceDate
+                    ),
+                    referenceDate: referenceDate
+                ) {
+                    toggleCompletion(for: habit)
+                } onSkip: {
+                    toggleRest(for: habit)
                 }
                 .todayCompletionTransition(transitionPhase(for: habit))
                 .todayListRow()
@@ -411,7 +473,7 @@ struct TodayView: View {
             case .plan:
                 coverRoute = .plan(.create)
             case .focus:
-                coverRoute = .focus(habits: todayHabits)
+                coverRoute = .focus(habits: todayHabits.filter { !$0.isSkipped(on: referenceDate) })
             }
         }
     }
@@ -428,10 +490,11 @@ struct TodayView: View {
             AppCalendar.isSameDay($0.date, referenceDate)
         }
 
-        let willComplete = entriesForToday.isEmpty
+        let willComplete = !habit.isCompleted(on: referenceDate)
 
         transitionHabitBetweenSections(habit.id) {
             if willComplete {
+                entriesForToday.forEach { modelContext.delete($0) }
                 let entry = HabitEntry(
                     date: referenceDate,
                     completedAt: .now,
@@ -509,6 +572,7 @@ struct TodayView: View {
             }
 
             if let entry = entriesForDay.first {
+                entry.kind = .completed
                 entry.value = value
                 entry.completedCount = Int(value.rounded())
                 entry.completedAt = .now
@@ -522,6 +586,31 @@ struct TodayView: View {
                         source: source,
                         completedCount: Int(value.rounded()),
                         value: value,
+                        habit: habit
+                    )
+                )
+            }
+        }
+    }
+
+    private func toggleRest(for habit: Habit) {
+        let entriesForToday = habit.entries.filter {
+            AppCalendar.isSameDay($0.date, referenceDate)
+        }
+        let willSkip = !habit.isSkipped(on: referenceDate)
+
+        transitionHabitBetweenSections(habit.id) {
+            entriesForToday.forEach { modelContext.delete($0) }
+
+            if willSkip {
+                modelContext.insert(
+                    HabitEntry(
+                        date: referenceDate,
+                        completedAt: nil,
+                        source: .today,
+                        kind: .skipped,
+                        completedCount: 0,
+                        value: 0,
                         habit: habit
                     )
                 )
@@ -663,6 +752,7 @@ private enum TodayCompletionTransitionPhase {
 private struct TodayCompletedHabitRow: View {
     let habit: Habit
     let metadata: String
+    let onSkip: () -> Void
     let onToggle: () -> Void
 
     var body: some View {
@@ -692,6 +782,13 @@ private struct TodayCompletedHabitRow: View {
             }
 
             Spacer(minLength: 0)
+        }
+        .contextMenu {
+            Button {
+                onSkip()
+            } label: {
+                Label("Hoy descanso", systemImage: "pause.circle")
+            }
         }
         .padding(.horizontal, AppSpacing.l)
         .padding(.vertical, AppSpacing.s)

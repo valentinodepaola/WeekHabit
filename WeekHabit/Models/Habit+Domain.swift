@@ -11,6 +11,7 @@ import Foundation
 
 enum CellState: Equatable {
     case completed
+    case skipped
     case missed
     case inactive
     case future
@@ -94,9 +95,15 @@ extension Habit {
         totalValue(on: date) >= sessionTargetValue
     }
 
+    func isSkipped(on date: Date) -> Bool {
+        entries.contains {
+            AppCalendar.isSameDay($0.date, date) && $0.kind == .skipped
+        }
+    }
+
     func totalValue(on date: Date) -> Double {
         entries
-            .filter { AppCalendar.isSameDay($0.date, date) }
+            .filter { AppCalendar.isSameDay($0.date, date) && $0.kind == .completed }
             .reduce(0) { partial, entry in
                 partial + (entry.value ?? Double(entry.completedCount))
             }
@@ -141,8 +148,11 @@ extension Habit {
 
         while scannedDays < 365 * 5 {
             if isLoggable(on: cursor) {
-                guard isCompleted(on: cursor) else { break }
-                streak += 1
+                if isCompleted(on: cursor) {
+                    streak += 1
+                } else if !isSkipped(on: cursor) {
+                    break
+                }
             }
             guard let previous = calendar.date(byAdding: .day, value: -1, to: cursor) else {
                 break
@@ -185,6 +195,8 @@ extension Habit {
                 if isCompleted(on: cursor) {
                     running += 1
                     best = max(best, running)
+                } else if isSkipped(on: cursor) {
+                    best = max(best, running)
                 } else {
                     running = 0
                 }
@@ -225,6 +237,10 @@ extension Habit {
 
                 if !isLoggable(on: day) {
                     return .inactive
+                }
+
+                if isSkipped(on: day) {
+                    return .skipped
                 }
 
                 if isFlexibleSchedule && !isCompleted(on: day) {
@@ -272,7 +288,7 @@ extension Habit {
         var cursor = start
         var scanned = 0
         while cursor <= end && scanned < 365 * 5 {
-            if isLoggable(on: cursor) { count += 1 }
+            if isLoggable(on: cursor), !isSkipped(on: cursor) { count += 1 }
             guard let next = calendar.date(byAdding: .day, value: 1, to: cursor) else { break }
             cursor = next
             scanned += 1
