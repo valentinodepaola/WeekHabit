@@ -11,6 +11,8 @@ struct PlanAccordion: View {
     let onToggle: () -> Void
     let onHabitTap: (Habit) -> Void
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     private var planColor: Color { AppColor.accent }
     private var progress: Double { plan.progress() }
     private var sortedHabits: [Habit] {
@@ -34,64 +36,60 @@ struct PlanAccordion: View {
                     )
             }
         }
-        .background(AppColor.surface)
+        .background(AppColor.bgElevated)
         .overlay(alignment: .leading) {
             Rectangle()
                 .fill(planColor)
-                .frame(width: 5)
+                .frame(width: 4)
         }
         .overlay {
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
+            RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous)
                 .stroke(planColor.opacity(isExpanded ? 0.24 : 0.12), lineWidth: 1)
         }
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .shadow(color: AppColor.strongText.opacity(isExpanded ? 0.10 : 0.05), radius: isExpanded ? 16 : 8, x: 0, y: isExpanded ? 10 : 4)
-        .animation(.spring(response: 0.42, dampingFraction: 0.86), value: isExpanded)
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous))
+        .appElevation(isExpanded ? .medium : .low)
+        .animation(AppMotion.respectful(AppMotion.smooth, reduceMotion), value: isExpanded)
     }
 
     private var planHeader: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(spacing: 12) {
+        VStack(alignment: .leading, spacing: AppSpacing.m) {
+            HStack(spacing: AppSpacing.m) {
                 Button(action: onToggle) {
-                    HStack(spacing: 12) {
+                    HStack(spacing: AppSpacing.m) {
                         ZStack {
                             Circle()
                                 .fill(planColor.opacity(0.15))
                                 .frame(width: 44, height: 44)
-
                             Image(systemName: "target")
                                 .font(.system(size: 18, weight: .semibold))
                                 .foregroundStyle(planColor)
                         }
 
-                        VStack(alignment: .leading, spacing: 4) {
+                        VStack(alignment: .leading, spacing: 2) {
                             Text(plan.title)
-                                .font(AppFont.body2)
-                                .fontWeight(.semibold)
-                                .foregroundStyle(AppColor.strongText)
+                                .font(AppFont.bodyEmphasis)
+                                .foregroundStyle(AppColor.textPrimary)
                                 .lineLimit(1)
-
                             Text(plan.daysRemainingText)
-                                .font(AppFont.formSectionText2)
-                                .foregroundStyle(AppColor.subtleText)
+                                .font(AppFont.label)
+                                .foregroundStyle(AppColor.textTertiary)
                                 .lineLimit(1)
                         }
                     }
                 }
                 .buttonStyle(PlanHeaderButtonStyle())
 
-                Spacer(minLength: 8)
+                Spacer(minLength: AppSpacing.s)
 
                 Button(action: onToggle) {
                     ZStack {
                         Circle()
-                            .fill(AppColor.surfaceMuted)
+                            .fill(AppColor.bgSunken)
                             .frame(width: 30, height: 30)
-
                         Image(systemName: "chevron.down")
                             .font(.system(size: 12, weight: .bold))
-                            .foregroundStyle(AppColor.subtleText)
+                            .foregroundStyle(AppColor.textSecondary)
                             .rotationEffect(.degrees(isExpanded ? 180 : 0))
                     }
                 }
@@ -99,19 +97,16 @@ struct PlanAccordion: View {
             }
 
             Button(action: onToggle) {
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: AppSpacing.s) {
                     HStack(alignment: .firstTextBaseline) {
                         Text("\(Int(progress * 100))%")
-                            .font(AppFont.subtitle2)
+                            .font(AppFont.bodyEmphasis)
                             .foregroundStyle(progressColor)
                             .monospacedDigit()
-
                         Text("de avance")
-                            .font(AppFont.formSectionText2)
-                            .foregroundStyle(AppColor.mutedText)
-
+                            .font(AppFont.label)
+                            .foregroundStyle(AppColor.textSecondary)
                         Spacer()
-
                         PlanMetricPill(
                             icon: "checklist",
                             text: "\(plan.habits.count) \(plan.habits.count == 1 ? "hábito" : "hábitos")",
@@ -119,65 +114,60 @@ struct PlanAccordion: View {
                         )
                     }
 
-                    PlanProgressBar(
+                    WHProgressBar(
                         progress: progress,
-                        goal: plan.targetCompletionRate,
-                        color: planColor
+                        progressColor: planColor,
+                        height: 7,
+                        goalMarker: plan.targetCompletionRate
                     )
-                    .frame(height: 7)
                 }
             }
             .buttonStyle(PlanHeaderButtonStyle())
         }
-        .padding(.leading, 20)
-        .padding(.trailing, 16)
-        .padding(.vertical, 16)
+        .padding(.leading, AppSpacing.xl)
+        .padding(.trailing, AppSpacing.l)
+        .padding(.vertical, AppSpacing.l)
     }
 
     private var planHabits: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: AppSpacing.m) {
             HStack {
                 Text("Hábitos del plan")
-                    .font(AppFont.formSectionText)
-                    .foregroundStyle(AppColor.mutedText)
-
+                    .font(AppFont.label)
+                    .foregroundStyle(AppColor.textSecondary)
                 Spacer()
-
                 Text(plan.daysRemainingText)
-                    .font(AppFont.formSectionText2)
-                    .foregroundStyle(AppColor.subtleText)
+                    .font(AppFont.label)
+                    .foregroundStyle(AppColor.textTertiary)
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppSpacing.l)
 
             if sortedHabits.isEmpty {
                 PlanEmptyHabitRow(color: planColor)
             } else {
                 VStack(spacing: 0) {
                     ForEach(Array(sortedHabits.enumerated()), id: \.element.id) { index, habit in
-                        PlanHabitRow(
-                            habit: habit,
-                            color: planColor
-                        ) {
+                        PlanHabitRow(habit: habit, color: planColor) {
                             onHabitTap(habit)
                         }
-
                         if index < sortedHabits.count - 1 {
                             Divider()
+                                .overlay(AppColor.divider)
                                 .padding(.leading, 60)
                         }
                     }
                 }
-                .background(AppColor.surfaceMuted.opacity(0.58))
-                .clipShape(RoundedRectangle(cornerRadius: AppRadius.large, style: .continuous))
-                .padding(.horizontal, 12)
+                .background(AppColor.bgSunken.opacity(0.6))
+                .clipShape(RoundedRectangle(cornerRadius: AppRadius.m, style: .continuous))
+                .padding(.horizontal, AppSpacing.m)
             }
         }
         .padding(.top, 2)
-        .padding(.bottom, 14)
+        .padding(.bottom, AppSpacing.m)
     }
 
     private var progressColor: Color {
-        plan.meetsGoal() ? AppColor.accent : AppColor.strongText
+        plan.meetsGoal() ? AppColor.success : AppColor.textPrimary
     }
 }
 
@@ -188,53 +178,45 @@ private struct PlanHabitRow: View {
 
     var body: some View {
         Button(action: onTap) {
-            HStack(alignment: .center, spacing: 12) {
+            HStack(alignment: .center, spacing: AppSpacing.m) {
                 ZStack {
                     Circle()
                         .fill(habit.habitColor.opacity(0.16))
                         .frame(width: 36, height: 36)
-
                     Image(systemName: habit.iconName)
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(habit.habitColor)
                 }
 
-                VStack(alignment: .leading, spacing: 7) {
-                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                VStack(alignment: .leading, spacing: AppSpacing.xs) {
+                    HStack(alignment: .firstTextBaseline, spacing: AppSpacing.s) {
                         Text(habit.title)
-                            .font(AppFont.body2)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(AppColor.strongText)
+                            .font(AppFont.bodyEmphasis)
+                            .foregroundStyle(AppColor.textPrimary)
                             .lineLimit(1)
-
-                        Spacer(minLength: 8)
-
-                        HStack(spacing: 4) {
+                        Spacer(minLength: AppSpacing.s)
+                        HStack(spacing: AppSpacing.xs) {
                             Image(systemName: "flame.fill")
                                 .font(.system(size: 10, weight: .semibold))
                             Text("\(streakCount)")
-                                .font(AppFont.formSectionText2)
-                                .fontWeight(.medium)
+                                .font(AppFont.label)
                                 .monospacedDigit()
                         }
-                        .foregroundStyle(color)
-                        .accessibilityLabel(streakAccessibilityLabel)
+                        .foregroundStyle(streakColor)
                     }
 
-                    HStack(spacing: 10) {
+                    HStack(spacing: AppSpacing.s) {
                         Text(cardSubtitle)
-                            .font(AppFont.formSectionText2)
-                            .foregroundStyle(AppColor.subtleText)
+                            .font(AppFont.label)
+                            .foregroundStyle(AppColor.textTertiary)
                             .lineLimit(1)
-
-                        Spacer(minLength: 8)
-
+                        Spacer(minLength: AppSpacing.s)
                         PlanHabitWeekDots(habit: habit)
                     }
                 }
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 12)
+            .padding(.horizontal, AppSpacing.m)
+            .padding(.vertical, AppSpacing.m)
             .contentShape(Rectangle())
         }
         .buttonStyle(PlanHabitRowButtonStyle())
@@ -245,7 +227,6 @@ private struct PlanHabitRow: View {
         if habit.trackingKind == .quantity {
             return "\(status) · \(habit.targetPerSessionText)"
         }
-
         return status
     }
 
@@ -253,8 +234,8 @@ private struct PlanHabitRow: View {
         habit.currentStreak()
     }
 
-    private var streakAccessibilityLabel: String {
-        streakCount == 0 ? "Listo para volver" : "\(streakCount) días seguidos"
+    private var streakColor: Color {
+        streakCount > 0 ? AppColor.warning : AppColor.textTertiary
     }
 }
 
@@ -262,21 +243,19 @@ private struct PlanEmptyHabitRow: View {
     let color: Color
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppSpacing.m) {
             Image(systemName: "plus.circle")
                 .font(.system(size: 18, weight: .semibold))
                 .foregroundStyle(color)
-
             Text("Sin hábitos asignados")
-                .font(AppFont.body2)
-                .foregroundStyle(AppColor.subtleText)
-
+                .font(AppFont.body)
+                .foregroundStyle(AppColor.textSecondary)
             Spacer()
         }
-        .padding(14)
-        .background(AppColor.surfaceMuted.opacity(0.58))
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.large, style: .continuous))
-        .padding(.horizontal, 12)
+        .padding(AppSpacing.m)
+        .background(AppColor.bgSunken.opacity(0.6))
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.m, style: .continuous))
+        .padding(.horizontal, AppSpacing.m)
     }
 }
 
@@ -286,7 +265,7 @@ private struct PlanHabitWeekDots: View {
     var body: some View {
         let completedWeekdays = habit.completedWeekdays()
 
-        HStack(spacing: 4) {
+        HStack(spacing: AppSpacing.xs) {
             ForEach(Weekday.ordered) { weekday in
                 PlanHabitDot(
                     isCompleted: completedWeekdays.contains(weekday),
@@ -308,15 +287,9 @@ private struct PlanHabitDot: View {
     }
 
     private var fillColor: Color {
-        if isCompleted {
-            return AppColor.accent
-        }
-
-        if isActive {
-            return AppColor.subtleText.opacity(0.34)
-        }
-
-        return AppColor.subtleText.opacity(0.12)
+        if isCompleted { return AppColor.accent }
+        if isActive { return AppColor.textTertiary.opacity(0.5) }
+        return AppColor.textTertiary.opacity(0.18)
     }
 }
 
@@ -326,59 +299,35 @@ private struct PlanMetricPill: View {
     let color: Color
 
     var body: some View {
-        HStack(spacing: 5) {
+        HStack(spacing: AppSpacing.xs) {
             Image(systemName: icon)
                 .font(.system(size: 11, weight: .semibold))
-
             Text(text)
-                .font(AppFont.formSectionText2)
-                .fontWeight(.medium)
+                .font(AppFont.label)
         }
         .foregroundStyle(color)
-        .padding(.horizontal, 9)
-        .padding(.vertical, 5)
+        .padding(.horizontal, AppSpacing.s)
+        .padding(.vertical, AppSpacing.xs)
         .background(color.opacity(0.12))
         .clipShape(Capsule())
     }
 }
 
-private struct PlanProgressBar: View {
-    let progress: Double
-    let goal: Double
-    let color: Color
-
-    var body: some View {
-        GeometryReader { geo in
-            ZStack(alignment: .leading) {
-                Capsule()
-                    .fill(AppColor.surfaceMuted)
-
-                Capsule()
-                    .fill(color)
-                    .frame(width: geo.size.width * CGFloat(min(progress, 1)))
-
-                Rectangle()
-                    .fill(AppColor.strongText.opacity(0.28))
-                    .frame(width: 1.5, height: geo.size.height + 3)
-                    .offset(x: geo.size.width * CGFloat(goal) - 0.75)
-            }
-        }
-    }
-}
-
 private struct PlanHeaderButtonStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .scaleEffect(configuration.isPressed ? 0.99 : 1)
             .opacity(configuration.isPressed ? 0.92 : 1)
-            .animation(.easeOut(duration: 0.1), value: configuration.isPressed)
+            .animation(AppMotion.respectful(AppMotion.linearOut, reduceMotion), value: configuration.isPressed)
     }
 }
 
 private struct PlanHabitRowButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .background(configuration.isPressed ? AppColor.surface.opacity(0.65) : Color.clear)
-            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+            .background(configuration.isPressed ? AppColor.bgElevated.opacity(0.6) : Color.clear)
+            .animation(AppMotion.linearOut, value: configuration.isPressed)
     }
 }

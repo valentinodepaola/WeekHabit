@@ -2,8 +2,6 @@
 //  CustomTabBar.swift
 //  WeekHabit
 //
-//  Created by Valentino De Paola Gallardo on 22/04/26.
-//
 
 import SwiftUI
 
@@ -17,7 +15,7 @@ struct CustomTabBar: View {
     let tabs: [TabItems] = [.today, .week, .insights]
 
     var body: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: AppSpacing.s) {
             ForEach(tabs.indices, id: \.self) { index in
                 TabBarItem(
                     icon: tabs[index].icon,
@@ -29,28 +27,28 @@ struct CustomTabBar: View {
                 }
             }
         }
-        .padding(7)
+        .padding(AppSpacing.s)
         .frame(maxWidth: .infinity)
         .frame(height: 68)
         .background {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
+            RoundedRectangle(cornerRadius: AppRadius.xl, style: .continuous)
                 .fill(tabBarFill)
-                .shadow(color: shadowColor, radius: 24, x: 0, y: 12)
                 .overlay {
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    RoundedRectangle(cornerRadius: AppRadius.xl, style: .continuous)
                         .stroke(borderColor, lineWidth: 1)
                 }
         }
-        .padding(.horizontal, 16)
-        .padding(.bottom, 24)
+        .appElevation(.medium)
+        .padding(.horizontal, AppSpacing.l)
+        .padding(.bottom, AppSpacing.xl)
         .background {
             VStack(spacing: 0) {
                 Spacer(minLength: 0)
                 LinearGradient(
                     colors: [
-                        backgroundColor.opacity(0),
-                        backgroundColor.opacity(colorScheme == .dark ? 0.92 : 0.96),
-                        backgroundColor
+                        AppColor.bgCanvas.opacity(0),
+                        AppColor.bgCanvas.opacity(colorScheme == .dark ? 0.92 : 0.96),
+                        AppColor.bgCanvas
                     ],
                     startPoint: .top,
                     endPoint: .bottom
@@ -60,45 +58,26 @@ struct CustomTabBar: View {
             .ignoresSafeArea(edges: .bottom)
             .allowsHitTesting(false)
         }
-        .sensoryFeedback(.selection, trigger: selectedTab)
     }
 
     private func selectTab(_ index: Int) {
         guard selectedTab != index else { return }
 
-        withAnimation(selectionAnimation) {
+        withAnimation(AppMotion.respectful(AppMotion.smooth, reduceMotion)) {
             selectedTab = index
         }
     }
 
-    private var selectionAnimation: Animation {
-        if reduceMotion {
-            return .easeOut(duration: 0.18)
-        }
-
-        return .spring(response: 0.34, dampingFraction: 0.74, blendDuration: 0.12)
-    }
-
     private var tabBarFill: AnyShapeStyle {
         colorScheme == .dark
-            ? AnyShapeStyle(AppColor.surface.opacity(0.9))
+            ? AnyShapeStyle(AppColor.bgElevated.opacity(0.96))
             : AnyShapeStyle(.ultraThinMaterial)
     }
 
     private var borderColor: Color {
         colorScheme == .dark
-            ? Color.white.opacity(0.08)
-            : Color.white.opacity(0.72)
-    }
-
-    private var shadowColor: Color {
-        colorScheme == .dark
-            ? Color.black.opacity(0.35)
-            : AppColor.strongText.opacity(0.12)
-    }
-
-    private var backgroundColor: Color {
-        colorScheme == .dark ? AppColor.bgDark : AppColor.bgLight
+            ? AppColor.accent.opacity(0.08)
+            : AppColor.divider.opacity(0.6)
     }
 }
 
@@ -109,30 +88,24 @@ enum TabItems: String {
 
     var description: String {
         switch self {
-        case .today:
-            return "Hoy"
-        case .week:
-            return "Semana"
-        case .insights:
-            return "Insights"
+        case .today: return "Hoy"
+        case .week: return "Semana"
+        case .insights: return "Insights"
         }
     }
 
     var icon: String {
         switch self {
-        case .today:
-            return "sun.max"
-        case .week:
-            return "calendar"
-        case .insights:
-            return "align.vertical.bottom.fill"
+        case .today: return "sun.max"
+        case .week: return "calendar"
+        case .insights: return "align.vertical.bottom.fill"
         }
     }
 }
 
 #Preview {
     ZStack(alignment: .bottom) {
-        AppColor.bgLight.ignoresSafeArea()
+        AppColor.bgCanvas.ignoresSafeArea()
         CustomTabBar(selectedTab: .constant(0))
     }
 }

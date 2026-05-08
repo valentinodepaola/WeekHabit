@@ -11,56 +11,54 @@ struct FocusSessionLauncherCard: View {
 
     private var detail: String {
         if remainingCount == 0 {
-            return "Puedes usar una sesión para registrar hábitos hechos en tiempo real."
+            return "Para registrar hábitos en tiempo real."
         }
-
         if remainingCount == 1 {
-            return "Enfócate en 1 hábito y deja una marca más confiable para Insights."
+            return "Enfócate en 1 hábito y deja una marca confiable."
         }
-
-        return "Enfócate en \(remainingCount) hábitos y deja marcas más confiables para Insights."
+        return "Enfócate en \(remainingCount) hábitos y deja marcas confiables."
     }
 
     var body: some View {
-        HStack(spacing: 14) {
-            ZStack {
-                RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous)
-                    .fill(AppColor.accent.opacity(0.12))
-                    .frame(width: 50, height: 50)
+        Button(action: onStart) {
+            HStack(spacing: AppSpacing.m) {
+                ZStack {
+                    Circle()
+                        .fill(AppColor.accentMuted)
+                    Image(systemName: "timer")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundStyle(AppColor.accent)
+                }
+                .frame(width: 40, height: 40)
 
-                Image(systemName: "timer")
-                    .font(.system(size: 22, weight: .semibold))
-                    .foregroundStyle(AppColor.accent)
-            }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Sesión de ritmo")
+                        .font(AppFont.bodyEmphasis)
+                        .foregroundStyle(AppColor.textPrimary)
+                    Text(detail)
+                        .font(AppFont.label)
+                        .foregroundStyle(AppColor.textSecondary)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
+                }
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Sesión de ritmo")
-                    .font(AppFont.body2)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(AppColor.strongText)
+                Spacer(minLength: AppSpacing.s)
 
-                Text(detail)
-                    .font(AppFont.formSectionText2)
-                    .foregroundStyle(AppColor.mutedText)
-                    .lineLimit(2)
-            }
-
-            Spacer(minLength: 8)
-
-            Button {
-                onStart()
-            } label: {
                 Image(systemName: "play.fill")
-                    .font(.system(size: 14, weight: .bold))
+                    .font(.system(size: 12, weight: .bold))
                     .foregroundStyle(.white)
-                    .frame(width: 36, height: 36)
+                    .frame(width: 32, height: 32)
                     .background(AppColor.accent)
                     .clipShape(Circle())
             }
-            .buttonStyle(.plain)
+            .padding(AppSpacing.m)
+            .background(AppColor.bgElevated)
+            .clipShape(RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous)
+                    .strokeBorder(AppColor.divider, lineWidth: 1)
+            )
         }
-        .padding(14)
-        .background(AppColor.surface)
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.large, style: .continuous))
+        .buttonStyle(.plain)
     }
 }
