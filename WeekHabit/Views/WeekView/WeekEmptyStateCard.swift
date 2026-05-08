@@ -2,52 +2,53 @@
 //  WeekEmptyStateCard.swift
 //  WeekHabit
 //
-//  Created by Valentino De Paola Gallardo on 01/05/26.
-//
 
 import SwiftUI
 
 struct WeekEmptyStateCard: View {
-    private var text1: Text {
-        Text("Una semana ")
-            .font(AppFont.subtitle)
-    }
-
-    private var text2: Text {
-        Text("por escribir")
-            .font(AppFont.subtitle.italic())
-            .italic()
-            .foregroundStyle(AppColor.accent)
-    }
+    var onCreate: (() -> Void)? = nil
 
     var body: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: AppSpacing.l) {
             ZStack {
                 Circle()
-                    .fill(AppColor.accentSoft)
-                    .frame(width: 64, height: 64)
+                    .fill(AppColor.accentMuted)
+                    .frame(width: 72, height: 72)
                 Image(systemName: "square.grid.3x2")
                     .font(.system(size: 26, weight: .medium))
                     .foregroundStyle(AppColor.accent)
             }
 
-            text1 + text2
+            VStack(spacing: AppSpacing.s) {
+                headlineText
+                Text("Aún no hay marcas. La cuadrícula se irá llenando a medida que completes hábitos.")
+                    .font(AppFont.callout)
+                    .foregroundStyle(AppColor.textSecondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, AppSpacing.l)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
 
-            Text("Aún no hay marcas. La cuadrícula se irá llenando a medida que completes hábitos.")
-                .font(AppFont.body2)
-                .foregroundStyle(AppColor.mutedText)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 24)
+            if let onCreate {
+                WHButton(title: "Crear un hábito", icon: "plus", variant: .primary, fullWidth: false, action: onCreate)
+            }
         }
-        .padding(.vertical, 36)
-        .padding(.horizontal, 20)
+        .padding(.vertical, AppSpacing.xxl)
+        .padding(.horizontal, AppSpacing.l)
         .frame(maxWidth: .infinity)
-        .background(AppColor.surface)
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.large))
+        .background(AppColor.bgElevated)
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.l))
         .overlay {
-            RoundedRectangle(cornerRadius: AppRadius.large)
-                .stroke(AppColor.subtleText.opacity(0.12), lineWidth: 1)
+            RoundedRectangle(cornerRadius: AppRadius.l)
+                .stroke(AppColor.divider, lineWidth: 1)
         }
+    }
+
+    private var headlineText: some View {
+        (Text("Una semana ").font(AppFont.headline)
+         + Text("por escribir").font(AppFont.headline.italic())
+            .foregroundColor(AppColor.accent))
+            .foregroundStyle(AppColor.textPrimary)
     }
 }
 

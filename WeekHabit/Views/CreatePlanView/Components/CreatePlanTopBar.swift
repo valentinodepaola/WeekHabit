@@ -11,20 +11,26 @@ struct CreatePlanTopBar: View {
     let onSave: () -> Void
 
     var body: some View {
-        HStack {
-            Button("Cancelar", action: onCancel)
-                .foregroundStyle(AppColor.mutedText)
+        HStack(spacing: AppSpacing.s) {
+            Button(action: onCancel) {
+                Text("Cancelar")
+                    .font(AppFont.body)
+                    .foregroundStyle(AppColor.textSecondary)
+            }
+            .buttonStyle(.plain)
 
             Spacer()
 
-            Button(action: onSave) {
-                Text("Guardar")
-            }
-            .buttonStyle(.borderedProminent)
-            .fontWeight(.bold)
-            .tint(AppColor.accent)
-            .disabled(isSaveDisabled)
+            WHButton(
+                title: "Guardar",
+                variant: .primary,
+                size: .compact,
+                fullWidth: false,
+                isDisabled: isSaveDisabled,
+                action: onSave
+            )
         }
-        .padding(.horizontal)
+        .padding(.horizontal, AppSpacing.l)
+        .padding(.vertical, AppSpacing.s)
     }
 }

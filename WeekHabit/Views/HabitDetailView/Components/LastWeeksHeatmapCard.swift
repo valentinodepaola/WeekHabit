@@ -26,23 +26,46 @@ struct LastWeeksHeatmapCard: View {
         }
     }
 
-    private let cellSpacing: CGFloat = 7
-    private let cellCornerRadius: CGFloat = 6
+    private let cellSpacing: CGFloat = 6
+    private let cellCornerRadius: CGFloat = 5
     private let rowCount = 7
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("ÚLTIMAS 10 SEMANAS")
-                .font(AppFont.formSectionText)
-                .foregroundStyle(AppColor.mutedText)
-                .textCase(.uppercase)
+        VStack(alignment: .leading, spacing: AppSpacing.m) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("ÚLTIMAS \(weeks) SEMANAS")
+                    .font(AppFont.label)
+                    .foregroundStyle(AppColor.textTertiary)
+                    .tracking(0.6)
+
+                Spacer()
+
+                heatmapLegend
+            }
 
             heatmapGrid
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
-        .background(AppColor.surface)
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous))
+        .padding(AppSpacing.l)
+        .background(AppColor.bgElevated)
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous))
+        .appElevation(.low)
+    }
+
+    private var heatmapLegend: some View {
+        HStack(spacing: AppSpacing.xs) {
+            Text("menos")
+                .font(.system(size: 10, weight: .medium))
+                .foregroundStyle(AppColor.textTertiary)
+            ForEach([0.0, 0.25, 0.5, 0.75, 1.0], id: \.self) { intensity in
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(intensityFill(intensity))
+                    .frame(width: 9, height: 9)
+            }
+            Text("más")
+                .font(.system(size: 10, weight: .medium))
+                .foregroundStyle(AppColor.textTertiary)
+        }
     }
 
     private var heatmapGrid: some View {
@@ -64,28 +87,30 @@ struct LastWeeksHeatmapCard: View {
         let ratio = matrix[weekIndex].completionRatio(target: habit.targetDaysPerWeek)
 
         switch ratio {
-        case 0:
-            return 0
-        case 0...0.25:
-            return 0.25
-        case 0.25...0.5:
-            return 0.5
-        case 0.5...0.75:
-            return 0.75
-        default:
-            return 1
+        case 0: return 0
+        case 0...0.25: return 0.25
+        case 0.25...0.5: return 0.5
+        case 0.5...0.75: return 0.75
+        default: return 1
         }
     }
 
     private func color(for state: CellState, intensity: Double) -> Color {
         switch state {
         case .completed:
-            return habit.habitColor.opacity(max(0.25, intensity))
+            return habit.habitColor.opacity(max(0.35, intensity))
         case .missed:
-            return habit.habitColor.opacity(0.10)
+            return habit.habitColor.opacity(0.08)
         case .inactive, .future:
-            return AppColor.bgLight
+            return AppColor.bgSunken
         }
+    }
+
+    private func intensityFill(_ intensity: Double) -> Color {
+        if intensity == 0 {
+            return habit.habitColor.opacity(0.12)
+        }
+        return habit.habitColor.opacity(max(0.35, intensity))
     }
 }
 
@@ -145,7 +170,6 @@ private struct HeatmapGridLayout: Layout {
 
     private func cellSize(for width: CGFloat) -> CGFloat {
         let totalHorizontalSpacing = CGFloat(max(0, columns - 1)) * spacing
-
         return max(0, (width - totalHorizontalSpacing) / CGFloat(columns))
     }
 }
@@ -161,5 +185,5 @@ private struct HeatmapGridLayout: Layout {
         )
     )
     .padding()
-    .background(AppColor.bgLight)
+    .background(AppColor.bgCanvas)
 }

@@ -22,47 +22,49 @@ struct ActiveExperimentCard: View {
     }
 
     var body: some View {
-        HStack(spacing: 14) {
+        HStack(alignment: .top, spacing: AppSpacing.m) {
             ZStack {
                 Circle()
-                    .fill(AppColor.accent.opacity(0.14))
-                    .frame(width: 46, height: 46)
-
+                    .fill(AppColor.info.opacity(0.14))
                 Image(systemName: "flask")
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundStyle(AppColor.accent)
+                    .font(.system(size: 19, weight: .semibold))
+                    .foregroundStyle(AppColor.info)
             }
+            .frame(width: 46, height: 46)
 
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: AppSpacing.xxs) {
                 Text("EXPERIMENTO ACTIVO")
-                    .font(AppFont.formSectionText2)
-                    .foregroundStyle(AppColor.mutedText)
-                    .tracking(1)
+                    .font(AppFont.label)
+                    .foregroundStyle(AppColor.textTertiary)
+                    .tracking(0.8)
 
                 Text(title)
-                    .font(AppFont.body2)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(AppColor.strongText)
+                    .font(AppFont.bodyEmphasis)
+                    .foregroundStyle(AppColor.textPrimary)
                     .lineLimit(1)
 
                 Text(detailText)
-                    .font(AppFont.captionApp)
-                    .foregroundStyle(AppColor.subtleText)
+                    .font(AppFont.label)
+                    .foregroundStyle(AppColor.textSecondary)
                     .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
             Spacer()
         }
-        .padding(16)
-        .background(AppColor.accent.opacity(0.08))
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.large, style: .continuous))
+        .padding(AppSpacing.l)
+        .background(AppColor.infoMuted.opacity(0.5))
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous)
+                .stroke(AppColor.info.opacity(0.18), lineWidth: 1)
+        }
     }
 
     private var detailText: String {
         if let suggestedHourText = experiment.suggestedHourText {
             return "\(remainingText) · \(experiment.daySummary) · \(suggestedHourText)"
         }
-
         return "\(remainingText) · \(experiment.daySummary)"
     }
 }

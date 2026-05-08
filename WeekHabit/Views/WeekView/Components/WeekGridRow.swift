@@ -2,13 +2,10 @@
 //  WeekGridRow.swift
 //  WeekHabit
 //
-//  Created by Valentino De Paola Gallardo on 01/05/26.
-//
 
 import SwiftUI
 
 struct WeekGridRow: View {
-    
     let habit: Habit
     let daysInWeek: [Date]
     let referenceDate: Date
@@ -16,42 +13,30 @@ struct WeekGridRow: View {
     let onSelectHabit: () -> Void
     let onToggle: (Date) -> Void
 
-    private var habitColor: Color {
-        habit.habitColor
-    }
-
-    private var completedCount: Int {
-        habit.completedDaysThisWeek(reference: referenceDate)
-    }
-
-    private var progress: Double {
-        habit.weekProgress(reference: referenceDate)
-    }
+    private var habitColor: Color { habit.habitColor }
+    private var completedCount: Int { habit.completedDaysThisWeek(reference: referenceDate) }
+    private var progress: Double { habit.weekProgress(reference: referenceDate) }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: AppSpacing.m) {
             Button(action: onSelectHabit) {
-                HStack(alignment: .top, spacing: 12) {
+                HStack(alignment: .top, spacing: AppSpacing.m) {
                     ZStack {
                         Circle()
-                            .fill(habitColor.opacity(0.16))
+                            .fill(habitColor.opacity(0.18))
                             .frame(width: 42, height: 42)
-
                         Image(systemName: habit.iconName)
                             .font(.system(size: 17, weight: .semibold))
                             .foregroundStyle(habitColor)
                     }
 
-                    VStack(alignment: .leading, spacing: 7) {
-                        HStack(alignment: .firstTextBaseline, spacing: 10) {
+                    VStack(alignment: .leading, spacing: AppSpacing.s) {
+                        HStack(alignment: .firstTextBaseline, spacing: AppSpacing.s) {
                             Text(habit.title)
-                                .font(AppFont.body2)
-                                .fontWeight(.semibold)
-                                .foregroundStyle(AppColor.strongText)
+                                .font(AppFont.bodyEmphasis)
+                                .foregroundStyle(AppColor.textPrimary)
                                 .lineLimit(1)
-
-                            Spacer(minLength: 8)
-
+                            Spacer(minLength: AppSpacing.s)
                             WeekProgressPill(
                                 completed: completedCount,
                                 target: habit.targetDaysPerWeek,
@@ -60,13 +45,14 @@ struct WeekGridRow: View {
                         }
 
                         Text(subtitle)
-                            .font(AppFont.formSectionText2)
-                            .foregroundStyle(AppColor.subtleText)
+                            .font(AppFont.label)
+                            .foregroundStyle(AppColor.textTertiary)
                             .lineLimit(1)
 
-                        WeekProgressBar(
+                        WHProgressBar(
                             progress: progress,
-                            habitColor: habitColor
+                            progressColor: habitColor,
+                            height: 5
                         )
                     }
                 }
@@ -83,25 +69,25 @@ struct WeekGridRow: View {
                     )
                 }
             }
-            .padding(8)
-            .background(AppColor.surfaceMuted.opacity(0.62))
-            .clipShape(RoundedRectangle(cornerRadius: AppRadius.large, style: .continuous))
+            .padding(AppSpacing.s)
+            .background(AppColor.bgSunken.opacity(0.6))
+            .clipShape(RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous))
         }
-        .padding(.leading, 20)
-        .padding(.trailing, 14)
-        .padding(.vertical, 14)
-        .background(AppColor.surface)
+        .padding(.leading, AppSpacing.xl)
+        .padding(.trailing, AppSpacing.l)
+        .padding(.vertical, AppSpacing.l)
+        .background(AppColor.bgElevated)
         .overlay(alignment: .leading) {
             Rectangle()
                 .fill(habitColor)
-                .frame(width: 5)
+                .frame(width: 4)
         }
         .overlay {
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(habitColor.opacity(0.12), lineWidth: 1)
+            RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous)
+                .stroke(habitColor.opacity(0.14), lineWidth: 1)
         }
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .shadow(color: AppColor.strongText.opacity(0.06), radius: 12, x: 0, y: 6)
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous))
+        .appElevation(.low)
         .padding(.vertical, 2)
     }
 
@@ -109,7 +95,6 @@ struct WeekGridRow: View {
         if habit.trackingKind == .quantity {
             return habit.targetPerSessionText
         }
-
         return habit.scheduleSummaryText
     }
 
@@ -125,11 +110,22 @@ struct WeekGridRow: View {
             return .inactive
         }
 
-        if habit.trackingKind == .quantity && habit.totalValue(on: date) > 0 && !habit.isCompleted(on: date) {
-            return .partial
-        }
+        let entriesForDay = habit.entries.filter { AppCalendar.isSameDay($0.date, date) }
+        let isCompleted = habit.isCompleted(on: date)
+        let totalValue = habit.totalValue(on: date)
+        let isPartial = habit.trackingKind == .quantity && totalValue > 0 && !isCompleted
 
-        return habit.isCompleted(on: date) ? .completed : .pending
+        // Confianza: si TODAS las marcas son `.manual`, es retroactiva.
+        let onlyManualEntries = !entriesForDay.isEmpty
+            && entriesForDay.allSatisfy { $0.source == .manual }
+
+        if isCompleted {
+            return onlyManualEntries ? .completedRetro : .completed
+        }
+        if isPartial {
+            return onlyManualEntries ? .partialRetro : .partial
+        }
+        return .pending
     }
 }
 
@@ -139,19 +135,17 @@ private struct WeekProgressPill: View {
     let color: Color
 
     var body: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: AppSpacing.xs) {
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 11, weight: .semibold))
-
             Text("\(completed)/\(target)")
-                .font(AppFont.formSectionText2)
-                .fontWeight(.semibold)
+                .font(AppFont.label)
                 .monospacedDigit()
         }
         .foregroundStyle(color)
-        .padding(.horizontal, 8)
+        .padding(.horizontal, AppSpacing.s)
         .padding(.vertical, 5)
-        .background(color.opacity(0.12))
+        .background(color.opacity(0.14))
         .clipShape(Capsule())
     }
 }

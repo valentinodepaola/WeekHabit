@@ -10,60 +10,64 @@ struct InsightConfidenceCard: View {
 
     private var icon: String {
         switch confidence.level {
-        case .high:
-            return "checkmark.seal.fill"
-        case .learning:
-            return "waveform.path.ecg"
-        case .low:
-            return "hourglass"
+        case .high: return "checkmark.seal.fill"
+        case .learning: return "waveform.path.ecg"
+        case .low: return "hourglass"
         }
     }
 
     private var color: Color {
         switch confidence.level {
-        case .high:
-            return Color(hex: "#6f9a64")
-        case .learning:
-            return AppColor.editAction
-        case .low:
-            return AppColor.accent
+        case .high: return AppColor.success
+        case .learning: return AppColor.info
+        case .low: return AppColor.warning
+        }
+    }
+
+    private var equivalentTag: WHConfidence {
+        switch confidence.level {
+        case .high: return .high
+        case .learning: return .medium
+        case .low: return .low
         }
     }
 
     var body: some View {
-        HStack(spacing: 14) {
+        HStack(alignment: .top, spacing: AppSpacing.m) {
             ZStack {
                 Circle()
                     .fill(color.opacity(0.14))
-                    .frame(width: 46, height: 46)
-
                 Image(systemName: icon)
-                    .font(.system(size: 19, weight: .semibold))
+                    .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(color)
             }
+            .frame(width: 44, height: 44)
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text("CONFIANZA DEL RITMO")
-                    .font(AppFont.formSectionText2)
-                    .foregroundStyle(AppColor.mutedText)
-                    .tracking(1)
+            VStack(alignment: .leading, spacing: AppSpacing.xs) {
+                HStack(spacing: AppSpacing.s) {
+                    Text("CONFIANZA DEL RITMO")
+                        .font(AppFont.label)
+                        .foregroundStyle(AppColor.textTertiary)
+                        .tracking(0.8)
+                    WHConfidenceTag(confidence: equivalentTag)
+                }
 
                 Text(confidence.title)
-                    .font(AppFont.body2)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(AppColor.strongText)
+                    .font(AppFont.bodyEmphasis)
+                    .foregroundStyle(AppColor.textPrimary)
 
                 Text(confidence.detail)
-                    .font(AppFont.captionApp)
-                    .foregroundStyle(AppColor.subtleText)
+                    .font(AppFont.label)
+                    .foregroundStyle(AppColor.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
             Spacer()
         }
-        .padding(16)
-        .background(AppColor.surface)
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.large, style: .continuous))
+        .padding(AppSpacing.l)
+        .background(AppColor.bgElevated)
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous))
+        .appElevation(.low)
     }
 }
 
@@ -76,5 +80,5 @@ struct InsightConfidenceCard: View {
         )
     )
     .padding()
-    .background(AppColor.bgLight)
+    .background(AppColor.bgCanvas)
 }

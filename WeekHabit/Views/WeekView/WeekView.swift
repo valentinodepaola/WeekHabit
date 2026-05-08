@@ -2,22 +2,21 @@
 //  WeekView.swift
 //  WeekHabit
 //
-//  Created by Valentino De Paola Gallardo on 22/04/26.
-//
 
 import SwiftUI
 import SwiftData
 
 struct WeekView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @Query(sort: \Habit.createdAt, order: .reverse)
     private var habits: [Habit]
 
     @State private var weekOffset: Int = 0
     @State private var selectedHabit: Habit?
-    @State private var lastToggle: ToggleHaptic?
-    @State private var quantityRoute: WeekQuantityLogRoute?
+    @State private var coverRoute: WeekCoverRoute?
+    @State private var sheetRoute: WeekSheetRoute?
 
     private var referenceDate: Date {
         AppCalendar.current.date(byAdding: .weekOfYear, value: weekOffset, to: .now) ?? .now
@@ -82,38 +81,27 @@ struct WeekView: View {
                     WeekHeaderSection(
                         monthYearLabel: monthYearLabel,
                         weekNumber: weekNumber,
-                        weekOffset: $weekOffset
+                        weekOffset: $weekOffset,
+                        onCreate: { sheetRoute = .createMenu }
                     )
-                    
+
                     dayStrip
                     contentArea
-                        .padding(.top)
+                        .padding(.top, AppSpacing.s)
                 }
                 .navigationDestination(item: $selectedHabit) { habit in
                     HabitDetailView(habit: habit)
                 }
-                .sensoryFeedback(.success, trigger: lastToggle) { _, newValue in
-                    if case .marked = newValue { return true }
-                    return false
+                .fullScreenCover(item: $coverRoute) { route in
+                    routeCover(route)
                 }
-                .sensoryFeedback(.impact(weight: .light), trigger: lastToggle) { _, newValue in
-                    if case .unmarked = newValue { return true }
-                    return false
-                }
-                .sheet(item: $quantityRoute) { route in
-                    QuantityLogSheet(
-                        habit: route.habit,
-                        date: route.date,
-                        initialValue: route.habit.totalValue(on: route.date)
-                    ) { value in
-                        upsertQuantityEntry(for: route.habit, on: route.date, value: value)
-                    }
-                    .presentationDetents([.height(310)])
+                .sheet(item: $sheetRoute) { route in
+                    routeSheet(route)
                 }
             }
         }
     }
-    
+
     private var dayStrip: some View {
         HStack(spacing: WeekGridLayout.cellSpacing) {
             ForEach(daysInWeek, id: \.self) { date in
@@ -122,14 +110,14 @@ struct WeekView: View {
         }
         .padding(.leading, 34)
         .padding(.trailing, 30)
-        .padding(.bottom, 8)
+        .padding(.bottom, AppSpacing.s)
     }
 
     @ViewBuilder
     private var contentArea: some View {
         if visibleHabits.isEmpty {
-            WeekEmptyStateCard()
-                .padding(.horizontal, 16)
+            WeekEmptyStateCard(onCreate: { sheetRoute = .createMenu })
+                .padding(.horizontal, AppSpacing.l)
             Spacer()
         } else {
             List {
@@ -144,30 +132,31 @@ struct WeekView: View {
                     )
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
-                    .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
+                    .listRowInsets(EdgeInsets(top: 0, leading: AppSpacing.l, bottom: 0, trailing: AppSpacing.l))
                 }
 
                 Section {
                     summarySection
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
-                        .listRowInsets(EdgeInsets(top: 24, leading: 16, bottom: 0, trailing: 16))
+                        .listRowInsets(EdgeInsets(top: AppSpacing.xl, leading: AppSpacing.l, bottom: 0, trailing: AppSpacing.l))
                 }
             }
             .listStyle(.plain)
-            .listRowSpacing(6)
+            .listRowSpacing(AppSpacing.xs)
             .scrollContentBackground(.hidden)
             .contentMargins(.bottom, 120, for: .scrollContent)
         }
     }
 
     private var summarySection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: AppSpacing.m) {
             Text("RESUMEN")
-                .font(AppFont.formSectionText)
-                .foregroundStyle(AppColor.mutedText)
+                .font(AppFont.label)
+                .foregroundStyle(AppColor.textTertiary)
+                .tracking(0.6)
 
-            HStack(spacing: 10) {
+            HStack(spacing: AppSpacing.s) {
                 StatTile(label: "Completados", value: completedDisplay, icon: "checkmark.circle.fill")
                 StatTile(label: "Meta total", value: "\(totalGoal)", icon: "target")
                 StatTile(label: "Consistencia", value: consistencyDisplay, icon: "chart.bar.fill")
@@ -175,9 +164,75 @@ struct WeekView: View {
         }
     }
 
+    // MARK: - Routing
+
+    @ViewBuilder
+    private func routeCover(_ route: WeekCoverRoute) -> some View {
+        switch route {
+        case .habit(let habitRoute):
+            switch habitRoute {
+            case .create(let prefill):
+                CreateHabitView(
+                    initialDaysPerWeek: prefill.initialDaysPerWeek ?? 7,
+                    initialActiveDays: prefill.initialActiveDays
+                )
+            case .edit(let habit):
+                CreateHabitView(habitToEdit: habit)
+            }
+        case .plan(let planRoute):
+            switch planRoute {
+            case .create:
+                CreatePlanView()
+            case .edit(let plan):
+                CreatePlanView(planToEdit: plan)
+            }
+        case .focus(let habits):
+            FocusSessionView(habits: habits)
+        }
+    }
+
+    @ViewBuilder
+    private func routeSheet(_ route: WeekSheetRoute) -> some View {
+        switch route {
+        case .createMenu:
+            WHCreationSheet { option in
+                handleCreationSelection(option)
+            }
+            .presentationDetents([.height(380), .medium])
+            .presentationDragIndicator(.visible)
+            .presentationBackground(AppColor.bgCanvas)
+        case .quantityLog(let habit, let date):
+            QuantityLogSheet(
+                habit: habit,
+                date: date,
+                initialValue: habit.totalValue(on: date)
+            ) { value in
+                upsertQuantityEntry(for: habit, on: date, value: value)
+            }
+            .presentationDetents([.height(310)])
+        }
+    }
+
+    private func handleCreationSelection(_ option: WHCreationOption) {
+        sheetRoute = nil
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+            switch option {
+            case .habit:
+                coverRoute = .habit(.create(prefill: .empty))
+            case .plan:
+                coverRoute = .plan(.create)
+            case .focus:
+                let todayHabits = habits.filter { $0.isLoggable(on: .now) }
+                coverRoute = .focus(habits: todayHabits)
+            }
+        }
+    }
+
+    // MARK: - Actions
+
     private func toggleCompletion(for habit: Habit, on date: Date) {
         if habit.trackingKind == .quantity {
-            quantityRoute = WeekQuantityLogRoute(habit: habit, date: date)
+            sheetRoute = .quantityLog(habit: habit, date: date)
             return
         }
 
@@ -186,7 +241,7 @@ struct WeekView: View {
         }
         let willMark = entriesForDay.isEmpty
 
-        withAnimation(.easeInOut(duration: 0.2)) {
+        withAnimation(AppMotion.respectful(AppMotion.smooth, reduceMotion)) {
             if willMark {
                 modelContext.insert(
                     HabitEntry(
@@ -198,26 +253,21 @@ struct WeekView: View {
                     )
                 )
             } else {
-                entriesForDay.forEach { entry in
-                    modelContext.delete(entry)
-                }
+                entriesForDay.forEach { modelContext.delete($0) }
             }
         }
 
-        lastToggle = willMark ? .marked(UUID()) : .unmarked(UUID())
+        AppHaptics.play(willMark ? .selection : .selection)
     }
 
     private func upsertQuantityEntry(for habit: Habit, on date: Date, value: Double) {
         let entriesForDay = habit.entries.filter {
             AppCalendar.isSameDay($0.date, date)
         }
-        let willMark = value > 0
 
-        withAnimation(.easeInOut(duration: 0.2)) {
+        withAnimation(AppMotion.respectful(AppMotion.smooth, reduceMotion)) {
             if value <= 0 {
-                entriesForDay.forEach { entry in
-                    modelContext.delete(entry)
-                }
+                entriesForDay.forEach { modelContext.delete($0) }
             } else if let entry = entriesForDay.first {
                 entry.value = value
                 entry.completedCount = Int(value.rounded())
@@ -238,22 +288,35 @@ struct WeekView: View {
             }
         }
 
-        lastToggle = willMark ? .marked(UUID()) : .unmarked(UUID())
+        AppHaptics.play(.selection)
     }
-
 }
 
-private enum ToggleHaptic: Equatable {
-    case marked(UUID)
-    case unmarked(UUID)
-}
+// MARK: - Routes
 
-private struct WeekQuantityLogRoute: Identifiable {
-    let habit: Habit
-    let date: Date
+private enum WeekCoverRoute: Identifiable {
+    case habit(HabitRoute)
+    case plan(PlanRoute)
+    case focus(habits: [Habit])
 
     var id: String {
-        "\(habit.id)-\(date.timeIntervalSinceReferenceDate)"
+        switch self {
+        case .habit(let route): return "habit-\(route.id)"
+        case .plan(let route): return "plan-\(route.id)"
+        case .focus(let habits): return "focus-\(habits.map { $0.id.uuidString }.joined(separator: ","))"
+        }
+    }
+}
+
+private enum WeekSheetRoute: Identifiable {
+    case createMenu
+    case quantityLog(habit: Habit, date: Date)
+
+    var id: String {
+        switch self {
+        case .createMenu: return "createMenu"
+        case .quantityLog(let habit, let date): return "quantityLog-\(habit.id)-\(date.timeIntervalSinceReferenceDate)"
+        }
     }
 }
 

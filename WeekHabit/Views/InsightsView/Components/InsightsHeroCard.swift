@@ -20,53 +20,50 @@ struct InsightsHeroCard: View {
     }
 
     private var deltaColor: Color {
-        snapshot.deltaPercentagePoints >= 0 ? Color(hex: "#6f9a64") : AppColor.accent
+        snapshot.deltaPercentagePoints >= 0 ? AppColor.success : AppColor.warning
     }
 
     private var message: String {
         if let readiness, !readiness.isReady {
             return "La gráfica ya reacciona a tus marcas, pero todavía estoy juntando contexto."
         }
-
         if let readiness, readiness.isProvisional {
             return "La señal ya es útil, pero todavía puede moverse con pocos datos."
         }
-
         guard snapshot.current.scheduled > 0 else {
             return "Marca algunos hábitos para empezar a leer tu ritmo."
         }
-
         if snapshot.previous.scheduled == 0 {
             return "Ya tengo una base para empezar a comparar tu ritmo."
         }
-
         if snapshot.deltaPercentagePoints > 0 {
             return "Has mejorado frente a los 30 días anteriores."
         }
-
         if snapshot.deltaPercentagePoints < 0 {
             return "Tu ritmo cambió frente al periodo anterior."
         }
-
         return "Te mantuviste estable frente al periodo anterior."
     }
 
     private var encouragement: String {
         if let readiness, !readiness.isReady {
-            return readiness.remainingDays == 1 ? "Falta 1 día para activar Insights." : "Faltan \(readiness.remainingDays) días para activar Insights."
+            return readiness.remainingDays == 1
+                ? "Falta 1 día para activar Insights."
+                : "Faltan \(readiness.remainingDays) días para activar Insights."
         }
-
         if snapshot.current.scheduled == 0 { return "Empieza suave." }
-        return snapshot.deltaPercentagePoints >= 0 ? "Sigue así." : "Volvamos con un paso pequeño."
+        return snapshot.deltaPercentagePoints >= 0
+            ? "Sigue así."
+            : "Volvamos con un paso pequeño."
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            HStack(spacing: 8) {
+        VStack(alignment: .leading, spacing: AppSpacing.l) {
+            HStack(spacing: AppSpacing.s) {
                 Text("CONSISTENCIA GLOBAL")
-                    .font(AppFont.formSectionText)
-                    .foregroundStyle(AppColor.mutedText)
-                    .tracking(1.6)
+                    .font(AppFont.label)
+                    .foregroundStyle(AppColor.textTertiary)
+                    .tracking(1.2)
                     .lineLimit(1)
 
                 if readiness?.isProvisional == true {
@@ -74,49 +71,49 @@ struct InsightsHeroCard: View {
                 }
             }
 
-            HStack(alignment: .firstTextBaseline, spacing: 10) {
+            HStack(alignment: .firstTextBaseline, spacing: AppSpacing.s) {
                 Text(consistencyText)
                     .font(.system(size: 64, weight: .regular, design: .serif))
-                    .foregroundStyle(AppColor.strongText)
+                    .foregroundStyle(AppColor.textPrimary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
+                    .monospacedDigit()
 
                 if snapshot.previous.scheduled > 0 {
                     Text(deltaText)
-                        .font(AppFont.body2)
-                        .fontWeight(.bold)
+                        .font(AppFont.label)
                         .foregroundStyle(deltaColor)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 4)
+                        .padding(.horizontal, AppSpacing.s)
+                        .padding(.vertical, AppSpacing.xs)
                         .background(deltaColor.opacity(0.14))
                         .clipShape(Capsule())
                 }
             }
 
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: AppSpacing.xs) {
                 Text(message)
-                    .font(AppFont.body2)
-                    .foregroundStyle(AppColor.mutedText)
+                    .font(AppFont.callout)
+                    .foregroundStyle(AppColor.textSecondary)
 
                 Text(encouragement)
-                    .font(AppFont.body2)
-                    .italic()
+                    .font(AppFont.callout.italic())
                     .foregroundStyle(AppColor.accent)
             }
             .fixedSize(horizontal: false, vertical: true)
 
             InsightsTrendBars(values: snapshot.trend)
-                .padding(.top, 6)
+                .padding(.top, AppSpacing.xs)
 
             Text("Cada barra resume una parte de los últimos 30 días; más alta significa más cumplimiento.")
-                .font(AppFont.captionApp)
-                .foregroundStyle(AppColor.subtleText)
+                .font(AppFont.label)
+                .foregroundStyle(AppColor.textTertiary)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(24)
-        .background(AppColor.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .padding(AppSpacing.xl)
+        .background(AppColor.bgElevated)
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.xl, style: .continuous))
+        .appElevation(.low)
     }
 }
 
@@ -129,5 +126,5 @@ struct InsightsHeroCard: View {
         )
     )
     .padding()
-    .background(AppColor.bgLight)
+    .background(AppColor.bgCanvas)
 }

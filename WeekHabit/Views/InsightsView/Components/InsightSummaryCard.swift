@@ -16,23 +16,22 @@ struct InsightSummaryCard: View {
     var action: (() -> Void)?
 
     var body: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: AppSpacing.m) {
             ZStack {
-                RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous)
-                    .fill(iconColor.opacity(0.12))
-                    .frame(width: 60, height: 60)
-
+                RoundedRectangle(cornerRadius: AppRadius.m, style: .continuous)
+                    .fill(iconColor.opacity(0.14))
                 Image(systemName: icon)
                     .font(.system(size: 22, weight: .semibold))
                     .foregroundStyle(iconColor)
             }
+            .frame(width: 56, height: 56)
 
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 8) {
+            VStack(alignment: .leading, spacing: AppSpacing.xxs) {
+                HStack(spacing: AppSpacing.s) {
                     Text(title)
-                        .font(AppFont.formSectionText)
-                        .foregroundStyle(AppColor.mutedText)
-                        .tracking(1.2)
+                        .font(AppFont.label)
+                        .foregroundStyle(AppColor.textTertiary)
+                        .tracking(0.8)
                         .lineLimit(1)
 
                     if isProvisional {
@@ -41,41 +40,55 @@ struct InsightSummaryCard: View {
                 }
 
                 Text(value)
-                    .font(AppFont.subtitle3)
-                    .foregroundStyle(AppColor.strongText)
+                    .font(AppFont.bodyEmphasis)
+                    .foregroundStyle(AppColor.textPrimary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.82)
 
                 Text(detail)
-                    .font(AppFont.captionApp)
-                    .foregroundStyle(AppColor.subtleText)
+                    .font(AppFont.label)
+                    .foregroundStyle(AppColor.textSecondary)
                     .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
-            Spacer(minLength: 8)
+            Spacer(minLength: AppSpacing.s)
 
             if let actionTitle, let action {
                 Button(actionTitle, action: action)
-                    .font(AppFont.formSectionText)
+                    .font(AppFont.label)
                     .foregroundStyle(AppColor.accent)
                     .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 16)
-        .background(AppColor.surface)
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.large, style: .continuous))
+        .padding(.horizontal, AppSpacing.l)
+        .padding(.vertical, AppSpacing.m)
+        .background(AppColor.bgElevated)
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous))
+        .appElevation(.low)
     }
 }
 
 #Preview {
-    InsightSummaryCard(
-        icon: "calendar",
-        iconColor: AppColor.editAction,
-        title: "TU MEJOR DÍA",
-        value: "Lunes",
-        detail: "84% de cumplimiento promedio"
-    )
+    VStack(spacing: AppSpacing.s) {
+        InsightSummaryCard(
+            icon: "calendar",
+            iconColor: AppColor.info,
+            title: "TU MEJOR DÍA",
+            value: "Lunes",
+            detail: "84% de cumplimiento promedio"
+        )
+        InsightSummaryCard(
+            icon: "clock",
+            iconColor: AppColor.warning,
+            title: "TU HORA PUNTA",
+            value: "8:00 — 11:00",
+            detail: "Mayor consistencia en la mañana",
+            isProvisional: true,
+            actionTitle: "Editar",
+            action: {}
+        )
+    }
     .padding()
-    .background(AppColor.bgLight)
+    .background(AppColor.bgCanvas)
 }

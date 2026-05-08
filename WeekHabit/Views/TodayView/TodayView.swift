@@ -335,7 +335,7 @@ struct TodayView: View {
         case .plan(let planRoute):
             switch planRoute {
             case .create:
-                PlanFlowView()
+                CreatePlanView()
             case .edit(let plan):
                 CreatePlanView(planToEdit: plan)
             }

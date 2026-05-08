@@ -2,7 +2,7 @@
 //  PlanRoute.swift
 //  WeekHabit
 //
-//  Router unificado para CreatePlanView / PlanFlowView.
+//  Router unificado para CreatePlanView.
 //
 
 import Foundation
