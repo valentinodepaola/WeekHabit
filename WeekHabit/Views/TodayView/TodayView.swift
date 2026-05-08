@@ -224,12 +224,17 @@ struct TodayView: View {
                 referenceDate: referenceDate
             ) {
                 toggleCompletion(for: habit)
-            } onSkip: {
-                toggleRest(for: habit)
             }
             .todayHabitSectionMotion(habit.id, in: habitSectionNamespace, reduceMotion: reduceMotion)
             .todayListRow()
-            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                Button {
+                    toggleRest(for: habit)
+                } label: {
+                    Label("Hoy descanso", systemImage: "pause.circle")
+                }
+                .tint(habit.habitColor)
+
                 Button(role: .destructive) {
                     habitToDelete = habit
                     showDeleteHabitAlert = true
@@ -261,14 +266,20 @@ struct TodayView: View {
             ForEach(completedHabits) { habit in
                 TodayCompletedHabitRow(
                     habit: habit,
-                    metadata: completionMetadata(for: habit),
-                    onSkip: { toggleRest(for: habit) }
+                    metadata: completionMetadata(for: habit)
                 ) {
                     toggleCompletion(for: habit)
                 }
                 .todayHabitSectionMotion(habit.id, in: habitSectionNamespace, reduceMotion: reduceMotion)
                 .todayListRow()
-                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                    Button {
+                        toggleRest(for: habit)
+                    } label: {
+                        Label("Hoy descanso", systemImage: "pause.circle")
+                    }
+                    .tint(habit.habitColor)
+
                     Button(role: .destructive) {
                         habitToDelete = habit
                         showDeleteHabitAlert = true
@@ -304,12 +315,17 @@ struct TodayView: View {
                     referenceDate: referenceDate
                 ) {
                     toggleCompletion(for: habit)
-                } onSkip: {
-                    toggleRest(for: habit)
                 }
                 .todayHabitSectionMotion(habit.id, in: habitSectionNamespace, reduceMotion: reduceMotion)
                 .todayListRow()
-                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                    Button {
+                        toggleRest(for: habit)
+                    } label: {
+                        Label("Quitar descanso", systemImage: "arrow.uturn.backward.circle")
+                    }
+                    .tint(habit.habitColor)
+
                     Button(role: .destructive) {
                         habitToDelete = habit
                         showDeleteHabitAlert = true
@@ -732,7 +748,6 @@ private extension View {
 private struct TodayCompletedHabitRow: View {
     let habit: Habit
     let metadata: String
-    let onSkip: () -> Void
     let onToggle: () -> Void
 
     var body: some View {
@@ -764,13 +779,6 @@ private struct TodayCompletedHabitRow: View {
             Spacer(minLength: 0)
 
             completedIconBadge
-        }
-        .contextMenu {
-            Button {
-                onSkip()
-            } label: {
-                Label("Hoy descanso", systemImage: "pause.circle")
-            }
         }
         .padding(.horizontal, AppSpacing.l)
         .padding(.vertical, AppSpacing.m)

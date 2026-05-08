@@ -12,7 +12,6 @@ struct TodayHabitComponent: View {
     var activeExperiment: HabitExperiment?
     var referenceDate: Date = .now
     let onToggle: () -> Void
-    var onSkip: (() -> Void)?
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -36,15 +35,6 @@ struct TodayHabitComponent: View {
                 .strokeBorder(isSkipped ? habit.habitColor.opacity(0.38) : AppColor.divider, lineWidth: 1)
         }
         .appElevation(.low)
-        .contextMenu {
-            if let onSkip {
-                Button {
-                    onSkip()
-                } label: {
-                    Label(isSkipped ? "Quitar descanso" : "Hoy descanso", systemImage: "pause.circle")
-                }
-            }
-        }
     }
 
     private var textContent: some View {
@@ -210,7 +200,7 @@ struct TodayHabitComponent: View {
             return "Desmarcar hábito"
         }
         if isSkipped {
-            return "Quitar descanso"
+            return "Marcar hábito"
         }
         return "Marcar hábito"
     }
