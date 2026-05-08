@@ -27,8 +27,7 @@ struct TodayView: View {
     @State private var planToDelete: Plan?
     @State private var showDeletePlanAlert = false
     @State private var expandedPlans: Set<UUID> = []
-    @State private var outgoingHabitIDs: Set<UUID> = []
-    @State private var incomingHabitIDs: Set<UUID> = []
+    @Namespace private var habitSectionNamespace
 
     private var referenceDate: Date { Date() }
 
@@ -143,6 +142,10 @@ struct TodayView: View {
             } message: {
                 Text("Los hábitos del plan no serán eliminados.")
             }
+            .animation(
+                AppMotion.respectful(AppMotion.gentle, reduceMotion),
+                value: todayHabitSectionSignature
+            )
         }
     }
 
@@ -224,7 +227,7 @@ struct TodayView: View {
             } onSkip: {
                 toggleRest(for: habit)
             }
-            .todayCompletionTransition(transitionPhase(for: habit))
+            .todayHabitSectionMotion(habit.id, in: habitSectionNamespace, reduceMotion: reduceMotion)
             .todayListRow()
             .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                 Button(role: .destructive) {
@@ -263,7 +266,7 @@ struct TodayView: View {
                 ) {
                     toggleCompletion(for: habit)
                 }
-                .todayCompletionTransition(transitionPhase(for: habit))
+                .todayHabitSectionMotion(habit.id, in: habitSectionNamespace, reduceMotion: reduceMotion)
                 .todayListRow()
                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                     Button(role: .destructive) {
@@ -304,7 +307,7 @@ struct TodayView: View {
                 } onSkip: {
                     toggleRest(for: habit)
                 }
-                .todayCompletionTransition(transitionPhase(for: habit))
+                .todayHabitSectionMotion(habit.id, in: habitSectionNamespace, reduceMotion: reduceMotion)
                 .todayListRow()
                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                     Button(role: .destructive) {
@@ -353,16 +356,11 @@ struct TodayView: View {
         count == 1 ? "1 hábito" : "\(count) hábitos"
     }
 
-    private func transitionPhase(for habit: Habit) -> TodayCompletionTransitionPhase {
-        if outgoingHabitIDs.contains(habit.id) {
-            return .outgoing
-        }
-
-        if incomingHabitIDs.contains(habit.id) {
-            return .incoming
-        }
-
-        return .idle
+    private var todayHabitSectionSignature: String {
+        let pending = pendingHabits.map { "p:\($0.id.uuidString)" }
+        let completed = completedHabits.map { "c:\($0.id.uuidString)" }
+        let skipped = skippedHabits.map { "s:\($0.id.uuidString)" }
+        return (pending + completed + skipped).joined(separator: "|")
     }
 
     @ViewBuilder
@@ -492,7 +490,7 @@ struct TodayView: View {
 
         let willComplete = !habit.isCompleted(on: referenceDate)
 
-        transitionHabitBetweenSections(habit.id) {
+        transitionHabitBetweenSections {
             if willComplete {
                 entriesForToday.forEach { modelContext.delete($0) }
                 let entry = HabitEntry(
@@ -565,7 +563,7 @@ struct TodayView: View {
             AppCalendar.isSameDay($0.date, date)
         }
 
-        withoutTodayListAnimation {
+        transitionHabitBetweenSections {
             if value <= 0 {
                 entriesForDay.forEach { modelContext.delete($0) }
                 return
@@ -599,7 +597,7 @@ struct TodayView: View {
         }
         let willSkip = !habit.isSkipped(on: referenceDate)
 
-        transitionHabitBetweenSections(habit.id) {
+        transitionHabitBetweenSections {
             entriesForToday.forEach { modelContext.delete($0) }
 
             if willSkip {
@@ -618,28 +616,14 @@ struct TodayView: View {
         }
     }
 
-    private func transitionHabitBetweenSections(_ habitID: UUID, mutation: @escaping () -> Void) {
-        guard !reduceMotion else {
+    private func transitionHabitBetweenSections(_ mutation: @escaping () -> Void) {
+        guard let animation = AppMotion.respectful(AppMotion.gentle, reduceMotion) else {
             withoutTodayListAnimation(mutation)
             return
         }
 
-        withAnimation(AppMotion.linearOut) {
-            _ = outgoingHabitIDs.insert(habitID)
-        }
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-            withoutTodayListAnimation {
-                _ = incomingHabitIDs.insert(habitID)
-                mutation()
-                _ = outgoingHabitIDs.remove(habitID)
-            }
-
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.04) {
-                withAnimation(AppMotion.linearOut) {
-                    _ = incomingHabitIDs.remove(habitID)
-                }
-            }
+        withAnimation(animation) {
+            mutation()
         }
     }
 
@@ -716,35 +700,31 @@ private extension View {
             .listRowInsets(insets)
     }
 
-    func todayCompletionTransition(_ phase: TodayCompletionTransitionPhase) -> some View {
-        opacity(phase.opacity)
-            .scaleEffect(phase.scale, anchor: .center)
-            .allowsHitTesting(phase == .idle)
-    }
-}
-
-private enum TodayCompletionTransitionPhase {
-    case idle
-    case outgoing
-    case incoming
-
-    var opacity: Double {
-        switch self {
-        case .idle:
-            return 1
-        case .outgoing, .incoming:
-            return 0
-        }
-    }
-
-    var scale: CGFloat {
-        switch self {
-        case .idle:
-            return 1
-        case .outgoing:
-            return 0.97
-        case .incoming:
-            return 0.985
+    @ViewBuilder
+    func todayHabitSectionMotion(
+        _ habitID: UUID,
+        in namespace: Namespace.ID,
+        reduceMotion: Bool
+    ) -> some View {
+        if reduceMotion {
+            self
+        } else {
+            matchedGeometryEffect(
+                id: "today-habit-\(habitID.uuidString)",
+                in: namespace,
+                properties: .frame,
+                anchor: .center
+            )
+            .transition(
+                .asymmetric(
+                    insertion: .move(edge: .top)
+                        .combined(with: .opacity)
+                        .combined(with: .scale(scale: 0.985, anchor: .center)),
+                    removal: .opacity
+                        .combined(with: .scale(scale: 0.985, anchor: .center))
+                )
+            )
+            .zIndex(1)
         }
     }
 }
@@ -782,6 +762,8 @@ private struct TodayCompletedHabitRow: View {
             }
 
             Spacer(minLength: 0)
+
+            completedIconBadge
         }
         .contextMenu {
             Button {
@@ -791,8 +773,27 @@ private struct TodayCompletedHabitRow: View {
             }
         }
         .padding(.horizontal, AppSpacing.l)
-        .padding(.vertical, AppSpacing.s)
-        .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
+        .padding(.vertical, AppSpacing.m)
+        .frame(maxWidth: .infinity, minHeight: 68, alignment: .leading)
+        .background(AppColor.bgElevated.opacity(0.72))
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous)
+                .strokeBorder(AppColor.divider.opacity(0.7), lineWidth: 1)
+        }
+    }
+
+    private var completedIconBadge: some View {
+        ZStack {
+            Circle()
+                .fill(habit.habitColor.opacity(0.14))
+
+            Image(systemName: habit.iconName)
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(habit.habitColor)
+        }
+        .frame(width: 38, height: 38)
+        .accessibilityHidden(true)
     }
 }
 

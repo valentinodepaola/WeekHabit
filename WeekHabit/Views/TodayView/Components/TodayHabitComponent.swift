@@ -92,11 +92,16 @@ struct TodayHabitComponent: View {
     }
 
     private var iconBadge: some View {
-        Image(systemName: habit.iconName)
-            .font(.system(size: 22, weight: .semibold))
-            .foregroundStyle(habit.habitColor)
-            .frame(width: 36, height: 36)
-            .accessibilityHidden(true)
+        ZStack {
+            Circle()
+                .fill(habit.habitColor.opacity(0.14))
+
+            Image(systemName: habit.iconName)
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(habit.habitColor)
+        }
+        .frame(width: 38, height: 38)
+        .accessibilityHidden(true)
     }
 
     private func cueLine(_ cue: String) -> some View {
@@ -144,13 +149,15 @@ struct TodayHabitComponent: View {
                     Image(systemName: "checkmark")
                         .font(.system(size: 14, weight: .bold))
                         .foregroundStyle(.white)
+                        .symbolEffect(.bounce, value: isCompleted)
                 } else if isSkipped {
                     Image(systemName: "pause.circle.fill")
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundStyle(habit.habitColor)
+                        .symbolEffect(.pulse, value: isSkipped)
                 }
             }
-            .scaleEffect(isCompleted ? 1.0 : 1.0)
+            .scaleEffect(isCompleted ? 1.04 : 1.0)
         }
         .buttonStyle(.plain)
         .animation(AppMotion.respectful(AppMotion.celebration, reduceMotion), value: isCompleted || isSkipped)
