@@ -10,6 +10,7 @@ internal import Combine
 struct FocusSessionView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     let habits: [Habit]
 
@@ -38,20 +39,17 @@ struct FocusSessionView: View {
                 topBar
 
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 20) {
+                    VStack(alignment: .leading, spacing: AppSpacing.l) {
                         header
 
                         switch phase {
-                        case .setup:
-                            setupContent
-                        case .running:
-                            runningContent
-                        case .review:
-                            reviewContent
+                        case .setup: setupContent
+                        case .running: runningContent
+                        case .review: reviewContent
                         }
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 34)
+                    .padding(.horizontal, AppSpacing.l)
+                    .padding(.bottom, AppSpacing.xxl)
                 }
             }
         }
@@ -70,43 +68,39 @@ struct FocusSessionView: View {
             Button("Cerrar") {
                 cancelAndDismiss()
             }
-            .font(AppFont.body2)
-            .foregroundStyle(AppColor.mutedText)
+            .font(AppFont.body)
+            .foregroundStyle(AppColor.textSecondary)
 
             Spacer()
         }
-        .padding(.horizontal, 16)
-        .padding(.top, 15)
-        .padding(.bottom, 10)
+        .padding(.horizontal, AppSpacing.l)
+        .padding(.top, AppSpacing.l)
+        .padding(.bottom, AppSpacing.s)
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 5) {
+        VStack(alignment: .leading, spacing: AppSpacing.xs) {
             Text("MODO ENFOQUE")
-                .font(AppFont.captionApp)
-                .fontWeight(.bold)
-                .foregroundStyle(AppColor.subtleText)
-                .tracking(2)
+                .font(AppFont.label)
+                .foregroundStyle(AppColor.textTertiary)
+                .tracking(1.2)
 
             Text(headerTitle)
                 .font(AppFont.title)
-                .foregroundStyle(AppColor.strongText)
+                .foregroundStyle(AppColor.textPrimary)
         }
     }
 
     private var headerTitle: String {
         switch phase {
-        case .setup:
-            return "Sesión de ritmo"
-        case .running:
-            return "Enfoque activo"
-        case .review:
-            return "¿Qué completaste?"
+        case .setup: return "Sesión de ritmo"
+        case .running: return "Enfoque activo"
+        case .review: return "¿Qué completaste?"
         }
     }
 
     private var setupContent: some View {
-        VStack(alignment: .leading, spacing: 20) {
+        VStack(alignment: .leading, spacing: AppSpacing.l) {
             FocusDurationPicker(selectedDuration: $selectedDuration)
 
             FocusHabitPicker(
@@ -114,25 +108,18 @@ struct FocusSessionView: View {
                 selectedHabitIDs: $selectedHabitIDs
             )
 
-            Button {
-                startSession()
-            } label: {
-                Text("Iniciar sesión")
-                    .font(AppFont.body2)
-                    .fontWeight(.bold)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 13)
-                    .foregroundStyle(.white)
-                    .background(selectedHabitIDs.isEmpty ? AppColor.subtleText : AppColor.accent)
-                    .clipShape(RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous))
-            }
-            .buttonStyle(.plain)
-            .disabled(selectedHabitIDs.isEmpty)
+            WHButton(
+                title: "Iniciar sesión",
+                icon: "play.fill",
+                variant: .primary,
+                isDisabled: selectedHabitIDs.isEmpty,
+                action: startSession
+            )
         }
     }
 
     private var runningContent: some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: AppSpacing.l) {
             FocusTimerCard(
                 timeText: runningTimeText,
                 progress: session?.progress(reference: now),
@@ -145,10 +132,10 @@ struct FocusSessionView: View {
     }
 
     private var reviewContent: some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: AppSpacing.l) {
             Text("Marca solo lo que completaste durante esta sesión. Estas marcas pesan más en Insights porque nacen en tiempo real.")
-                .font(AppFont.body2)
-                .foregroundStyle(AppColor.mutedText)
+                .font(AppFont.callout)
+                .foregroundStyle(AppColor.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
 
             FocusReviewChecklist(
@@ -156,19 +143,11 @@ struct FocusSessionView: View {
                 completedHabitIDs: $completedHabitIDs
             )
 
-            Button {
-                saveSessionResults()
-            } label: {
-                Text(completedHabitIDs.isEmpty ? "Cerrar sin marcas" : "Guardar marcas")
-                    .font(AppFont.body2)
-                    .fontWeight(.bold)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 13)
-                    .foregroundStyle(.white)
-                    .background(AppColor.accent)
-                    .clipShape(RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous))
-            }
-            .buttonStyle(.plain)
+            WHButton(
+                title: completedHabitIDs.isEmpty ? "Cerrar sin marcas" : "Guardar marcas",
+                variant: .primary,
+                action: saveSessionResults
+            )
         }
     }
 
@@ -182,7 +161,6 @@ struct FocusSessionView: View {
         if let remaining = session.remainingSeconds(reference: now) {
             return FocusTimeFormatter.string(from: remaining)
         }
-
         return FocusTimeFormatter.string(from: session.elapsedSeconds(reference: now))
     }
 
@@ -197,7 +175,7 @@ struct FocusSessionView: View {
         session = newSession
         now = .now
 
-        withAnimation(.easeInOut(duration: 0.2)) {
+        withAnimation(AppMotion.respectful(AppMotion.smooth, reduceMotion)) {
             phase = .running
         }
     }
@@ -205,8 +183,9 @@ struct FocusSessionView: View {
     private func finishSession(reference: Date) {
         guard phase == .running else { return }
         session?.finishForReview(reference: reference)
+        AppHaptics.play(.focusClosed)
 
-        withAnimation(.easeInOut(duration: 0.2)) {
+        withAnimation(AppMotion.respectful(AppMotion.smooth, reduceMotion)) {
             phase = .review
         }
     }
@@ -224,6 +203,9 @@ struct FocusSessionView: View {
         }
 
         session.complete(completedHabitIDs: completedHabitIDs, reference: completedAt)
+        if !completedHabitIDs.isEmpty {
+            AppHaptics.play(.habitCompleted)
+        }
         dismiss()
     }
 
@@ -259,7 +241,6 @@ struct FocusSessionView: View {
 
     private func cancelAndDismiss() {
         session?.cancel(reference: .now)
-
         dismiss()
     }
 }

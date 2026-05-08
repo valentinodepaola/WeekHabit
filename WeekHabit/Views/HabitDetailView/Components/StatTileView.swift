@@ -11,37 +11,38 @@ struct StatTileView: View {
     let footer: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: AppSpacing.s) {
             Text(caption)
-                .font(AppFont.formSectionText2)
-                .fontWeight(.semibold)
-                .foregroundStyle(AppColor.subtleText)
+                .font(AppFont.label)
+                .foregroundStyle(AppColor.textTertiary)
+                .tracking(0.6)
 
             Text(value)
-                .font(AppFont.subtitle)
-                .fontWeight(.semibold)
-                .foregroundStyle(AppColor.strongText)
+                .font(AppFont.headline)
+                .foregroundStyle(AppColor.textPrimary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
+                .monospacedDigit()
 
             Text(footer)
-                .font(AppFont.formSectionText2)
-                .foregroundStyle(AppColor.mutedText)
+                .font(AppFont.label)
+                .foregroundStyle(AppColor.textSecondary)
                 .lineLimit(2)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
-        .background(AppColor.surface)
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous))
+        .padding(AppSpacing.l)
+        .background(AppColor.bgElevated)
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous))
+        .appElevation(.low)
     }
 }
 
 #Preview {
-    HStack {
+    HStack(spacing: AppSpacing.s) {
         StatTileView(caption: "ESTA SEMANA", value: "3/5", footer: "60% de meta")
         StatTileView(caption: "REFERENCIA", value: "8", footer: "tu marca para volver")
     }
     .padding()
-    .background(AppColor.bgLight)
+    .background(AppColor.bgCanvas)
 }

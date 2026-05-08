@@ -2,8 +2,6 @@
 //  TodayHabitComponent.swift
 //  WeekHabit
 //
-//  Created by Valentino De Paola Gallardo on 27/04/26.
-//
 
 import SwiftUI
 
@@ -13,103 +11,147 @@ struct TodayHabitComponent: View {
     var activeExperiment: HabitExperiment?
     var referenceDate: Date = .now
     let onToggle: () -> Void
-    
-    var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            IconComponent(
-                icon: habit.iconName,
-                color: habit.habitColor
-            )
-            
-            VStack(alignment: .leading, spacing: 2) {
-                Text(habit.title)
-                    .font(AppFont.body2)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(AppColor.strongText)
-                    .lineLimit(1)
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        HStack(alignment: .center, spacing: AppSpacing.m) {
+            completeToggle
+
+            textContent
+
+            Spacer(minLength: AppSpacing.s)
+
+            iconColumn
+        }
+        .padding(.horizontal, AppSpacing.l)
+        .padding(.vertical, AppSpacing.l)
+        .frame(maxWidth: .infinity, minHeight: 94, alignment: .leading)
+        .background(AppColor.bgElevated)
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous)
+                .strokeBorder(AppColor.divider, lineWidth: 1)
+        }
+        .appElevation(.low)
+    }
+
+    private var textContent: some View {
+        VStack(alignment: .leading, spacing: AppSpacing.xs) {
+            Text(habit.title)
+                .font(AppFont.bodyEmphasis)
+                .foregroundStyle(AppColor.textPrimary)
+                .lineLimit(1)
+
+            VStack(alignment: .leading, spacing: AppSpacing.xxs) {
                 if let trimmedCue {
                     cueLine(trimmedCue)
                 }
 
                 if let experimentSubtitle {
                     Text(experimentSubtitle)
-                        .font(AppFont.formSectionText2)
-                        .foregroundStyle(AppColor.mutedText)
-                        .lineLimit(1)
+                        .font(AppFont.label)
+                        .foregroundStyle(AppColor.info)
+                        .lineLimit(2)
                 } else if shouldShowScheduleFallback {
                     Text(scheduleFallbackText)
-                        .font(AppFont.formSectionText2)
-                        .foregroundStyle(AppColor.mutedText)
+                        .font(AppFont.label)
+                        .foregroundStyle(AppColor.textTertiary)
                         .lineLimit(1)
                 }
             }
-            
-            Spacer()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
 
-            VStack(alignment: .trailing, spacing: 8) {
+    private var iconColumn: some View {
+        VStack(alignment: .trailing, spacing: AppSpacing.xs) {
+            iconBadge
+
+            if streakCount > 0 {
                 streakIndicator
-
-                Button {
-                    self.onToggle()
-                } label: {
-                    ZStack {
-                        Circle()
-                            .fill(self.isCompleted ? AppColor.accent : AppColor.surface)
-                            .frame(width: 35, height: 35)
-                            .overlay {
-                                Circle()
-                                    .stroke(
-                                        self.isCompleted ? AppColor.accent : AppColor.subtleText.opacity(0.18),
-                                        lineWidth: 1
-                                    )
-                            }
-                        if self.isCompleted {
-                            Image(systemName: "checkmark")
-                                .font(.system(size: 13, weight: .bold))
-                                .foregroundStyle(.white)
-                        }
-                    }
-                }
-                .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
-        .background(AppColor.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .frame(width: 44, alignment: .trailing)
+    }
+
+    private var iconBadge: some View {
+        Image(systemName: habit.iconName)
+            .font(.system(size: 22, weight: .semibold))
+            .foregroundStyle(habit.habitColor)
+            .frame(width: 36, height: 36)
+            .accessibilityHidden(true)
     }
 
     private func cueLine(_ cue: String) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 5) {
+        HStack(alignment: .firstTextBaseline, spacing: AppSpacing.xs) {
             Image(systemName: "arrow.turn.down.right")
                 .font(.system(size: 10, weight: .semibold))
                 .foregroundStyle(habit.habitColor)
 
             Text(cue)
-                .font(AppFont.formSectionText2)
-                .foregroundStyle(AppColor.mutedText)
+                .font(AppFont.label)
+                .foregroundStyle(AppColor.textSecondary)
                 .lineLimit(2)
         }
         .padding(.top, 1)
     }
+
+    private var streakIndicator: some View {
+        HStack(spacing: AppSpacing.xs) {
+            Image(systemName: "flame.fill")
+                .font(.system(size: 10, weight: .semibold))
+
+            Text("\(streakCount)")
+                .font(AppFont.micro)
+                .monospacedDigit()
+        }
+        .foregroundStyle(streakColor)
+        .accessibilityLabel(streakAccessibilityLabel)
+        .opacity(streakCount == 0 ? 0.5 : 1)
+    }
+
+    private var completeToggle: some View {
+        Button(action: handleToggle) {
+            ZStack {
+                RoundedRectangle(cornerRadius: AppRadius.s, style: .continuous)
+                    .fill(isCompleted ? habit.habitColor : AppColor.bgElevated)
+                    .frame(width: 34, height: 34)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: AppRadius.s, style: .continuous)
+                            .strokeBorder(
+                                isCompleted ? habit.habitColor : AppColor.divider,
+                                lineWidth: 1
+                            )
+                    }
+                if isCompleted {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(.white)
+                }
+            }
+            .scaleEffect(isCompleted ? 1.0 : 1.0)
+        }
+        .buttonStyle(.plain)
+        .animation(AppMotion.respectful(AppMotion.celebration, reduceMotion), value: isCompleted)
+        .accessibilityLabel(isCompleted ? "Desmarcar hábito" : "Marcar hábito")
+    }
+
+    private func handleToggle() {
+        if !isCompleted {
+            AppHaptics.play(.habitCompleted)
+        }
+        onToggle()
+    }
+
+    // MARK: - Computed
 
     private var trimmedCue: String? {
         guard let cue = habit.cue?.trimmingCharacters(in: .whitespacesAndNewlines),
               !cue.isEmpty else {
             return nil
         }
-
         return cue
-    }
-
-    private var trimmedNote: String? {
-        guard let note = habit.note?.trimmingCharacters(in: .whitespacesAndNewlines),
-              !note.isEmpty else {
-            return nil
-        }
-
-        return note
     }
 
     private var shouldShowScheduleFallback: Bool {
@@ -120,21 +162,7 @@ struct TodayHabitComponent: View {
         if habit.trackingKind == .quantity {
             return habit.targetPerSessionText
         }
-
         return "Diario"
-    }
-
-    private var streakIndicator: some View {
-        HStack(spacing: 4) {
-            Image(systemName: "flame.fill")
-                .font(.system(size: 12, weight: .semibold))
-
-            Text("\(streakCount)")
-                .font(AppFont.formSectionText)
-                .monospacedDigit()
-        }
-        .foregroundStyle(streakColor)
-        .accessibilityLabel(streakAccessibilityLabel)
     }
 
     private var streakCount: Int {
@@ -148,7 +176,7 @@ struct TodayHabitComponent: View {
     }
 
     private var streakColor: Color {
-        streakCount > 0 ? .orange : AppColor.subtleText
+        streakCount > 0 ? AppColor.warning : AppColor.textTertiary
     }
 
     private var experimentSubtitle: String? {
@@ -164,20 +192,4 @@ struct TodayHabitComponent: View {
 
         return "Prueba activa · \(activeExperiment.daySummary)"
     }
-}
-
-
-#Preview {
-    TodayHabitComponent(
-        habit: Habit(
-            title: "Tender cama",
-            cue: "Después de servirme el café de la mañana",
-            iconName: "sparkles",
-            colorHex: "#c89046",
-            targetDaysPerWeek: 3,
-            activeDaysOfWeek: [.monday, .tuesday, .wednesday]
-        ),
-        isCompleted: false,
-        onToggle: {}
-    )
 }

@@ -7,11 +7,11 @@ import SwiftUI
 import SwiftData
 
 struct CreatePlanView: View {
-
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
 
     @Query(sort: \Habit.createdAt, order: .reverse) private var allHabits: [Habit]
+    @Query(sort: \Plan.createdAt, order: .reverse) private var allPlans: [Plan]
 
     @State private var planName: String = ""
     @State private var motivation: String = ""
@@ -27,6 +27,10 @@ struct CreatePlanView: View {
 
     private var isEditing: Bool {
         planToEdit != nil
+    }
+
+    private var isFirstPlan: Bool {
+        !isEditing && allPlans.isEmpty
     }
 
     init(planToEdit: Plan? = nil) {
@@ -48,25 +52,56 @@ struct CreatePlanView: View {
                     onSave: { savePlan() }
                 )
 
-                VStack(alignment: .leading, spacing: 25) {
+                VStack(alignment: .leading, spacing: AppSpacing.xl) {
                     Text(isEditing ? "Editar plan" : "Nuevo plan")
                         .font(AppFont.title)
-                        .foregroundStyle(AppColor.strongText)
-                        .padding(.bottom, 8)
+                        .foregroundStyle(AppColor.textPrimary)
+                        .padding(.bottom, AppSpacing.xs)
+
+                    if isFirstPlan {
+                        firstPlanIntroCard
+                    }
 
                     PlanBasicInfoSection(
                         planName: $planName,
                         motivation: $motivation
                     )
 
-                    PlanScheduleSection(endsAt: $endsAt)
-
-                    PlanGoalSection(targetCompletionRate: $targetCompletionRate)
+                    PlanScheduleSection(
+                        endsAt: $endsAt,
+                        targetCompletionRate: $targetCompletionRate
+                    )
 
                     PlanHabitsSection(selectedHabits: $selectedHabits)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding()
+                .padding(AppSpacing.l)
+                .padding(.bottom, AppSpacing.xxl)
+            }
+        }
+    }
+
+    private var firstPlanIntroCard: some View {
+        WHCard(variant: .elevated, padding: AppSpacing.l, radius: AppRadius.l) {
+            VStack(alignment: .leading, spacing: AppSpacing.m) {
+                HStack(spacing: AppSpacing.s) {
+                    Image(systemName: "target")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(AppColor.accent)
+                    Text("TU PRIMER PLAN")
+                        .font(AppFont.label)
+                        .foregroundStyle(AppColor.textTertiary)
+                        .tracking(0.8)
+                }
+
+                Text("Hábitos con propósito")
+                    .font(AppFont.headline)
+                    .foregroundStyle(AppColor.textPrimary)
+
+                Text("Un plan agrupa los hábitos que te llevan a una meta concreta. Al terminar, decides qué se mantiene y qué cumplió su función.")
+                    .font(AppFont.callout)
+                    .foregroundStyle(AppColor.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
     }

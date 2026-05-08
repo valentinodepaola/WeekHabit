@@ -2,63 +2,76 @@
 //  WeekHeaderSection.swift
 //  WeekHabit
 //
-//  Created by Valentino De Paola Gallardo on 01/05/26.
-//
 
 import SwiftUI
 
 struct WeekHeaderSection: View {
-    
     var monthYearLabel: String
     var weekNumber: Int
     @Binding var weekOffset: Int
-    
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(monthYearLabel)
-                .font(AppFont.formSectionText)
-                .foregroundStyle(AppColor.mutedText)
+    var onCreate: (() -> Void)? = nil
 
-            HStack(spacing: 16) {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: AppSpacing.xs) {
+            Text(monthYearLabel)
+                .font(AppFont.label)
+                .foregroundStyle(AppColor.textTertiary)
+                .tracking(0.6)
+
+            HStack(spacing: AppSpacing.m) {
                 Text("Semana \(weekNumber)")
                     .font(AppFont.title)
-                    .foregroundStyle(AppColor.strongText)
+                    .foregroundStyle(AppColor.textPrimary)
 
                 Spacer()
 
                 if weekOffset != 0 {
                     Button("Hoy") {
-                        withAnimation(.spring(duration: 0.35)) {
+                        withAnimation(AppMotion.respectful(AppMotion.smooth, reduceMotion)) {
                             weekOffset = 0
                         }
                     }
-                    .font(AppFont.formSectionText)
+                    .font(AppFont.label)
                     .foregroundStyle(AppColor.accent)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(AppColor.accentSoft, in: Capsule())
+                    .padding(.horizontal, AppSpacing.m)
+                    .padding(.vertical, AppSpacing.s)
+                    .background(AppColor.accentMuted, in: Capsule())
                 }
 
-                HStack(spacing: 8) {
+                HStack(spacing: AppSpacing.s) {
                     navButton(systemName: "chevron.left") {
-                        withAnimation(.spring(duration: 0.35)) {
+                        withAnimation(AppMotion.respectful(AppMotion.smooth, reduceMotion)) {
                             weekOffset -= 1
                         }
                     }
 
                     navButton(systemName: "chevron.right") {
-                        withAnimation(.spring(duration: 0.35)) {
+                        withAnimation(AppMotion.respectful(AppMotion.smooth, reduceMotion)) {
                             weekOffset += 1
                         }
                     }
                     .disabled(weekOffset >= 0)
+
+                    if let onCreate {
+                        Button(action: onCreate) {
+                            Image(systemName: "plus")
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundStyle(.white)
+                                .frame(width: 40, height: 40)
+                                .background(AppColor.accent)
+                                .clipShape(Circle())
+                                .appElevation(.low)
+                        }
+                        .accessibilityLabel("Nuevo")
+                    }
                 }
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.top, 16)
-        .padding(.bottom, 18)
+        .padding(.horizontal, AppSpacing.l)
+        .padding(.top, AppSpacing.l)
+        .padding(.bottom, AppSpacing.l)
     }
 }
 
@@ -66,13 +79,13 @@ private func navButton(systemName: String, action: @escaping () -> Void) -> some
     Button(action: action) {
         Image(systemName: systemName)
             .font(.system(size: 15, weight: .semibold))
-            .foregroundStyle(AppColor.strongText)
+            .foregroundStyle(AppColor.textPrimary)
             .frame(width: 40, height: 40)
-            .background(AppColor.surface)
+            .background(AppColor.bgElevated)
             .clipShape(Circle())
             .overlay {
                 Circle()
-                    .stroke(AppColor.subtleText.opacity(0.12), lineWidth: 1)
+                    .stroke(AppColor.divider, lineWidth: 1)
             }
     }
     .buttonStyle(.plain)

@@ -10,13 +10,16 @@ struct InsightProvisionalBadge: View {
 
     var body: some View {
         Text(text)
-            .font(AppFont.formSectionText2)
-            .foregroundStyle(AppColor.accent)
+            .font(AppFont.label)
+            .foregroundStyle(AppColor.warning)
             .lineLimit(1)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 5)
-            .background(AppColor.accentSoft)
+            .padding(.horizontal, AppSpacing.s)
+            .padding(.vertical, AppSpacing.xs)
+            .background(AppColor.warning.opacity(0.14))
             .clipShape(Capsule())
+            .overlay(
+                Capsule().strokeBorder(AppColor.warning.opacity(0.25), lineWidth: 1)
+            )
             .fixedSize(horizontal: true, vertical: false)
             .accessibilityLabel("Insight provisional")
     }
@@ -25,5 +28,5 @@ struct InsightProvisionalBadge: View {
 #Preview {
     InsightProvisionalBadge()
         .padding()
-        .background(AppColor.bgLight)
+        .background(AppColor.bgCanvas)
 }

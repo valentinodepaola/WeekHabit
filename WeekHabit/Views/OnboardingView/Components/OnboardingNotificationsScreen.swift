@@ -13,55 +13,66 @@ struct OnboardingNotificationsScreen: View {
         VStack(spacing: 0) {
             Spacer()
 
-            ZStack {
-                RoundedRectangle(cornerRadius: 34, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [AppColor.accent, Color(hex: "#df7442")],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 116, height: 116)
+            iconBadge
+                .padding(.bottom, AppSpacing.xxl)
 
-                Image(systemName: "bell")
-                    .font(.system(size: 42, weight: .regular))
-                    .foregroundStyle(.white)
-            }
-            .shadow(color: AppColor.accent.opacity(0.14), radius: 28, x: 0, y: 18)
-            .padding(.bottom, 44)
-
-            VStack(spacing: 14) {
-                (
-                    Text("Un empujón ")
-                        .font(AppFont.title)
-                        .foregroundStyle(AppColor.strongText)
-                    +
-                    Text("en el momento justo")
-                        .font(AppFont.title.italic())
-                        .foregroundStyle(AppColor.accent)
-                )
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 24)
-
-                Text("Te avisamos cuando toca tu hábito. Tú decides hora y frecuencia, sin spam, lo prometemos.")
-                    .font(AppFont.body2)
-                    .foregroundStyle(AppColor.mutedText)
+            VStack(spacing: AppSpacing.m) {
+                headlineText
                     .multilineTextAlignment(.center)
-                    .lineSpacing(4)
-                    .padding(.horizontal, 48)
+
+                Text("Te avisamos cuando toca tu hábito. Tú decides hora y frecuencia, sin spam.")
+                    .font(AppFont.callout)
+                    .foregroundStyle(AppColor.textSecondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, AppSpacing.xxxl)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
             Spacer()
 
-            OnboardingPrimaryButton(title: "Activar notificaciones", action: onRequestNotifications)
-                .padding(.horizontal, 28)
-                .padding(.bottom, 22)
+            WHButton(
+                title: "Activar recordatorios",
+                icon: "bell",
+                variant: .primary,
+                action: onRequestNotifications
+            )
+            .padding(.horizontal, AppSpacing.xl)
+            .padding(.bottom, AppSpacing.s)
 
             Button("Más tarde", action: onSkip)
-                .font(AppFont.body2)
-                .foregroundStyle(AppColor.mutedText)
-                .padding(.bottom, 34)
+                .font(AppFont.label)
+                .foregroundStyle(AppColor.textTertiary)
+                .padding(.bottom, AppSpacing.xxl)
+        }
+    }
+
+    private var iconBadge: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: AppRadius.xl, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [AppColor.accent, AppColor.warning],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .frame(width: 116, height: 116)
+
+            Image(systemName: "bell")
+                .font(.system(size: 42, weight: .regular))
+                .foregroundStyle(.white)
+        }
+        .appElevation(.medium)
+    }
+
+    private var headlineText: some View {
+        VStack(spacing: 2) {
+            Text("Un empujón")
+                .font(AppFont.title)
+                .foregroundStyle(AppColor.textPrimary)
+            Text("en el momento justo")
+                .font(AppFont.title.italic())
+                .foregroundStyle(AppColor.accent)
         }
     }
 }

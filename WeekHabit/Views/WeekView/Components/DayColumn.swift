@@ -2,8 +2,6 @@
 //  DayColumn.swift
 //  WeekHabit
 //
-//  Created by Valentino De Paola Gallardo on 01/05/26.
-//
 
 import SwiftUI
 
@@ -22,17 +20,18 @@ struct DayColumn: View {
     }
 
     var body: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: AppSpacing.xs) {
             Text(dayAbbrev)
-                .font(AppFont.formSectionText)
-                .foregroundStyle(isToday ? .white : AppColor.mutedText)
+                .font(AppFont.label)
+                .foregroundStyle(isToday ? .white : AppColor.textSecondary)
 
             Text(dayNumber)
-                .font(AppFont.dayLabel)
-                .foregroundStyle(isToday ? .white : AppColor.strongText)
+                .font(AppFont.bodyEmphasis)
+                .foregroundStyle(isToday ? .white : AppColor.textPrimary)
+                .monospacedDigit()
         }
         .frame(maxWidth: .infinity, minHeight: 54)
         .background(isToday ? AppColor.accent : Color.clear)
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.medium))
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.m))
     }
 }

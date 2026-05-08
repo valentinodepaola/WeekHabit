@@ -2,7 +2,8 @@
 //  OnboardingView.swift
 //  WeekHabit
 //
-//  Created by Valentino De Paola Gallardo on 24/04/26.
+//  Reducido a 3 pasos: intro → primer hábito → recordatorios.
+//  La filosofía vive en el lenguaje de toda la app, no en pantallas didácticas.
 //
 
 import SwiftData
@@ -30,9 +31,9 @@ struct OnboardingView: View {
                         currentIndex: step.progressIndex,
                         total: OnboardingStep.progressCount
                     )
-                    .padding(.horizontal, 30)
-                    .padding(.top, 18)
-                    .padding(.bottom, 12)
+                    .padding(.horizontal, AppSpacing.xl)
+                    .padding(.top, AppSpacing.l)
+                    .padding(.bottom, AppSpacing.s)
                 }
 
                 ZStack {
@@ -40,7 +41,10 @@ struct OnboardingView: View {
                         .id(step)
                         .transition(screenTransition)
                 }
-                .animation(.spring(response: 0.42, dampingFraction: 0.9), value: step)
+                .animation(
+                    AppMotion.respectful(AppMotion.gentle, reduceMotion),
+                    value: step
+                )
             }
         }
     }
@@ -53,35 +57,17 @@ struct OnboardingView: View {
                 onStart: goForward,
                 onSkip: onFinish
             )
-        case .smallStart:
-            OnboardingInsightScreen(
-                icon: "leaf.fill",
-                title: "No necesitas cambiarlo todo.",
-                accentTitle: "Solo empezar pequeño.",
-                message: "Un hábito claro reduce la fricción. Cuando el primer paso cabe en tu día, repetirlo se vuelve mucho más fácil.",
-                buttonTitle: "Continuar",
-                onContinue: goForward
-            )
-        case .weeklyRhythm:
-            OnboardingInsightScreen(
-                icon: "calendar",
-                title: "Tu semana es el terreno.",
-                accentTitle: "Tu ritmo hace el cambio.",
-                message: "WeekHabit te ayuda a mirar siete días a la vez: suficiente para avanzar, amable para volver a intentarlo.",
-                buttonTitle: "Elegir mi primer hábito",
-                onContinue: goForward
-            )
-        case .notifications:
-            OnboardingNotificationsScreen(
-                onRequestNotifications: requestNotifications,
-                onSkip: goForward
-            )
         case .starterHabit:
             OnboardingStarterHabitScreen(
                 selectedTemplateID: $selectedTemplate,
                 templates: StarterHabitTemplate.all,
-                onStartWeek: createSelectedHabitAndFinish,
+                onContinue: createSelectedHabitAndContinue,
                 onCreateFromScratch: onFinish
+            )
+        case .notifications:
+            OnboardingNotificationsScreen(
+                onRequestNotifications: requestNotifications,
+                onSkip: onFinish
             )
         }
     }
@@ -92,27 +78,31 @@ struct OnboardingView: View {
     }
 
     private func goForward() {
-        guard let nextStep = step.next else { return }
+        guard let nextStep = step.next else {
+            onFinish()
+            return
+        }
         step = nextStep
     }
 
     private func requestNotifications() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { _, _ in
-            Task { @MainActor in
-                goForward()
+        Task {
+            await HabitReminderService.requestAuthorization()
+            await MainActor.run {
+                onFinish()
             }
         }
     }
 
-    private func createSelectedHabitAndFinish() {
+    private func createSelectedHabitAndContinue() {
         guard let template = StarterHabitTemplate.all.first(where: { $0.id == selectedTemplate }) else {
-            onFinish()
+            goForward()
             return
         }
 
         modelContext.insert(template.makeHabit())
         try? modelContext.save()
-        onFinish()
+        goForward()
     }
 }
 

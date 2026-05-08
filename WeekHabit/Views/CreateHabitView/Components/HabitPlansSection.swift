@@ -15,14 +15,14 @@ struct HabitPlansSection: View {
     }
 
     var body: some View {
-        CreateHabitFormSection(title: "Planes") {
+        CreateHabitFormSection(
+            title: "Plan",
+            helper: "Conecta este hábito con una meta que importa."
+        ) {
             if activePlans.isEmpty {
-                Text("No tienes planes activos. Puedes crear uno desde el botón + de Hoy.")
-                    .font(AppFont.body2)
-                    .foregroundStyle(AppColor.subtleText)
-                    .multilineTextAlignment(.leading)
+                emptyState
             } else {
-                VStack(spacing: 8) {
+                VStack(spacing: AppSpacing.s) {
                     ForEach(activePlans) { plan in
                         PlanSelectionRow(
                             plan: plan,
@@ -39,6 +39,26 @@ struct HabitPlansSection: View {
             }
         }
     }
+
+    private var emptyState: some View {
+        HStack(spacing: AppSpacing.m) {
+            Image(systemName: "target")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundStyle(AppColor.textTertiary)
+                .frame(width: 32, height: 32)
+                .background(AppColor.bgSunken)
+                .clipShape(Circle())
+
+            Text("Sin planes activos. Puedes vincularlo más tarde desde el plan.")
+                .font(AppFont.callout)
+                .foregroundStyle(AppColor.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(AppSpacing.m)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(AppColor.bgSunken.opacity(0.6))
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.m, style: .continuous))
+    }
 }
 
 private struct PlanSelectionRow: View {
@@ -48,37 +68,40 @@ private struct PlanSelectionRow: View {
 
     var body: some View {
         Button(action: onTap) {
-            HStack(spacing: 12) {
+            HStack(spacing: AppSpacing.m) {
                 ZStack {
                     Circle()
                         .fill(AppColor.accent.opacity(0.15))
                         .frame(width: 36, height: 36)
                     Image(systemName: "target")
-                        .font(.system(size: 16))
+                        .font(.system(size: 16, weight: .medium))
                         .foregroundStyle(AppColor.accent)
                 }
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(plan.title)
-                        .font(AppFont.body2)
-                        .foregroundStyle(AppColor.strongText)
+                        .font(AppFont.body)
+                        .foregroundStyle(AppColor.textPrimary)
                         .lineLimit(1)
-
                     Text(plan.daysRemainingText)
-                        .font(AppFont.formSectionText2)
-                        .foregroundStyle(AppColor.subtleText)
+                        .font(AppFont.label)
+                        .foregroundStyle(AppColor.textTertiary)
                 }
 
                 Spacer()
 
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 22))
-                    .foregroundStyle(isSelected ? AppColor.accent : AppColor.subtleText)
+                    .foregroundStyle(isSelected ? AppColor.accent : AppColor.textTertiary)
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
-            .background(AppColor.surfaceMuted)
-            .clipShape(RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous))
+            .padding(.horizontal, AppSpacing.m)
+            .padding(.vertical, AppSpacing.s)
+            .background(isSelected ? AppColor.accentMuted.opacity(0.5) : AppColor.bgSunken)
+            .clipShape(RoundedRectangle(cornerRadius: AppRadius.m, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: AppRadius.m, style: .continuous)
+                    .strokeBorder(isSelected ? AppColor.accent.opacity(0.4) : Color.clear, lineWidth: 1)
+            )
         }
         .buttonStyle(.plain)
     }

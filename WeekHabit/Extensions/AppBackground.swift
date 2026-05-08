@@ -2,34 +2,24 @@
 //  AppBackground.swift
 //  WeekHabit
 //
-//  Created by Valentino De Paola Gallardo on 22/04/26.
+//  Fondo de pantalla coherente con el sistema. Usa `bgCanvas` adaptivo.
 //
+
 import SwiftUI
 
-struct AppBackground<Content: View> : View {
-    @Environment(\.colorScheme) private var colorScheme
-    
+struct AppBackground<Content: View>: View {
     let content: Content
-    
+
     init(@ViewBuilder content: () -> Content) {
         self.content = content()
     }
-    
+
     var body: some View {
         ZStack {
-            backgroundColor
+            AppColor.bgCanvas
                 .ignoresSafeArea()
-            
-            self.content
-        }
-    }
-    
-    private var backgroundColor: Color {
-        switch colorScheme {
-        case .dark:
-            AppColor.bgDark
-        default:
-            AppColor.bgLight
+
+            content
         }
     }
 }

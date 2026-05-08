@@ -2,6 +2,8 @@
 //  PlanHabitsSection.swift
 //  WeekHabit
 //
+//  Sección "Con qué hábitos": selección de hábitos activos a vincular.
+//
 
 import SwiftUI
 import SwiftData
@@ -15,14 +17,14 @@ struct PlanHabitsSection: View {
     }
 
     var body: some View {
-        CreateHabitFormSection(title: "Hábitos") {
+        WHFormSection(
+            title: "Con qué hábitos",
+            helper: "Elige los hábitos pequeños que sostienen esta meta."
+        ) {
             if activeHabits.isEmpty {
-                Text("No tienes hábitos activos todavía. Crea uno primero desde el botón + de Hoy.")
-                    .font(AppFont.body2)
-                    .foregroundStyle(AppColor.subtleText)
-                    .multilineTextAlignment(.leading)
+                emptyState
             } else {
-                VStack(spacing: 8) {
+                VStack(spacing: AppSpacing.s) {
                     ForEach(activeHabits) { habit in
                         HabitSelectionRow(
                             habit: habit,
@@ -39,6 +41,26 @@ struct PlanHabitsSection: View {
             }
         }
     }
+
+    private var emptyState: some View {
+        HStack(spacing: AppSpacing.m) {
+            Image(systemName: "leaf")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundStyle(AppColor.textTertiary)
+                .frame(width: 32, height: 32)
+                .background(AppColor.bgSunken)
+                .clipShape(Circle())
+
+            Text("Aún no tienes hábitos activos. Puedes guardar el plan y vincularlos después.")
+                .font(AppFont.callout)
+                .foregroundStyle(AppColor.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(AppSpacing.m)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(AppColor.bgSunken.opacity(0.6))
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.m, style: .continuous))
+    }
 }
 
 private struct HabitSelectionRow: View {
@@ -48,31 +70,35 @@ private struct HabitSelectionRow: View {
 
     var body: some View {
         Button(action: onTap) {
-            HStack(spacing: 12) {
+            HStack(spacing: AppSpacing.m) {
                 ZStack {
                     Circle()
-                        .fill(habit.habitColor.opacity(0.15))
+                        .fill(habit.habitColor.opacity(0.18))
                         .frame(width: 36, height: 36)
                     Image(systemName: habit.iconName)
-                        .font(.system(size: 16))
+                        .font(.system(size: 16, weight: .medium))
                         .foregroundStyle(habit.habitColor)
                 }
 
                 Text(habit.title)
-                    .font(AppFont.body2)
-                    .foregroundStyle(AppColor.strongText)
+                    .font(AppFont.body)
+                    .foregroundStyle(AppColor.textPrimary)
                     .lineLimit(1)
 
                 Spacer()
 
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 22))
-                    .foregroundStyle(isSelected ? AppColor.accent : AppColor.subtleText)
+                    .foregroundStyle(isSelected ? AppColor.accent : AppColor.textTertiary)
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
-            .background(AppColor.surfaceMuted)
-            .clipShape(RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous))
+            .padding(.horizontal, AppSpacing.m)
+            .padding(.vertical, AppSpacing.s)
+            .background(isSelected ? AppColor.accentMuted.opacity(0.5) : AppColor.bgSunken)
+            .clipShape(RoundedRectangle(cornerRadius: AppRadius.m, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: AppRadius.m, style: .continuous)
+                    .strokeBorder(isSelected ? AppColor.accent.opacity(0.4) : Color.clear, lineWidth: 1)
+            )
         }
         .buttonStyle(.plain)
     }

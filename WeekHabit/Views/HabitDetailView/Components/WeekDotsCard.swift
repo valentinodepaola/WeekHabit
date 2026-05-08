@@ -14,23 +14,25 @@ struct WeekDotsCard: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: AppSpacing.m) {
             Text("ESTA SEMANA")
-                .font(AppFont.formSectionText)
-                .foregroundStyle(AppColor.mutedText)
-                .textCase(.uppercase)
+                .font(AppFont.label)
+                .foregroundStyle(AppColor.textTertiary)
+                .tracking(0.6)
 
-            HStack(spacing: 8) {
+            HStack(spacing: AppSpacing.s) {
                 ForEach(Array(Weekday.ordered.enumerated()), id: \.element.id) { index, weekday in
-                    VStack(spacing: 7) {
+                    let dayDate = date(for: index)
+                    VStack(spacing: AppSpacing.s) {
                         Text(weekday.oneLetterName)
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(AppColor.subtleText)
+                            .font(AppFont.label)
+                            .foregroundStyle(AppColor.textTertiary)
                             .frame(width: 30)
 
                         WeekDot(
-                            isCompleted: habit.isCompleted(on: date(for: index)),
-                            isActive: habit.isLoggable(on: date(for: index)),
+                            isCompleted: habit.isCompleted(on: dayDate),
+                            isActive: habit.isLoggable(on: dayDate),
+                            isRetroactive: isRetroactive(on: dayDate),
                             color: habit.habitColor
                         )
                     }
@@ -39,19 +41,27 @@ struct WeekDotsCard: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
-        .background(AppColor.surface)
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous))
+        .padding(AppSpacing.l)
+        .background(AppColor.bgElevated)
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous))
+        .appElevation(.low)
     }
 
     private func date(for dayIndex: Int) -> Date {
         AppCalendar.current.date(byAdding: .day, value: dayIndex, to: weekStart) ?? weekStart
+    }
+
+    private func isRetroactive(on date: Date) -> Bool {
+        let entries = habit.entries.filter { AppCalendar.isSameDay($0.date, date) }
+        guard !entries.isEmpty else { return false }
+        return entries.allSatisfy { $0.source == .manual }
     }
 }
 
 private struct WeekDot: View {
     let isCompleted: Bool
     let isActive: Bool
+    let isRetroactive: Bool
     let color: Color
 
     private let size: CGFloat = 30
@@ -62,7 +72,7 @@ private struct WeekDot: View {
                 .fill(fillColor)
                 .overlay {
                     Circle()
-                        .stroke(borderColor, lineWidth: 1.2)
+                        .strokeBorder(borderColor, style: borderStyle)
                 }
 
             if isCompleted && isActive {
@@ -76,26 +86,25 @@ private struct WeekDot: View {
 
     private var fillColor: Color {
         if isCompleted && isActive {
-            return color
+            return isRetroactive ? color.opacity(0.7) : color
         }
-
         if isActive {
-            return AppColor.surface
+            return AppColor.bgSunken
         }
-
-        return AppColor.subtleText.opacity(0.08)
+        return AppColor.divider.opacity(0.4)
     }
 
     private var borderColor: Color {
-        if isCompleted && isActive {
-            return color
-        }
+        if isCompleted && isActive { return color }
+        if isActive { return color.opacity(0.45) }
+        return AppColor.divider
+    }
 
-        if isActive {
-            return color
+    private var borderStyle: StrokeStyle {
+        if isCompleted && isRetroactive {
+            return StrokeStyle(lineWidth: 1.2, dash: [2.5, 2])
         }
-
-        return AppColor.subtleText.opacity(0.25)
+        return StrokeStyle(lineWidth: 1.2)
     }
 }
 
@@ -110,5 +119,5 @@ private struct WeekDot: View {
         )
     )
     .padding()
-    .background(AppColor.bgLight)
+    .background(AppColor.bgCanvas)
 }

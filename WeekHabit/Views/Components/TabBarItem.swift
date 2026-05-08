@@ -2,8 +2,6 @@
 //  TabBarItem.swift
 //  WeekHabit
 //
-//  Created by Valentino De Paola Gallardo on 22/04/26.
-//
 
 import SwiftUI
 
@@ -18,26 +16,26 @@ struct TabBarItem: View {
         Button(action: action) {
             ZStack {
                 if isSelected {
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .fill(AppColor.accentSoft)
+                    RoundedRectangle(cornerRadius: AppRadius.m, style: .continuous)
+                        .fill(AppColor.accentMuted)
                         .matchedGeometryEffect(id: "tab-selection", in: namespace)
                         .overlay {
-                            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                .stroke(AppColor.accent.opacity(0.16), lineWidth: 1)
+                            RoundedRectangle(cornerRadius: AppRadius.m, style: .continuous)
+                                .stroke(AppColor.accent.opacity(0.18), lineWidth: 1)
                         }
                 }
 
-                VStack(spacing: 4) {
+                VStack(spacing: AppSpacing.xs) {
                     Image(systemName: icon)
                         .font(.system(size: isSelected ? 21 : 20, weight: isSelected ? .semibold : .regular))
                         .symbolEffect(.bounce, value: isSelected)
 
                     Text(text)
-                        .font(.system(size: 10.5, weight: isSelected ? .semibold : .medium, design: .default))
+                        .font(AppFont.micro)
                         .lineLimit(1)
                         .minimumScaleFactor(0.86)
                 }
-                .foregroundStyle(isSelected ? AppColor.accent : AppColor.mutedText)
+                .foregroundStyle(isSelected ? AppColor.accent : AppColor.textSecondary)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .contentShape(Rectangle())
             }
@@ -50,11 +48,13 @@ struct TabBarItem: View {
 }
 
 private struct TabBarPressStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .scaleEffect(configuration.isPressed ? 0.94 : 1)
             .opacity(configuration.isPressed ? 0.86 : 1)
-            .animation(.spring(response: 0.22, dampingFraction: 0.72), value: configuration.isPressed)
+            .animation(AppMotion.respectful(AppMotion.snap, reduceMotion), value: configuration.isPressed)
     }
 }
 
@@ -66,7 +66,7 @@ private struct TabBarItemPreview: View {
     @Namespace private var namespace
 
     var body: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: AppSpacing.s) {
             TabBarItem(
                 icon: "calendar",
                 text: "Semana",
@@ -82,6 +82,6 @@ private struct TabBarItemPreview: View {
             ) { }
         }
         .padding()
-        .background(AppColor.bgLight)
+        .background(AppColor.bgCanvas)
     }
 }

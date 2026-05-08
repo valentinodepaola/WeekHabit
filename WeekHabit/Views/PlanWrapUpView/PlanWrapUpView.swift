@@ -2,6 +2,11 @@
 //  PlanWrapUpView.swift
 //  WeekHabit
 //
+//  Cierre con narrativa: "Un plan que termina no debe desaparecer en silencio.
+//  Debe cerrar un ciclo: mirar avance, conservar lo útil, archivar lo que ya
+//  cumplió su función y aprender para la siguiente semana."
+//  — IDENTIDAD_MISION.md
+//
 
 import SwiftUI
 import SwiftData
@@ -11,148 +16,169 @@ struct PlanWrapUpView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
 
-    // true = mantener, false = archivar
+    /// true = mantener, false = archivar.
     @State private var retainHabits: [UUID: Bool] = [:]
+
+    private var progress: Double { plan.progress() }
+    private var meetsGoal: Bool { plan.meetsGoal() }
+
+    private var headline: String {
+        if meetsGoal { return "Lo lograste" }
+        if progress > 0 { return "El plan termina" }
+        return "El plan termina"
+    }
+
+    private var narrative: String {
+        if meetsGoal {
+            return "Llegaste a la meta que te pusiste. Lo aprendido se queda contigo, sin importar qué decidas con los hábitos a continuación."
+        }
+        if progress > 0.5 {
+            return "Te quedaste cerca. Eso también es información: hay un ritmo posible, quizá con menos fricción la próxima vez."
+        }
+        if progress > 0 {
+            return "El plan termina sin alcanzar la meta. No es fracaso — es información para ajustar lo que pides la próxima vez."
+        }
+        return "El plan termina sin marcas registradas. A veces el contexto no acompaña; el siguiente intento empieza desde cero, sin culpa."
+    }
 
     var body: some View {
         AppBackground {
             ScrollView {
-                VStack(alignment: .leading, spacing: 28) {
+                VStack(alignment: .leading, spacing: AppSpacing.xl) {
                     headerSection
-                    progressSection
+                    progressCard
+                    narrativeSection
                     habitsSection
                     actionButton
                 }
-                .padding()
-                .padding(.bottom, 40)
+                .padding(AppSpacing.l)
+                .padding(.bottom, AppSpacing.xxl)
             }
         }
     }
 
+    // MARK: - Header
+
     private var headerSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                ZStack {
-                    Circle()
-                        .fill(AppColor.accent.opacity(0.15))
-                        .frame(width: 48, height: 48)
-                    Image(systemName: "target")
-                        .font(.system(size: 22))
-                        .foregroundStyle(AppColor.accent)
-                }
-
-                Spacer()
-
-                Text("Plan finalizado")
-                    .font(AppFont.formSectionText)
-                    .foregroundStyle(AppColor.mutedText)
-                    .textCase(.uppercase)
+        VStack(alignment: .leading, spacing: AppSpacing.s) {
+            HStack(spacing: AppSpacing.s) {
+                Image(systemName: meetsGoal ? "checkmark.seal.fill" : "checkmark.seal")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(meetsGoal ? AppColor.success : AppColor.textTertiary)
+                Text("PLAN COMPLETADO")
+                    .font(AppFont.label)
+                    .tracking(0.8)
+                    .foregroundStyle(AppColor.textTertiary)
             }
 
             Text(plan.title)
                 .font(AppFont.title)
-                .foregroundStyle(AppColor.strongText)
+                .foregroundStyle(AppColor.textPrimary)
 
             if let motivation = plan.motivation, !motivation.isEmpty {
                 Text(motivation)
-                    .font(AppFont.body2)
-                    .foregroundStyle(AppColor.subtleText)
-                    .multilineTextAlignment(.leading)
+                    .font(AppFont.callout)
+                    .foregroundStyle(AppColor.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
     }
 
-    private var progressSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            let progress = plan.progress()
-            let meetsGoal = plan.meetsGoal()
+    // MARK: - Progress card
 
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Completitud")
-                        .font(AppFont.formSectionText)
-                        .foregroundStyle(AppColor.mutedText)
-                        .textCase(.uppercase)
+    private var progressCard: some View {
+        WHCard(variant: .elevated, padding: AppSpacing.l, radius: AppRadius.l) {
+            VStack(alignment: .leading, spacing: AppSpacing.m) {
+                HStack(alignment: .firstTextBaseline) {
+                    VStack(alignment: .leading, spacing: AppSpacing.xxs) {
+                        Text("COMPLETITUD")
+                            .font(AppFont.label)
+                            .tracking(0.8)
+                            .foregroundStyle(AppColor.textTertiary)
 
-                    Text("\(Int(progress * 100))%")
-                        .font(AppFont.subtitle)
-                        .foregroundStyle(meetsGoal ? AppColor.accent : AppColor.strongText)
+                        Text("\(Int(progress * 100))%")
+                            .font(.system(size: 36, weight: .regular, design: .serif))
+                            .foregroundStyle(meetsGoal ? AppColor.success : AppColor.textPrimary)
+                            .monospacedDigit()
+                    }
+
+                    Spacer()
+
+                    if meetsGoal {
+                        Label("Meta lograda", systemImage: "checkmark.seal.fill")
+                            .font(AppFont.label)
+                            .foregroundStyle(AppColor.success)
+                            .padding(.horizontal, AppSpacing.s)
+                            .padding(.vertical, AppSpacing.xs)
+                            .background(AppColor.success.opacity(0.14))
+                            .clipShape(Capsule())
+                    } else {
+                        Text("Meta: \(Int(plan.targetCompletionRate * 100))%")
+                            .font(AppFont.label)
+                            .foregroundStyle(AppColor.textTertiary)
+                    }
                 }
 
-                Spacer()
-
-                if meetsGoal {
-                    Label("Meta lograda", systemImage: "checkmark.seal.fill")
-                        .font(AppFont.captionApp)
-                        .fontWeight(.medium)
-                        .foregroundStyle(AppColor.accent)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(AppColor.accentSoft)
-                        .clipShape(Capsule())
-                } else {
-                    Text("Meta: \(Int(plan.targetCompletionRate * 100))%")
-                        .font(AppFont.captionApp)
-                        .foregroundStyle(AppColor.subtleText)
-                }
+                WHProgressBar(
+                    progress: progress,
+                    progressColor: meetsGoal ? AppColor.success : AppColor.accent,
+                    height: 8,
+                    goalMarker: plan.targetCompletionRate
+                )
             }
-
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    Capsule()
-                        .fill(AppColor.surfaceMuted)
-                        .frame(height: 8)
-
-                    Capsule()
-                        .fill(meetsGoal ? AppColor.accent : AppColor.mutedText)
-                        .frame(width: geo.size.width * CGFloat(min(progress, 1)), height: 8)
-
-                    Rectangle()
-                        .fill(AppColor.mutedText.opacity(0.5))
-                        .frame(width: 2, height: 14)
-                        .offset(x: geo.size.width * CGFloat(plan.targetCompletionRate) - 1)
-                }
-            }
-            .frame(height: 14)
         }
-        .padding(16)
-        .background(AppColor.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
+
+    // MARK: - Narrative
+
+    private var narrativeSection: some View {
+        VStack(alignment: .leading, spacing: AppSpacing.xs) {
+            Text(headline)
+                .font(AppFont.headline)
+                .foregroundStyle(AppColor.textPrimary)
+
+            Text(narrative)
+                .font(AppFont.callout)
+                .foregroundStyle(AppColor.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    // MARK: - Habits
 
     private var habitsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("¿Qué hábitos quieres conservar?")
-                .font(AppFont.subtitle2)
-                .foregroundStyle(AppColor.strongText)
+        VStack(alignment: .leading, spacing: AppSpacing.s) {
+            Text("¿Qué se mantiene viviendo?")
+                .font(AppFont.headline)
+                .foregroundStyle(AppColor.textPrimary)
 
-            Text("Los hábitos que no conserves quedarán archivados.")
-                .font(AppFont.body2)
-                .foregroundStyle(AppColor.subtleText)
+            Text("Un hábito puede graduarse del plan y seguir contigo, o cumplir su función y archivarse.")
+                .font(AppFont.callout)
+                .foregroundStyle(AppColor.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.bottom, AppSpacing.xs)
 
-            VStack(spacing: 8) {
-                ForEach(plan.habits.sorted(by: { $0.createdAt > $1.createdAt })) { habit in
-                    HabitRetentionRow(
-                        habit: habit,
-                        shouldRetain: retainBinding(for: habit)
-                    )
+            if plan.habits.isEmpty {
+                Text("Este plan no tenía hábitos vinculados.")
+                    .font(AppFont.callout)
+                    .foregroundStyle(AppColor.textTertiary)
+                    .padding(.vertical, AppSpacing.m)
+            } else {
+                VStack(spacing: AppSpacing.s) {
+                    ForEach(plan.habits.sorted(by: { $0.createdAt > $1.createdAt })) { habit in
+                        HabitRetentionRow(
+                            habit: habit,
+                            shouldRetain: retainBinding(for: habit)
+                        )
+                    }
                 }
             }
         }
     }
 
     private var actionButton: some View {
-        Button(action: confirmWrapUp) {
-            Text("Confirmar y cerrar plan")
-                .font(AppFont.body2)
-                .fontWeight(.semibold)
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
-                .background(AppColor.accent)
-                .clipShape(RoundedRectangle(cornerRadius: AppRadius.large, style: .continuous))
-        }
-        .padding(.top, 8)
+        WHButton(title: "Confirmar y cerrar plan", variant: .primary, action: confirmWrapUp)
+            .padding(.top, AppSpacing.s)
     }
 
     private func retainBinding(for habit: Habit) -> Binding<Bool> {
@@ -170,6 +196,7 @@ struct PlanWrapUpView: View {
             }
         }
         plan.reviewedAt = .now
+        AppHaptics.play(.experimentApplied)
         dismiss()
     }
 }
@@ -178,28 +205,29 @@ private struct HabitRetentionRow: View {
     let habit: Habit
     @Binding var shouldRetain: Bool
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppSpacing.m) {
             ZStack {
                 Circle()
-                    .fill(habit.habitColor.opacity(0.15))
+                    .fill(habit.habitColor.opacity(0.18))
                     .frame(width: 36, height: 36)
                 Image(systemName: habit.iconName)
-                    .font(.system(size: 16))
+                    .font(.system(size: 16, weight: .medium))
                     .foregroundStyle(habit.habitColor)
             }
             .opacity(shouldRetain ? 1 : 0.4)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(habit.title)
-                    .font(AppFont.body2)
-                    .fontWeight(.medium)
-                    .foregroundStyle(shouldRetain ? AppColor.strongText : AppColor.subtleText)
+                    .font(AppFont.body)
+                    .foregroundStyle(shouldRetain ? AppColor.textPrimary : AppColor.textTertiary)
                     .lineLimit(1)
 
-                Text(shouldRetain ? "Se mantendrá activo" : "Se archivará")
-                    .font(AppFont.formSectionText2)
-                    .foregroundStyle(shouldRetain ? AppColor.accent : AppColor.subtleText)
+                Text(shouldRetain ? "Se mantiene viviendo" : "Cumplió su función")
+                    .font(AppFont.label)
+                    .foregroundStyle(shouldRetain ? AppColor.success : AppColor.textTertiary)
             }
 
             Spacer()
@@ -208,10 +236,10 @@ private struct HabitRetentionRow: View {
                 .labelsHidden()
                 .tint(AppColor.accent)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(AppColor.surface)
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous))
-        .animation(.easeOut(duration: 0.15), value: shouldRetain)
+        .padding(.horizontal, AppSpacing.m)
+        .padding(.vertical, AppSpacing.s)
+        .background(AppColor.bgElevated)
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.m, style: .continuous))
+        .animation(AppMotion.respectful(AppMotion.snap, reduceMotion), value: shouldRetain)
     }
 }

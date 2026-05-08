@@ -5,10 +5,8 @@
 
 enum OnboardingStep: Int, CaseIterable {
     case intro
-    case smallStart
-    case weeklyRhythm
-    case notifications
     case starterHabit
+    case notifications
 
     var showsProgress: Bool {
         self != .intro

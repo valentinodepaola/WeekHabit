@@ -11,7 +11,9 @@ struct HabitExperimentStatusCard: View {
     var referenceDate: Date = .now
 
     private var title: String {
-        experiment.needsReview(reference: referenceDate) ? "Prueba lista para revisar" : "Prueba de 7 días activa"
+        experiment.needsReview(reference: referenceDate)
+            ? "Prueba lista para revisar"
+            : "Prueba de 7 días activa"
     }
 
     private var detail: String {
@@ -23,34 +25,38 @@ struct HabitExperimentStatusCard: View {
         if let suggestedHourText = experiment.suggestedHourText {
             return "\(base) · \(experiment.daySummary) · \(suggestedHourText) · \(consistency)%"
         }
-
         return "\(base) · \(experiment.daySummary) · \(consistency)%"
     }
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: AppSpacing.m) {
             Image(systemName: "flask")
                 .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(AppColor.accent)
-                .frame(width: 34, height: 34)
-                .background(AppColor.accent.opacity(0.12))
+                .foregroundStyle(AppColor.info)
+                .frame(width: 36, height: 36)
+                .background(AppColor.infoMuted)
                 .clipShape(Circle())
 
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: AppSpacing.xxs) {
                 Text(title)
-                    .font(AppFont.formSectionText)
-                    .foregroundStyle(AppColor.strongText)
+                    .font(AppFont.bodyEmphasis)
+                    .foregroundStyle(AppColor.textPrimary)
 
                 Text(detail)
-                    .font(AppFont.formSectionText2)
-                    .foregroundStyle(AppColor.mutedText)
+                    .font(AppFont.label)
+                    .foregroundStyle(AppColor.textSecondary)
                     .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
             Spacer()
         }
-        .padding(12)
-        .background(AppColor.accent.opacity(0.08))
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous))
+        .padding(AppSpacing.m)
+        .background(AppColor.infoMuted.opacity(0.5))
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.m, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: AppRadius.m, style: .continuous)
+                .stroke(AppColor.info.opacity(0.18), lineWidth: 1)
+        }
     }
 }

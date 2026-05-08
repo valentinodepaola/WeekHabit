@@ -2,8 +2,6 @@
 //  DailyProgressCard.swift
 //  WeekHabit
 //
-//  Created by Valentino De Paola Gallardo on 28/04/26.
-//
 
 import SwiftUI
 
@@ -13,69 +11,78 @@ struct DailyProgressCard: View {
     let totalCount: Int
     let remainingCount: Int
 
-    private var progressPercent: Int {
-        Int((progress * 100).rounded())
+    private var ringColor: Color {
+        if totalCount == 0 { return AppColor.textTertiary }
+        if remainingCount == 0 { return AppColor.success }
+        return AppColor.accent
     }
 
-    private var footerText: String {
+    private var headlineText: String {
+        if totalCount == 0 { return "Sin hábitos hoy" }
+        if remainingCount == 0 { return "Día cerrado" }
+        if remainingCount == 1 { return "Te falta uno" }
+        return "Te faltan \(remainingCount)"
+    }
+
+    private var supportText: String {
         if totalCount == 0 {
-            return "Sin hábitos para hoy"
+            return "El descanso también construye semana."
         }
-
         if remainingCount == 0 {
-            return "Día cerrado"
+            return "Llegaste a tu meta de hoy."
         }
-
-        return "Te faltan \(remainingCount) para cerrar el día"
+        return "Un paso pequeño cuenta."
     }
 
     var body: some View {
-        HStack(spacing: 22) {
-            DailyProgressRing(
-                progress: progress,
-                percent: progressPercent
-            )
-
-            VStack(alignment: .leading, spacing: 5) {
-                Text("HOY")
-                    .font(AppFont.formSectionText2)
-                    .fontWeight(.bold)
-                    .foregroundStyle(AppColor.mutedText)
-
-                HStack(alignment: .firstTextBaseline, spacing: 5) {
-                    Text("\(completedCount)")
-                        .font(.system(size: 27, weight: .semibold, design: .serif))
-                        .foregroundStyle(AppColor.accent)
-
-                    Text("/ \(totalCount)")
-                        .font(.system(size: 27, weight: .regular, design: .serif))
-                        .foregroundStyle(AppColor.mutedText)
+        WHCard(variant: .elevated, padding: AppSpacing.l, radius: AppRadius.l) {
+            HStack(spacing: AppSpacing.l) {
+                WHProgressRing(
+                    progress: progress,
+                    lineWidth: 8,
+                    size: 86,
+                    progressColor: ringColor
+                ) {
+                    VStack(spacing: 0) {
+                        Text("\(completedCount)")
+                            .font(.system(size: 22, weight: .regular, design: .serif))
+                            .foregroundStyle(AppColor.textPrimary)
+                            .monospacedDigit()
+                        Text("de \(totalCount)")
+                            .font(AppFont.label)
+                            .foregroundStyle(AppColor.textTertiary)
+                            .monospacedDigit()
+                    }
                 }
 
-                Text(footerText)
-                    .font(AppFont.formSectionText2)
-                    .foregroundStyle(AppColor.mutedText)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
-            }
+                VStack(alignment: .leading, spacing: AppSpacing.xs) {
+                    Text("HOY")
+                        .font(AppFont.label)
+                        .foregroundStyle(AppColor.textTertiary)
+                        .tracking(1)
 
-            Spacer(minLength: 0)
+                    Text(headlineText)
+                        .font(AppFont.headline)
+                        .foregroundStyle(AppColor.textPrimary)
+
+                    Text(supportText)
+                        .font(AppFont.callout)
+                        .foregroundStyle(AppColor.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Spacer(minLength: 0)
+            }
         }
-        .padding(.horizontal, 22)
-        .padding(.vertical, 20)
-        .frame(maxWidth: .infinity, minHeight: 122, alignment: .leading)
-        .background(AppColor.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
     }
 }
 
 #Preview {
-    DailyProgressCard(
-        progress: 0.75,
-        completedCount: 3,
-        totalCount: 4,
-        remainingCount: 1
-    )
+    VStack(spacing: AppSpacing.m) {
+        DailyProgressCard(progress: 0.66, completedCount: 2, totalCount: 3, remainingCount: 1)
+        DailyProgressCard(progress: 1.0, completedCount: 3, totalCount: 3, remainingCount: 0)
+        DailyProgressCard(progress: 0.0, completedCount: 0, totalCount: 0, remainingCount: 0)
+    }
     .padding()
-    .background(AppColor.bgLight)
+    .background(AppColor.bgCanvas)
 }

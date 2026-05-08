@@ -2,16 +2,17 @@
 //  SplashRhythmPalette.swift
 //  WeekHabit
 //
+//  Paleta de tonos cálidos para los nodos del splash.
+//
 
 import SwiftUI
 
 enum SplashRhythmPalette {
     static let colors: [Color] = [
         AppColor.accent,
-        Color(hex: "#7fa774"),
-        Color(hex: "#5c89a8"),
-        Color(hex: "#c89046"),
-        Color(hex: "#8b7fb0")
+        AppColor.success,
+        AppColor.info,
+        AppColor.warning,
+        AppColor.editAction
     ]
 }
-

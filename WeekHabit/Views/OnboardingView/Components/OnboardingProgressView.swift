@@ -10,10 +10,10 @@ struct OnboardingProgressView: View {
     let total: Int
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: AppSpacing.s) {
             ForEach(0..<total, id: \.self) { index in
                 Capsule()
-                    .fill(index <= currentIndex ? AppColor.accent : AppColor.subtleText.opacity(0.22))
+                    .fill(index <= currentIndex ? AppColor.accent : AppColor.divider)
                     .frame(height: 3)
             }
         }

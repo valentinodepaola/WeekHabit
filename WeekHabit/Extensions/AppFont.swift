@@ -2,21 +2,47 @@
 //  AppFont.swift
 //  WeekHabit
 //
-//  Created by Valentino De Paola Gallardo on 22/04/26.
+//  Escala tipográfica disciplinada con voz dual.
+//  Serif (New York vía .serif) para display/title/headline — voz contemplativa.
+//  Sans rounded (SF Rounded) para body/callout — voz operativa cálida.
+//  Sans default para label/micro — voz técnica sobria.
 //
+
 import SwiftUI
 
 enum AppFont {
-    static let title1 = Font.system(size: 38, weight: .regular, design: .serif)
-    static let title = Font.system(size: 34, weight: .regular, design: .serif)
-    static let subtitle = Font.system(size: 28, weight: .regular, design: .serif)
-    static let subtitle2 = Font.system(size: 20, weight: .bold, design: .default)
-    static let subtitle3 = Font.system(size: 20, weight: .semibold, design: .serif)
-    static let body = Font.system(size: 17, weight: .regular, design: .default)
-    static let body2 = Font.system(size: 16, weight: .regular, design: .default)
-    static let captionApp = Font.system(size: 14, weight: .regular, design: .default)
-    static let formSectionText = Font.system(size: 13, weight: .bold, design: .default)
-    static let formSectionText2 = Font.system(size: 12, weight: .regular, design: .default)
-    static let tabBarText = Font.system(size: 10.5, weight: .regular, design: .default)
-    static let dayLabel = Font.system(size: 16, weight: .semibold, design: .default)
+
+    // MARK: - New scale (8 levels)
+
+    /// 40pt serif — pantallas hito, cierres semanales.
+    static let display = Font.system(size: 40, weight: .regular, design: .serif)
+    /// 30pt serif — hero de pantalla.
+    static let title = Font.system(size: 30, weight: .regular, design: .serif)
+    /// 22pt serif medium — sección principal.
+    static let headline = Font.system(size: 22, weight: .medium, design: .serif)
+    /// 17pt rounded — cuerpo principal.
+    static let body = Font.system(size: 17, weight: .regular, design: .rounded)
+    /// 17pt rounded semibold — énfasis.
+    static let bodyEmphasis = Font.system(size: 17, weight: .semibold, design: .rounded)
+    /// 15pt rounded — captions de card, subtítulos.
+    static let callout = Font.system(size: 15, weight: .regular, design: .rounded)
+    /// 13pt sans medium — etiquetas, formularios.
+    static let label = Font.system(size: 13, weight: .medium, design: .default)
+    /// 11pt sans medium — tabs, badges, metadatos.
+    static let micro = Font.system(size: 11, weight: .medium, design: .default)
+
+    // MARK: - Legacy aliases
+    // Apuntan al token nuevo más cercano. No agregar nuevos usos —
+    // deuda técnica a migrar gradualmente.
+
+    static let title1 = display
+    static let subtitle = headline
+    static let subtitle2 = bodyEmphasis
+    static let subtitle3 = headline
+    static let body2 = callout
+    static let captionApp = label
+    static let formSectionText = label
+    static let formSectionText2 = micro
+    static let tabBarText = micro
+    static let dayLabel = bodyEmphasis
 }

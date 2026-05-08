@@ -11,16 +11,21 @@ struct HabitScheduleSection: View {
     @Binding var selectedActiveDays: Set<Weekday>
 
     var body: some View {
-        CreateHabitFormSection(title: "Ritmo") {
-            HabitScheduleSelector(
-                scheduleKind: $scheduleKind,
-                selectedActiveDays: $selectedActiveDays
-            )
+        CreateHabitFormSection(
+            title: "Ritmo",
+            helper: "La semana es la unidad. Empieza con menos de lo que crees."
+        ) {
+            VStack(alignment: .leading, spacing: AppSpacing.m) {
+                HabitScheduleSelector(
+                    scheduleKind: $scheduleKind,
+                    selectedActiveDays: $selectedActiveDays
+                )
 
-            if scheduleKind == .specificDays {
-                WeekdaySelectionComponent(selectedDays: $selectedActiveDays)
-            } else if scheduleKind == .timesPerWeek {
-                TimesPerWeekComponent(timesPerWeek: $timesPerWeek)
+                if scheduleKind == .specificDays {
+                    WeekdaySelectionComponent(selectedDays: $selectedActiveDays)
+                } else if scheduleKind == .timesPerWeek {
+                    TimesPerWeekComponent(timesPerWeek: $timesPerWeek)
+                }
             }
         }
     }

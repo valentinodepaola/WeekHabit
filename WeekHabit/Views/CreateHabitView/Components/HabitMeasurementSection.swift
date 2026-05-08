@@ -19,18 +19,23 @@ struct HabitMeasurementSection: View {
     ]
 
     var body: some View {
-        CreateHabitFormSection(title: "Medición") {
-            HabitTrackingSelector(trackingKind: $trackingKind)
+        CreateHabitFormSection(
+            title: "Medición",
+            helper: "Lo cuantificable es más fácil de observar y ajustar."
+        ) {
+            VStack(alignment: .leading, spacing: AppSpacing.m) {
+                HabitTrackingSelector(trackingKind: $trackingKind)
 
-            if trackingKind == .quantity {
-                HabitUnitSelector(
-                    measurementUnit: $measurementUnit,
-                    units: quantityUnits
-                )
-                HabitTargetValueField(
-                    targetValueText: $targetValueText,
-                    unitLabel: measurementUnit.shortTitle
-                )
+                if trackingKind == .quantity {
+                    HabitUnitSelector(
+                        measurementUnit: $measurementUnit,
+                        units: quantityUnits
+                    )
+                    HabitTargetValueField(
+                        targetValueText: $targetValueText,
+                        unitLabel: measurementUnit.shortTitle
+                    )
+                }
             }
         }
     }

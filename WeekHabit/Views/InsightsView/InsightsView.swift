@@ -8,6 +8,7 @@ import SwiftData
 
 struct InsightsView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @Query(sort: \Habit.createdAt, order: .reverse)
     private var habits: [Habit]
@@ -15,11 +16,9 @@ struct InsightsView: View {
     @Query(sort: \HabitExperiment.startedAt, order: .reverse)
     private var experiments: [HabitExperiment]
 
-    @State private var editRoute: InsightsEditHabitRoute?
+    @State private var habitRoute: HabitRoute?
 
-    private var referenceDate: Date {
-        .now
-    }
+    private var referenceDate: Date { .now }
 
     private var snapshot: GlobalInsightSnapshot {
         habits.globalInsightSnapshot(reference: referenceDate)
@@ -56,7 +55,7 @@ struct InsightsView: View {
         NavigationStack {
             AppBackground {
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 16) {
+                    VStack(alignment: .leading, spacing: AppSpacing.l) {
                         header
 
                         if habits.isEmpty {
@@ -98,114 +97,117 @@ struct InsightsView: View {
                             }
                         }
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 15)
+                    .padding(.horizontal, AppSpacing.l)
+                    .padding(.top, AppSpacing.l)
                     .padding(.bottom, 120)
                 }
             }
-            .fullScreenCover(item: $editRoute) { route in
-                CreateHabitView(habitToEdit: route.habit)
+            .fullScreenCover(item: $habitRoute) { route in
+                switch route {
+                case .edit(let habit):
+                    CreateHabitView(habitToEdit: habit)
+                case .create(let prefill):
+                    CreateHabitView(
+                        initialDaysPerWeek: prefill.initialDaysPerWeek ?? 7,
+                        initialActiveDays: prefill.initialActiveDays
+                    )
+                }
             }
         }
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 5) {
+        VStack(alignment: .leading, spacing: AppSpacing.xs) {
             Text("ÚLTIMOS 30 DÍAS")
-                .font(AppFont.captionApp)
-                .fontWeight(.bold)
-                .foregroundStyle(AppColor.subtleText)
-                .tracking(2)
+                .font(AppFont.label)
+                .foregroundStyle(AppColor.textTertiary)
+                .tracking(1.2)
 
             Text("Tu ritmo")
                 .font(AppFont.title)
-                .foregroundStyle(AppColor.strongText)
+                .foregroundStyle(AppColor.textPrimary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var warmupCard: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack(spacing: 12) {
+        VStack(alignment: .leading, spacing: AppSpacing.l) {
+            HStack(spacing: AppSpacing.m) {
                 ZStack {
                     Circle()
-                        .fill(AppColor.editAction.opacity(0.14))
-                        .frame(width: 46, height: 46)
-
+                        .fill(AppColor.warning.opacity(0.14))
                     Image(systemName: "hourglass")
                         .font(.system(size: 19, weight: .semibold))
-                        .foregroundStyle(AppColor.editAction)
+                        .foregroundStyle(AppColor.warning)
                 }
+                .frame(width: 46, height: 46)
 
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: AppSpacing.xxs) {
                     Text("INSIGHTS EN PREPARACIÓN")
-                        .font(AppFont.formSectionText2)
-                        .foregroundStyle(AppColor.mutedText)
-                        .tracking(1)
+                        .font(AppFont.label)
+                        .foregroundStyle(AppColor.textTertiary)
+                        .tracking(0.8)
 
                     Text(readiness.remainingDays == 1 ? "Falta 1 día" : "Faltan \(readiness.remainingDays) días")
-                        .font(AppFont.body2)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(AppColor.strongText)
+                        .font(AppFont.bodyEmphasis)
+                        .foregroundStyle(AppColor.textPrimary)
                 }
+
+                Spacer()
             }
 
             Text("Voy a esperar 5 días desde tu primer hábito para juntar una base más justa. Mientras tanto, la gráfica sí seguirá reaccionando a lo que marques.")
-                .font(AppFont.body2)
-                .foregroundStyle(AppColor.mutedText)
+                .font(AppFont.callout)
+                .foregroundStyle(AppColor.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
 
-            VStack(alignment: .leading, spacing: 8) {
-                GeometryReader { proxy in
-                    ZStack(alignment: .leading) {
-                        Capsule()
-                            .fill(AppColor.bgLight)
-
-                        Capsule()
-                            .fill(AppColor.editAction)
-                            .frame(width: max(8, proxy.size.width * readiness.progress))
-                    }
-                }
-                .frame(height: 8)
+            VStack(alignment: .leading, spacing: AppSpacing.s) {
+                WHProgressBar(
+                    progress: readiness.progress,
+                    progressColor: AppColor.warning,
+                    height: 8
+                )
 
                 Text("\(min(readiness.elapsedDays, readiness.requiredDays)) de \(readiness.requiredDays) días de contexto")
-                    .font(AppFont.captionApp)
-                    .foregroundStyle(AppColor.subtleText)
+                    .font(AppFont.label)
+                    .foregroundStyle(AppColor.textTertiary)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(18)
-        .background(AppColor.surface)
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.large, style: .continuous))
+        .padding(AppSpacing.l)
+        .background(AppColor.bgElevated)
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous))
+        .appElevation(.low)
     }
 
     private var emptyState: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: AppSpacing.s) {
             Image(systemName: "chart.line.uptrend.xyaxis")
                 .font(.system(size: 28, weight: .semibold))
                 .foregroundStyle(AppColor.accent)
 
             Text("Aún no hay ritmo que leer")
-                .font(AppFont.subtitle3)
-                .foregroundStyle(AppColor.strongText)
+                .font(AppFont.headline)
+                .foregroundStyle(AppColor.textPrimary)
 
             Text("Cuando empieces a marcar hábitos, esta pantalla detectará patrones y te propondrá pruebas de 7 días.")
-                .font(AppFont.body2)
-                .foregroundStyle(AppColor.mutedText)
+                .font(AppFont.callout)
+                .foregroundStyle(AppColor.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(22)
-        .background(AppColor.surface)
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous))
+        .padding(AppSpacing.l)
+        .background(AppColor.bgElevated)
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous))
+        .appElevation(.low)
     }
 
     private var summaryCards: some View {
-        VStack(spacing: 14) {
+        VStack(spacing: AppSpacing.m) {
             if let top = habits.topConsistentHabit(reference: referenceDate) {
                 InsightSummaryCard(
                     icon: "brain.head.profile",
-                    iconColor: AppColor.highPurple,
+                    iconColor: AppColor.info,
                     title: "EL MÁS CONSISTENTE",
                     value: top.habit.title,
                     detail: top.detail,
@@ -222,14 +224,14 @@ struct InsightsView: View {
                     detail: attention.recommendation ?? attention.detail,
                     isProvisional: attention.habit.insightReadiness(reference: referenceDate).isProvisional,
                     actionTitle: "Editar",
-                    action: { editRoute = InsightsEditHabitRoute(habit: attention.habit) }
+                    action: { habitRoute = .edit(attention.habit) }
                 )
             }
 
             if let bestDay = habits.contextualBestWeekday(reference: referenceDate) {
                 InsightSummaryCard(
                     icon: "calendar",
-                    iconColor: AppColor.editAction,
+                    iconColor: AppColor.success,
                     title: "TU MEJOR DÍA",
                     value: bestDay.performance.weekday.displayName,
                     detail: bestDay.contextText,
@@ -240,7 +242,7 @@ struct InsightsView: View {
             if let peakHour = habits.contextualPeakHour(reference: referenceDate) {
                 InsightSummaryCard(
                     icon: "clock",
-                    iconColor: AppColor.highPurple,
+                    iconColor: AppColor.info,
                     title: "TU HORA PUNTA",
                     value: peakHour.window.displayText,
                     detail: peakHour.contextText,
@@ -268,30 +270,26 @@ struct InsightsView: View {
             startedAt: referenceDate
         )
 
-        withAnimation(.easeInOut(duration: 0.2)) {
+        withAnimation(AppMotion.respectful(AppMotion.smooth, reduceMotion)) {
             experiment.apply(to: suggestion.habit)
             modelContext.insert(experiment)
         }
+
+        AppHaptics.play(.experimentApplied)
     }
 
     private func keep(_ experiment: HabitExperiment) {
-        withAnimation(.easeInOut(duration: 0.2)) {
+        withAnimation(AppMotion.respectful(AppMotion.smooth, reduceMotion)) {
             experiment.keep(reference: referenceDate)
         }
+        AppHaptics.play(.experimentApplied)
     }
 
     private func revert(_ experiment: HabitExperiment, habit: Habit) {
-        withAnimation(.easeInOut(duration: 0.2)) {
+        withAnimation(AppMotion.respectful(AppMotion.smooth, reduceMotion)) {
             experiment.revert(on: habit, reference: referenceDate)
         }
-    }
-}
-
-private struct InsightsEditHabitRoute: Identifiable {
-    let habit: Habit
-
-    var id: UUID {
-        habit.id
+        AppHaptics.play(.selection)
     }
 }
 

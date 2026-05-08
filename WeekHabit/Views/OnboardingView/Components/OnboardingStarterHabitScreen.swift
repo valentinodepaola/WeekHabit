@@ -9,60 +9,64 @@ struct OnboardingStarterHabitScreen: View {
     @Binding var selectedTemplateID: StarterHabitTemplate.ID
 
     let templates: [StarterHabitTemplate]
-    let onStartWeek: () -> Void
+    let onContinue: () -> Void
     let onCreateFromScratch: () -> Void
 
     var body: some View {
         VStack(spacing: 0) {
-            VStack(alignment: .leading, spacing: 12) {
-                (
-                    Text("Empieza con ")
-                        .font(AppFont.title)
-                        .foregroundStyle(AppColor.strongText)
-                    +
-                    Text("uno pequeño")
-                        .font(AppFont.title.italic())
-                        .foregroundStyle(AppColor.accent)
-                )
-                .fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: AppSpacing.s) {
+                headlineText
 
                 Text("Elige una plantilla o crea el tuyo. Siempre puedes cambiarlo.")
-                    .font(AppFont.body2)
-                    .foregroundStyle(AppColor.mutedText)
-                    .lineSpacing(4)
+                    .font(AppFont.callout)
+                    .foregroundStyle(AppColor.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 30)
-            .padding(.top, 44)
-            .padding(.bottom, 28)
+            .padding(.horizontal, AppSpacing.xl)
+            .padding(.top, AppSpacing.xxl)
+            .padding(.bottom, AppSpacing.xl)
 
-            VStack(spacing: 12) {
-                ForEach(templates) { template in
-                    StarterHabitRow(
-                        template: template,
-                        isSelected: selectedTemplateID == template.id
-                    ) {
-                        selectedTemplateID = template.id
+            ScrollView {
+                VStack(spacing: AppSpacing.s) {
+                    ForEach(templates) { template in
+                        StarterHabitRow(
+                            template: template,
+                            isSelected: selectedTemplateID == template.id
+                        ) {
+                            selectedTemplateID = template.id
+                        }
                     }
                 }
+                .padding(.horizontal, AppSpacing.l)
+                .padding(.bottom, AppSpacing.s)
             }
-            .padding(.horizontal, 22)
+            .scrollIndicators(.hidden)
 
-            Spacer()
-
-            OnboardingPrimaryButton(title: "Empezar mi semana", action: onStartWeek)
-                .padding(.horizontal, 28)
-                .padding(.bottom, 18)
+            WHButton(title: "Empezar mi semana", variant: .primary, action: onContinue)
+                .padding(.horizontal, AppSpacing.xl)
+                .padding(.bottom, AppSpacing.s)
 
             Button("o crear uno desde cero", action: onCreateFromScratch)
-                .font(AppFont.captionApp)
-                .foregroundStyle(AppColor.subtleText)
+                .font(AppFont.label)
+                .foregroundStyle(AppColor.textTertiary)
                 .underline()
-                .padding(.bottom, 34)
+                .padding(.bottom, AppSpacing.xxl)
         }
         .onChange(of: templates.map(\.id)) { _, ids in
             guard let first = ids.first, !ids.contains(selectedTemplateID) else { return }
             selectedTemplateID = first
+        }
+    }
+
+    private var headlineText: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("Empieza con")
+                .font(AppFont.title)
+                .foregroundStyle(AppColor.textPrimary)
+            Text("uno pequeño")
+                .font(AppFont.title.italic())
+                .foregroundStyle(AppColor.accent)
         }
     }
 }

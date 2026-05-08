@@ -9,31 +9,34 @@ struct FocusSelectedHabitsCard: View {
     let habits: [Habit]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: AppSpacing.m) {
             Text("EN ESTA SESIÓN")
-                .font(AppFont.formSectionText)
-                .foregroundStyle(AppColor.mutedText)
-                .tracking(1.3)
+                .font(AppFont.label)
+                .foregroundStyle(AppColor.textTertiary)
+                .tracking(0.8)
 
-            VStack(spacing: 10) {
+            VStack(spacing: AppSpacing.s) {
                 ForEach(habits) { habit in
-                    HStack(spacing: 12) {
-                        IconComponent(
-                            icon: habit.iconName,
-                            color: habit.habitColor
-                        )
+                    HStack(spacing: AppSpacing.m) {
+                        ZStack {
+                            Circle()
+                                .fill(habit.habitColor.opacity(0.18))
+                            Image(systemName: habit.iconName)
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundStyle(habit.habitColor)
+                        }
+                        .frame(width: 40, height: 40)
 
                         Text(habit.title)
-                            .font(AppFont.body2)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(AppColor.strongText)
+                            .font(AppFont.bodyEmphasis)
+                            .foregroundStyle(AppColor.textPrimary)
                             .lineLimit(1)
 
                         Spacer()
                     }
-                    .padding(14)
-                    .background(AppColor.surface)
-                    .clipShape(RoundedRectangle(cornerRadius: AppRadius.large, style: .continuous))
+                    .padding(AppSpacing.m)
+                    .background(AppColor.bgElevated)
+                    .clipShape(RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous))
                 }
             }
         }

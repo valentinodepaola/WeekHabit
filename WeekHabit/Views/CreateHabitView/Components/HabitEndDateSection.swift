@@ -11,18 +11,20 @@ struct HabitEndDateSection: View {
 
     var body: some View {
         CreateHabitFormSection(title: "Finalización") {
-            Toggle("Tiene fecha final", isOn: $hasEndDate)
-                .font(AppFont.body2)
-                .tint(AppColor.accent)
+            VStack(alignment: .leading, spacing: AppSpacing.m) {
+                Toggle("Tiene fecha final", isOn: $hasEndDate)
+                    .font(AppFont.body)
+                    .tint(AppColor.accent)
 
-            if hasEndDate {
-                DatePicker(
-                    "Termina",
-                    selection: $endsAt,
-                    displayedComponents: .date
-                )
-                .font(AppFont.body2)
-                .tint(AppColor.accent)
+                if hasEndDate {
+                    DatePicker(
+                        "Termina",
+                        selection: $endsAt,
+                        displayedComponents: .date
+                    )
+                    .font(AppFont.body)
+                    .tint(AppColor.accent)
+                }
             }
         }
     }

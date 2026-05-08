@@ -18,6 +18,20 @@ enum HabitReminderService {
         }
     }
 
+    /// Solicita permiso de notificaciones al usuario. Solo válido cuando el
+    /// estado es `.notDetermined`; en otros casos retorna el resultado del
+    /// estado actual sin presentar el diálogo del sistema.
+    @discardableResult
+    static func requestAuthorization() async -> Bool {
+        do {
+            return try await UNUserNotificationCenter
+                .current()
+                .requestAuthorization(options: [.alert, .badge, .sound])
+        } catch {
+            return false
+        }
+    }
+
     static func refreshReminder(for habit: Habit) async {
         await cancelReminder(for: habit)
 
