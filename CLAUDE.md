@@ -1,49 +1,162 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file gives concise guidance for coding agents working in this repository.
 
 ## Project
 
-WeekHabit is a SwiftUI iOS app for tracking weekly habits. Single Xcode project (`WeekHabit.xcodeproj`), no Swift Package Manager dependencies, no test target. Swift 5.0, deployment target iOS 26.4, universal (iPhone + iPad). UI strings and code comments are in Spanish — keep new strings/comments in Spanish to match.
+WeekHabit is a SwiftUI iOS app for weekly habit tracking and rhythm building. It is a single Xcode project (`WeekHabit.xcodeproj`) with no Swift Package Manager dependencies, no CocoaPods, and no test target.
 
-## Build & Run
+Stack: Swift 5.0, SwiftUI, SwiftData, UserNotifications, iOS 26.4+, universal iPhone/iPad.
 
-Open `WeekHabit.xcodeproj` in Xcode and run the `WeekHabit` scheme on a Simulator. From CLI:
+User-facing strings and code comments are in Spanish. Keep new UI strings and comments in Spanish. Type names and identifiers may stay in English, matching the existing codebase.
+
+## Build
 
 ```bash
-# Build for simulator
-xcodebuild -project WeekHabit.xcodeproj -scheme WeekHabit -destination 'platform=iOS Simulator,name=iPhone 16' build
+xcodebuild -project WeekHabit.xcodeproj \
+  -scheme WeekHabit \
+  -destination 'platform=iOS Simulator,name=iPhone 16' \
+  build
 
-# Quick syntax check (no signing)
-xcodebuild -project WeekHabit.xcodeproj -scheme WeekHabit -destination 'generic/platform=iOS Simulator' -configuration Debug build CODE_SIGNING_ALLOWED=NO
+xcodebuild -project WeekHabit.xcodeproj \
+  -scheme WeekHabit \
+  -destination 'generic/platform=iOS Simulator' \
+  -configuration Debug \
+  build CODE_SIGNING_ALLOWED=NO
 ```
 
-There is no test target and no lint configuration.
+There is no lint configuration and no test target.
 
 ## Architecture
 
-**Persistence (SwiftData).** [WeekHabitApp.swift](WeekHabit/WeekHabitApp.swift) builds the `ModelContainer` from a versioned schema declared in [HabitSchema.swift](WeekHabit/Models/HabitSchema.swift). When the persisted shape of a model changes, add a new `SchemaV2` and a `MigrationStage` in `HabitMigrationPlan` — do not edit `SchemaV1` in place. Views read/write via `@Environment(\.modelContext)` and `@Query`; there is no view-model layer.
+The app uses a lightweight Model-View style with SwiftUI + SwiftData.
 
-- [Habit](WeekHabit/Models/Habit.swift) — owns `entries` with `.cascade` delete. Active days persist as `[Int]` (`activeDaysOfWeekRaw`) but expose as `Set<Weekday>` via a computed property; always read/write through `activeDaysOfWeek`. Appearance persists as optional raw fields (`iconNameRaw`, `colorHexRaw`) and exposes non-optional `iconName`, `colorHex`, and `habitColor`. Domain computations (`isActive(on:)`, `isCompleted(on:)`, `completedDaysThisWeek`, `weekProgress`, `currentStreak`) live in [Habit+Domain.swift](WeekHabit/Models/Habit+Domain.swift) — extend there, not in views.
-- [HabitEntry](WeekHabit/Models/HabitEntry.swift) — one record per completion event. The `init` normalizes `date` to `startOfDay` so range queries are timezone-stable.
-- [Weekday](WeekHabit/Models/WeekDay.swift) — `Int` raw values match `Calendar`'s 1-based weekday convention (Sunday = 1, Monday = 2, …). Use `Weekday.ordered` for L–D display order.
-- [AppCalendar](WeekHabit/Extensions/AppCalendar.swift) — single source of truth for date math (`startOfDay`, `weekday(of:)`, `weekRange(containing:)`, `isSameDay`). Always use this instead of `Calendar.current` directly so timezone/firstWeekday assumptions stay consistent.
+- Views read with `@Query`.
+- Views mutate with `@Environment(\.modelContext)`.
+- Domain logic lives in model extensions, not in layout code.
+- There is no ViewModel, repository, networking, authentication, or external sync layer.
 
-**Navigation.** No `NavigationStack` / `TabView`. [ContentView](WeekHabit/ContentView.swift) holds `@State selectedTab: Int` and switches between `TodayView`, `HabitsView`, `WeekView`, `InsightsView` inside a `ZStack`, with [CustomTabBar](WeekHabit/Views/Components/CustomTabBar.swift) overlaid at the bottom. The tab order in the `switch` and the `tabs` array in `CustomTabBar` must stay in sync. Modal flows (e.g. `CreateHabitView`) are presented via `.fullScreenCover`.
+`WeekHabitApp.swift` creates the `ModelContainer` with `Schema(versionedSchema: SchemaV7.self)` and `HabitMigrationPlan.self`.
 
-**View organization.** Each feature lives in `Views/<Feature>View/` with a sibling `Components/` folder for view-local building blocks. Truly cross-feature pieces go in `Views/Components/` (e.g. `CustomTabBar`, `IconButton`). Mirror this when adding a new screen rather than flattening into `Views/`.
+`RootView` switches between `OnboardingView` and `ContentView` using `@AppStorage("hasCompletedAppOnboarding")`. It also refreshes habit reminders when the app starts or returns active.
 
-**Design system (Extensions/).** Reuse these instead of hardcoding:
-- [AppBackground](WeekHabit/Extensions/AppBackground.swift) — wrap each top-level screen in `AppBackground { … }` for the app's light/dark background. Don't set background colors directly on screens.
-- [AppColor](WeekHabit/Extensions/AppColor.swift) — brand palette (`accent`, `mutedText`, `surface`, …). Add new tokens here instead of inlining `Color(hex:)`. Habit appearance choices live in [HabitAppearance](WeekHabit/Models/HabitAppearance.swift).
-- [AppFont](WeekHabit/Extensions/AppFont.swift) — use the named tokens (`title`, `body2`, `formSectionText`, …) instead of `Font.system(...)` for text. SF Symbol sizing on `Image` still uses `.font(.system(size:))`.
-- [AppRadius](WeekHabit/Extensions/AppRadius.swift) — corner-radius scale (`small`/`medium`/`large`/`pill`).
-- [IconButton](WeekHabit/Views/Components/IconButton.swift) — shared brand button, two shapes via `style: .circle | .pill`. Don't introduce new bespoke buttons unless the design genuinely diverges.
+## Main Models
 
-**Form pattern (CreateHabitView).** [CreateHabitView](WeekHabit/Views/CreateHabitView/CreateHabitView.swift) is the reference for forms: local `@State` per field, an `isSaveDisabled` computed property gates the save button, and `.onChange(of: daysPerWeek)` keeps `selectedActiveDays` consistent with `targetDaysPerWeek`. Saving inserts directly into `modelContext` and calls `dismiss()` — no repository/service indirection.
+- `Habit`: core habit entity. Supports check or quantity tracking, units, daily/specific/flexible weekly schedules, optional end date, reminders, entries, and plan associations.
+- `HabitEntry`: one day/value record. `date` is normalized to start of day. `source` distinguishes `.today`, `.focusSession`, and `.manual`.
+- `Plan`: groups habits around a goal with motivation, end date, target completion rate, and review state.
+- `HabitExperiment`: 7-day rhythm experiment suggested by Insights.
+- `FocusSession`: timer/review workflow for focused habit completion.
 
-## Conventions
+Important domain files:
 
-- Follow the existing folder shape (`Views/<Feature>View/Components/`) when adding new screens.
-- New persisted fields require updating `Habit.init` and any callers. For shape changes (renamed/removed/retyped fields), add a `SchemaV2` and a `MigrationStage` in [HabitSchema.swift](WeekHabit/Models/HabitSchema.swift) — don't mutate `SchemaV1`.
-- Spanish for user-facing strings and inline comments. English is fine for type/identifier names (the codebase already mixes them — e.g. `WeekGoalComponent`, `targetDaysPerWeek`).
+- `Habit+Domain.swift`: schedule checks, loggability, quantities, streaks, weekly progress, heatmap matrix.
+- `Habit+Insights.swift`: 30-day metrics, confidence, trends, best day/hour, suggestions.
+- `HabitExperiment+Domain.swift`: apply, keep, revert, cancel, review experiments.
+- `FocusSession+Domain.swift`: timer progress, review/completion/cancel.
+- `Plan+Domain.swift`: active/finished/review state, progress, goal status.
+
+Use `AppCalendar` for date math instead of `Calendar.current` directly.
+
+## Navigation
+
+`ContentView` uses a manual `ZStack` tab shell with `selectedTab` and `CustomTabBar`.
+
+Current tabs:
+
+- `0`: `TodayView`
+- `1`: `WeekView`
+- `2`: `InsightsView`
+
+There is no separate `HabitsView` tab in the current app.
+
+`ContentView` also presents `PlanWrapUpView` as a sheet when a plan has ended and has not been reviewed.
+
+Common flows:
+
+- `TodayView` creates/edits/deletes habits and plans.
+- `TodayView` presents `CreateHabitView`, `PlanFlowView`, `CreatePlanView`, and `FocusSessionView`.
+- `WeekView` opens `HabitDetailView` and logs manual/retroactive entries.
+- `InsightsView` edits suggested habits and manages rhythm experiments.
+- `HabitDetailView` presents `CreateHabitView` for editing.
+
+Keep the tab order in `ContentView` synchronized with `CustomTabBar.tabs`.
+
+## Feature Notes
+
+Habit tracking:
+
+- Check habits toggle directly.
+- Quantity habits open `QuantityLogSheet`.
+- A habit is completed when `totalValue(on:) >= sessionTargetValue`.
+- Flexible schedules use `HabitScheduleKind.timesPerWeek`.
+
+Insights:
+
+- `.today` and `.focusSession` entries are trusted.
+- `.manual` entries are useful for history but not trusted as rhythm evidence.
+
+Plans:
+
+- Plans are created through `PlanFlowView` / `CreatePlanView`.
+- First plan creation may show `PlanOnboardingView`.
+- Finished plans are reviewed in `PlanWrapUpView`.
+- Archiving a plan habit sets the habit `endsAt` to today.
+
+Reminders:
+
+- `HabitReminderService` schedules local notifications per active weekday.
+- Reminders are skipped for finished habits.
+- Reminder body prefers active plan motivation, then habit note, then fallback copy.
+
+Onboarding:
+
+- `OnboardingView` is connected.
+- It can request notification permission and create a starter habit.
+
+## View Organization
+
+Follow the existing folder shape:
+
+```text
+Views/
+  <Feature>View/
+    <Feature>View.swift
+    Components/
+      <ComponentName>.swift
+  Components/
+    SharedComponent.swift
+```
+
+Shared UI goes in `Views/Components`. Feature-specific UI stays in that feature's `Components` folder.
+
+## Design System
+
+Reuse existing tokens/helpers:
+
+- `AppBackground`
+- `AppColor`
+- `AppFont`
+- `AppRadius`
+- `IconButton`
+- `HabitAppearance`
+
+Top-level screens should use `AppBackground`. Avoid hardcoded colors, fonts, and date calculations when a local helper exists.
+
+## Persistence Conventions
+
+- New persisted fields require updating model initializers and callers.
+- Shape changes require a new `SchemaV*` and a `MigrationStage` in `HabitMigrationPlan`.
+- Do not mutate old schemas to represent new persisted shapes.
+- Keep data mutations in the owning view unless a reusable service already exists.
+
+## Forms
+
+`CreateHabitView` and `CreatePlanView` are the reference patterns:
+
+- local `@State` per field;
+- computed `isSaveDisabled`;
+- normalize values before saving;
+- insert/update directly with `modelContext`;
+- dismiss after save;
+- refresh side effects explicitly when needed, such as reminders.
