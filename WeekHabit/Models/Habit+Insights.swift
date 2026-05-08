@@ -316,7 +316,7 @@ extension Habit {
                 let visibleStart = max(max(weekStart, start), creationDay)
                 let visibleEnd = min(min(weekEnd, end), endsAt.map { AppCalendar.startOfDay(for: $0) } ?? end)
                 let loggableDays = visibleStart <= visibleEnd
-                    ? insightDays(from: visibleStart, to: visibleEnd).filter { !isSkipped(on: $0) }
+                    ? insightDays(from: visibleStart, to: visibleEnd).filter { !isSkipped(on: $0) && !isFreezeProtected(on: $0) }
                     : []
                 let weeklyTarget = min(targetDaysPerWeek, loggableDays.count)
                 scheduled += weeklyTarget
@@ -331,7 +331,11 @@ extension Habit {
             return HabitCompletionStats(completed: completed, scheduled: scheduled)
         }
 
-        for day in insightDays(from: start, to: end) where day >= creationDay && isLoggable(on: day) && !isSkipped(on: day) {
+        for day in insightDays(from: start, to: end)
+        where day >= creationDay
+            && isLoggable(on: day)
+            && !isSkipped(on: day)
+            && !isFreezeProtected(on: day) {
             scheduled += 1
             if isTrustedCompleted(on: day) {
                 completed += 1
@@ -357,7 +361,8 @@ extension Habit {
             where day >= AppCalendar.startOfDay(for: createdAt)
                 && AppCalendar.weekday(of: day) == weekday
                 && isLoggable(on: day)
-                && !isSkipped(on: day) {
+                && !isSkipped(on: day)
+                && !isFreezeProtected(on: day) {
                 scheduled += 1
                 if isTrustedCompleted(on: day) {
                     completed += 1
@@ -452,7 +457,10 @@ extension Habit {
         var manualOnlyCount = 0
 
         for day in insightDays(from: range.lowerBound, to: range.upperBound)
-        where day >= AppCalendar.startOfDay(for: createdAt) && isLoggable(on: day) && !isSkipped(on: day) {
+        where day >= AppCalendar.startOfDay(for: createdAt)
+            && isLoggable(on: day)
+            && !isSkipped(on: day)
+            && !isFreezeProtected(on: day) {
             if isTrustedCompleted(on: day) {
                 continue
             }
@@ -630,7 +638,8 @@ extension Sequence where Element == Habit {
                 for habit in habits
                 where day >= AppCalendar.startOfDay(for: habit.createdAt)
                     && habit.isLoggable(on: day)
-                    && !habit.isSkipped(on: day) {
+                    && !habit.isSkipped(on: day)
+                    && !habit.isFreezeProtected(on: day) {
                     scheduled += 1
                     if habit.isTrustedCompleted(on: day) {
                         completed += 1

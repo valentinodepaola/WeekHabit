@@ -12,6 +12,7 @@ import Foundation
 enum CellState: Equatable {
     case completed
     case skipped
+    case frozen
     case missed
     case inactive
     case future
@@ -101,6 +102,21 @@ extension Habit {
         }
     }
 
+    func isFreezeProtected(on date: Date) -> Bool {
+        guard allowsWeeklyFreeze else { return false }
+        return streakFreezes.contains {
+            AppCalendar.isSameDay($0.protectedDate, date)
+        }
+    }
+
+    func weeklyFreeze(containing date: Date) -> StreakFreeze? {
+        guard allowsWeeklyFreeze else { return nil }
+        let weekStart = AppCalendar.weekRange(containing: date).lowerBound
+        return streakFreezes.first {
+            AppCalendar.isSameDay($0.weekStartDate, weekStart)
+        }
+    }
+
     func totalValue(on date: Date) -> Double {
         entries
             .filter { AppCalendar.isSameDay($0.date, date) && $0.kind == .completed }
@@ -150,7 +166,7 @@ extension Habit {
             if isLoggable(on: cursor) {
                 if isCompleted(on: cursor) {
                     streak += 1
-                } else if !isSkipped(on: cursor) {
+                } else if !preservesStreakWithoutCompletion(on: cursor) {
                     break
                 }
             }
@@ -195,7 +211,7 @@ extension Habit {
                 if isCompleted(on: cursor) {
                     running += 1
                     best = max(best, running)
-                } else if isSkipped(on: cursor) {
+                } else if preservesStreakWithoutCompletion(on: cursor) {
                     best = max(best, running)
                 } else {
                     running = 0
@@ -243,6 +259,10 @@ extension Habit {
                     return .skipped
                 }
 
+                if isFreezeProtected(on: day) {
+                    return .frozen
+                }
+
                 if isFlexibleSchedule && !isCompleted(on: day) {
                     return .inactive
                 }
@@ -256,6 +276,50 @@ extension Habit {
         (0..<7).compactMap { dayOffset in
             AppCalendar.current.date(byAdding: .day, value: dayOffset, to: week.lowerBound)
         }
+    }
+
+    func weeklyFreezeCandidate(reference: Date = .now) -> Date? {
+        guard allowsWeeklyFreeze else { return nil }
+
+        let referenceDay = AppCalendar.startOfDay(for: reference)
+        let week = AppCalendar.weekRange(containing: referenceDay)
+        guard weeklyFreeze(containing: referenceDay) == nil else { return nil }
+
+        if isFlexibleSchedule {
+            return flexibleWeeklyFreezeCandidate(in: week, referenceDay: referenceDay)
+        }
+
+        return weekDays(in: week)
+            .filter { $0 < referenceDay }
+            .first { isMissedFreezeCandidate(on: $0) }
+    }
+
+    private func flexibleWeeklyFreezeCandidate(in week: Range<Date>, referenceDay: Date) -> Date? {
+        let weekDays = weekDays(in: week)
+        let completed = weekDays.filter { isCompleted(on: $0) }.count
+        guard completed < targetDaysPerWeek else { return nil }
+
+        let remainingPossible = weekDays
+            .filter { $0 >= referenceDay }
+            .filter { isLoggable(on: $0) }
+            .count
+
+        guard completed + remainingPossible < targetDaysPerWeek else { return nil }
+
+        return weekDays
+            .filter { $0 < referenceDay }
+            .first { isMissedFreezeCandidate(on: $0) }
+    }
+
+    private func isMissedFreezeCandidate(on date: Date) -> Bool {
+        isLoggable(on: date)
+            && !isCompleted(on: date)
+            && !isSkipped(on: date)
+            && !isFreezeProtected(on: date)
+    }
+
+    private func preservesStreakWithoutCompletion(on date: Date) -> Bool {
+        isSkipped(on: date) || isFreezeProtected(on: date)
     }
 
     /// Días completados desde `startDate` hasta `reference` (inclusive en ambos extremos).
@@ -288,7 +352,7 @@ extension Habit {
         var cursor = start
         var scanned = 0
         while cursor <= end && scanned < 365 * 5 {
-            if isLoggable(on: cursor), !isSkipped(on: cursor) { count += 1 }
+            if isLoggable(on: cursor), !preservesStreakWithoutCompletion(on: cursor) { count += 1 }
             guard let next = calendar.date(byAdding: .day, value: 1, to: cursor) else { break }
             cursor = next
             scanned += 1

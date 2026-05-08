@@ -19,6 +19,9 @@ struct TodayView: View {
     @Query(sort: \Plan.createdAt, order: .reverse)
     private var plans: [Plan]
 
+    @Query(sort: \StreakFreeze.usedAt, order: .reverse)
+    private var streakFreezes: [StreakFreeze]
+
     @State private var coverRoute: TodayCoverRoute?
     @State private var sheetRoute: TodaySheetRoute?
     @State private var selectedHabit: Habit?
@@ -69,6 +72,14 @@ struct TodayView: View {
 
     private var skippedHabits: [Habit] {
         todayHabits.filter { $0.isSkipped(on: referenceDate) }
+    }
+
+    private var weeklyFreezes: [StreakFreeze] {
+        let habitIDs = Set(todayHabits.filter { $0.allowsWeeklyFreeze }.map(\.id))
+        let weekStart = AppCalendar.weekRange(containing: referenceDate).lowerBound
+        return streakFreezes
+            .filter { habitIDs.contains($0.habitID) && AppCalendar.isSameDay($0.weekStartDate, weekStart) }
+            .sorted { $0.protectedDate < $1.protectedDate }
     }
 
     private var tomorrowDate: Date {
@@ -146,6 +157,9 @@ struct TodayView: View {
                 AppMotion.respectful(AppMotion.gentle, reduceMotion),
                 value: todayHabitSectionSignature
             )
+            .task {
+                applyWeeklyFreezes(reference: referenceDate)
+            }
         }
     }
 
@@ -207,6 +221,13 @@ struct TodayView: View {
         .todayListRow(
             EdgeInsets(top: AppSpacing.s, leading: AppSpacing.l, bottom: AppSpacing.s, trailing: AppSpacing.l)
         )
+
+        if let freezeMessage = weeklyFreezeMessage {
+            TodayFreezeBanner(message: freezeMessage)
+                .todayListRow(
+                    EdgeInsets(top: 0, leading: AppSpacing.l, bottom: AppSpacing.s, trailing: AppSpacing.l)
+                )
+        }
 
         sectionHeader(title: "Pendientes", count: pendingHabits.count)
             .todayListRow(
@@ -376,7 +397,19 @@ struct TodayView: View {
         let pending = pendingHabits.map { "p:\($0.id.uuidString)" }
         let completed = completedHabits.map { "c:\($0.id.uuidString)" }
         let skipped = skippedHabits.map { "s:\($0.id.uuidString)" }
-        return (pending + completed + skipped).joined(separator: "|")
+        let freezes = weeklyFreezes.map { "f:\($0.id.uuidString)" }
+        return (pending + completed + skipped + freezes).joined(separator: "|")
+    }
+
+    private var weeklyFreezeMessage: String? {
+        guard let freeze = weeklyFreezes.first else { return nil }
+        let weekday = weekdayName(for: freeze.protectedDate)
+
+        if weeklyFreezes.count == 1 {
+            return "Comodín usado el \(weekday). Tu racha sigue viva."
+        }
+
+        return "\(weeklyFreezes.count) comodines usados esta semana. Tu racha sigue viva."
     }
 
     @ViewBuilder
@@ -528,6 +561,23 @@ struct TodayView: View {
                 AppHaptics.play(.dayClosed)
             }
         }
+    }
+
+    private func applyWeeklyFreezes(reference: Date) {
+        for habit in habits where habit.allowsWeeklyFreeze {
+            guard let protectedDate = habit.weeklyFreezeCandidate(reference: reference),
+                  !streakFreezes.containsFreeze(for: habit, weekContaining: protectedDate) else {
+                continue
+            }
+
+            modelContext.insert(StreakFreeze(habit: habit, protectedDate: protectedDate))
+        }
+    }
+
+    private func weekdayName(for date: Date) -> String {
+        AppCalendar.weekday(of: date)
+            .displayName
+            .lowercased(with: Locale(identifier: "es_MX"))
     }
 
     private func isCompleteForTodayList(_ habit: Habit) -> Bool {
@@ -802,6 +852,36 @@ private struct TodayCompletedHabitRow: View {
         }
         .frame(width: 38, height: 38)
         .accessibilityHidden(true)
+    }
+}
+
+private struct TodayFreezeBanner: View {
+    let message: String
+
+    var body: some View {
+        HStack(alignment: .top, spacing: AppSpacing.m) {
+            Image(systemName: "shield.fill")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(AppColor.info)
+                .frame(width: 30, height: 30)
+                .background(AppColor.info.opacity(0.14))
+                .clipShape(Circle())
+
+            Text(message)
+                .font(AppFont.label)
+                .foregroundStyle(AppColor.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, AppSpacing.m)
+        .padding(.vertical, AppSpacing.s)
+        .background(AppColor.info.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.m, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: AppRadius.m, style: .continuous)
+                .strokeBorder(AppColor.info.opacity(0.22), lineWidth: 1)
+        }
     }
 }
 

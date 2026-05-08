@@ -69,7 +69,7 @@ enum SchemaV8: VersionedSchema {
     static var versionIdentifier: Schema.Version { .init(8, 0, 0) }
 
     static var models: [any PersistentModel.Type] {
-        [Habit.self, HabitEntry.self, HabitExperiment.self, FocusSession.self, Plan.self]
+        [Habit.self, HabitEntry.self, HabitExperiment.self, FocusSession.self, Plan.self, StreakFreeze.self]
     }
 }
 

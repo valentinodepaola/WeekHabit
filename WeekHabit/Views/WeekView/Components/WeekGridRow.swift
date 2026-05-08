@@ -128,6 +128,9 @@ struct WeekGridRow: View {
         if isSkipped {
             return .skipped
         }
+        if habit.isFreezeProtected(on: date) {
+            return .frozen
+        }
         if isPartial {
             return onlyManualEntries ? .partialRetro : .partial
         }

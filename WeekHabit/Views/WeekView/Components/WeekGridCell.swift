@@ -11,6 +11,7 @@ struct WeekGridCell: View {
         /// Marca registrada retroactivamente (todos los entries del día son `.manual`).
         case completedRetro
         case skipped
+        case frozen
         case partial
         /// Misma idea para cantidades parciales registradas retroactivamente.
         case partialRetro
@@ -44,6 +45,10 @@ struct WeekGridCell: View {
                 case .skipped:
                     Image(systemName: "pause.circle.fill")
                         .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(habitColor)
+                case .frozen:
+                    Image(systemName: "shield.fill")
+                        .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(habitColor)
                 case .partial:
                     Circle()
@@ -101,6 +106,13 @@ struct WeekGridCell: View {
                     RoundedRectangle(cornerRadius: AppRadius.s)
                         .strokeBorder(habitColor.opacity(0.45), style: StrokeStyle(lineWidth: 1.3, dash: [3, 2]))
                 }
+        case .frozen:
+            RoundedRectangle(cornerRadius: AppRadius.s)
+                .fill(AppColor.info.opacity(0.12))
+                .overlay {
+                    RoundedRectangle(cornerRadius: AppRadius.s)
+                        .strokeBorder(AppColor.info.opacity(0.5), lineWidth: 1.2)
+                }
         case .partial:
             RoundedRectangle(cornerRadius: AppRadius.s)
                 .fill(habitColor.opacity(0.18))
@@ -140,6 +152,7 @@ struct WeekGridCell: View {
         case .completed: return "Completado"
         case .completedRetro: return "Completado, registrado más tarde"
         case .skipped: return "Descanso intencional"
+        case .frozen: return "Comodín de racha usado"
         case .partial: return "Avance parcial"
         case .partialRetro: return "Avance parcial, registrado más tarde"
         case .pending: return "Pendiente"
