@@ -10,12 +10,12 @@ struct SplashScreenBackground: View {
 
     var body: some View {
         ZStack {
-            baseBackgroundColor
+            AppColor.bgCanvas
                 .ignoresSafeArea()
 
             LinearGradient(
                 colors: [
-                    AppColor.accent.opacity(colorScheme == .dark ? 0.18 : 0.13),
+                    AppColor.accent.opacity(colorScheme == .dark ? 0.16 : 0.12),
                     Color.clear
                 ],
                 startPoint: .top,
@@ -26,7 +26,7 @@ struct SplashScreenBackground: View {
             LinearGradient(
                 colors: [
                     Color.clear,
-                    AppColor.surface.opacity(colorScheme == .dark ? 0.08 : 0.34)
+                    AppColor.bgElevated.opacity(colorScheme == .dark ? 0.08 : 0.3)
                 ],
                 startPoint: .center,
                 endPoint: .bottom
@@ -34,9 +34,4 @@ struct SplashScreenBackground: View {
             .ignoresSafeArea()
         }
     }
-
-    private var baseBackgroundColor: Color {
-        colorScheme == .dark ? AppColor.bgDark : AppColor.bgLight
-    }
 }
-

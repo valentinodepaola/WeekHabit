@@ -32,7 +32,8 @@ enum AppFont {
     static let micro = Font.system(size: 11, weight: .medium, design: .default)
 
     // MARK: - Legacy aliases
-    // Apuntan al token nuevo más cercano. Eliminar en Fase 8.
+    // Apuntan al token nuevo más cercano. No agregar nuevos usos —
+    // deuda técnica a migrar gradualmente.
 
     static let title1 = display
     static let subtitle = headline

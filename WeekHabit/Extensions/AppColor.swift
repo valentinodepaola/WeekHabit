@@ -57,7 +57,9 @@ enum AppColor {
     static let destructiveAction = adaptive(light: "#b54a40", dark: "#d56158")
 
     // MARK: - Legacy aliases
-    // Mantenemos compatibilidad hasta limpieza en Fase 8. No agregar nuevos usos.
+    // Compatibility shims que redirigen al sistema nuevo. No agregar nuevos
+    // usos — son deuda técnica a migrar gradualmente. El build no los requiere
+    // semánticamente; sólo evitan reescribir 50+ callsites a la vez.
 
     static let strongText = textPrimary
     static let mutedText = textSecondary

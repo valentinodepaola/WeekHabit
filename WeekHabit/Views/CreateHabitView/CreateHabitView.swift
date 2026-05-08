@@ -2,7 +2,8 @@
 //  CreateHabitView.swift
 //  WeekHabit
 //
-//  Created by Valentino De Paola Gallardo on 24/04/26.
+//  Orden por modelo conductual:
+//    Acción → Señal → Medición (si cantidad) → Ritmo → Finalización → Recordatorio → Plan
 //
 
 import SwiftUI
@@ -114,26 +115,31 @@ struct CreateHabitView: View {
                     onSave: { saveHabit() }
                 )
 
-                VStack(alignment: .leading, spacing: 25) {
+                VStack(alignment: .leading, spacing: AppSpacing.xl) {
                     Text(isEditing ? "Editar hábito" : "Nuevo hábito")
                         .font(AppFont.title)
-                        .foregroundStyle(AppColor.strongText)
-                        .padding(.bottom, 8)
+                        .foregroundStyle(AppColor.textPrimary)
+                        .padding(.bottom, AppSpacing.xs)
 
+                    // 1. Acción
                     HabitBasicInfoSection(
                         habitName: $habitName,
                         note: $note,
-                        cue: $cue,
                         selectedIconName: $selectedIconName,
                         selectedColorHex: $selectedColorHex
                     )
 
+                    // 2. Señal
+                    HabitCueSection(cue: $cue)
+
+                    // 3. Medición (siempre visible — el selector check/quantity es parte)
                     HabitMeasurementSection(
                         trackingKind: $trackingKind,
                         measurementUnit: $measurementUnit,
                         targetValueText: $targetValueText
                     )
 
+                    // 4. Ritmo
                     HabitScheduleSection(
                         scheduleKind: $scheduleKind,
                         timesPerWeek: $timesPerWeek,
@@ -145,16 +151,20 @@ struct CreateHabitView: View {
                         endsAt: $endsAt
                     )
 
+                    // 5. Recordatorio
                     HabitReminderSection(
                         isReminderEnabled: $isReminderEnabled,
                         reminderTime: $reminderTime,
-                        authorizationStatus: notificationAuthorizationStatus
+                        authorizationStatus: notificationAuthorizationStatus,
+                        onRequestAuthorization: requestNotificationAuthorization
                     )
 
+                    // 6. Plan
                     HabitPlansSection(selectedPlans: $selectedPlans)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding()
+                .padding(AppSpacing.l)
+                .padding(.bottom, AppSpacing.xxl)
                 .onChange(of: trackingKind) { _, newValue in
                     if newValue == .check {
                         measurementUnit = .none
@@ -265,6 +275,16 @@ struct CreateHabitView: View {
 
         if !status.allowsReminderScheduling {
             isReminderEnabled = false
+        }
+    }
+
+    private func requestNotificationAuthorization() {
+        Task {
+            let granted = await HabitReminderService.requestAuthorization()
+            await refreshNotificationAuthorizationStatus()
+            if granted {
+                isReminderEnabled = true
+            }
         }
     }
 

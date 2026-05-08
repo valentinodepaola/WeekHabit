@@ -25,7 +25,8 @@ enum AppRadius {
     /// Capsule shape.
     static let capsule: CGFloat = 999
 
-    // MARK: - Legacy aliases (eliminar en Fase 8)
+    // MARK: - Legacy aliases
+    // Compatibility shims. No agregar nuevos usos — deuda técnica a migrar.
 
     static let small: CGFloat = s
     static let medium: CGFloat = m

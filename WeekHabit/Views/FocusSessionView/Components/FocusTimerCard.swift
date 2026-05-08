@@ -12,42 +12,34 @@ struct FocusTimerCard: View {
     let onFinish: () -> Void
 
     var body: some View {
-        VStack(spacing: 18) {
-            VStack(spacing: 8) {
+        VStack(spacing: AppSpacing.l) {
+            VStack(spacing: AppSpacing.s) {
                 Text(timeText)
                     .font(.system(size: 66, weight: .regular, design: .serif))
-                    .foregroundStyle(AppColor.strongText)
+                    .foregroundStyle(AppColor.textPrimary)
                     .monospacedDigit()
                     .lineLimit(1)
                     .minimumScaleFactor(0.72)
 
                 Text(selectedCount == 1 ? "1 hábito en enfoque" : "\(selectedCount) hábitos en enfoque")
-                    .font(AppFont.body2)
-                    .foregroundStyle(AppColor.mutedText)
+                    .font(AppFont.callout)
+                    .foregroundStyle(AppColor.textSecondary)
             }
 
             if let progress {
-                ProgressView(value: progress)
-                    .tint(AppColor.accent)
+                WHProgressBar(
+                    progress: progress,
+                    progressColor: AppColor.accent,
+                    height: 6
+                )
             }
 
-            Button {
-                onFinish()
-            } label: {
-                Text("Terminar sesión")
-                    .font(AppFont.body2)
-                    .fontWeight(.bold)
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 13)
-                    .background(AppColor.accent)
-                    .clipShape(RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous))
-            }
-            .buttonStyle(.plain)
+            WHButton(title: "Terminar sesión", variant: .primary, action: onFinish)
         }
-        .padding(22)
+        .padding(AppSpacing.xl)
         .frame(maxWidth: .infinity)
-        .background(AppColor.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .background(AppColor.bgElevated)
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.xl, style: .continuous))
+        .appElevation(.low)
     }
 }

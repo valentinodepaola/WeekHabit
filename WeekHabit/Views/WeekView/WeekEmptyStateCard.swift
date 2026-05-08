@@ -45,9 +45,8 @@ struct WeekEmptyStateCard: View {
     }
 
     private var headlineText: some View {
-        (Text("Una semana ").font(AppFont.headline)
-         + Text("por escribir").font(AppFont.headline.italic())
-            .foregroundColor(AppColor.accent))
+        Text("Una semana \(Text("por escribir").italic().foregroundColor(AppColor.accent))")
+            .font(AppFont.headline)
             .foregroundStyle(AppColor.textPrimary)
     }
 }

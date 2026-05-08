@@ -10,38 +10,40 @@ struct FocusReviewChecklist: View {
     @Binding var completedHabitIDs: Set<UUID>
 
     var body: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: AppSpacing.s) {
             ForEach(habits) { habit in
                 Button {
                     toggle(habit)
                 } label: {
-                    HStack(spacing: 12) {
-                        IconComponent(
-                            icon: habit.iconName,
-                            color: habit.habitColor
-                        )
+                    HStack(spacing: AppSpacing.m) {
+                        ZStack {
+                            Circle()
+                                .fill(habit.habitColor.opacity(0.18))
+                            Image(systemName: habit.iconName)
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundStyle(habit.habitColor)
+                        }
+                        .frame(width: 40, height: 40)
 
                         VStack(alignment: .leading, spacing: 2) {
                             Text(habit.title)
-                                .font(AppFont.body2)
-                                .fontWeight(.semibold)
-                                .foregroundStyle(AppColor.strongText)
+                                .font(AppFont.bodyEmphasis)
+                                .foregroundStyle(AppColor.textPrimary)
                                 .lineLimit(1)
-
                             Text("Completado durante la sesión")
-                                .font(AppFont.formSectionText2)
-                                .foregroundStyle(AppColor.mutedText)
+                                .font(AppFont.label)
+                                .foregroundStyle(AppColor.textSecondary)
                         }
 
                         Spacer()
 
                         Image(systemName: completedHabitIDs.contains(habit.id) ? "checkmark.circle.fill" : "circle")
                             .font(.system(size: 24, weight: .semibold))
-                            .foregroundStyle(completedHabitIDs.contains(habit.id) ? AppColor.accent : AppColor.subtleText)
+                            .foregroundStyle(completedHabitIDs.contains(habit.id) ? AppColor.accent : AppColor.textTertiary)
                     }
-                    .padding(14)
-                    .background(AppColor.surface)
-                    .clipShape(RoundedRectangle(cornerRadius: AppRadius.large, style: .continuous))
+                    .padding(AppSpacing.m)
+                    .background(AppColor.bgElevated)
+                    .clipShape(RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous))
                 }
                 .buttonStyle(.plain)
             }

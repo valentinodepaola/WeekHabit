@@ -59,9 +59,8 @@ struct TodayEmptyStateView: View {
     }
 
     private var headlineText: some View {
-        (Text("Hoy toca ").font(AppFont.headline)
-         + Text("descansar").font(AppFont.headline.italic())
-            .foregroundColor(AppColor.accent))
+        Text("Hoy toca \(Text("descansar").italic().foregroundColor(AppColor.accent))")
+            .font(AppFont.headline)
             .foregroundStyle(AppColor.textPrimary)
     }
 

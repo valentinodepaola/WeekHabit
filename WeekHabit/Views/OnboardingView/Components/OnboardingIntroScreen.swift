@@ -14,35 +14,44 @@ struct OnboardingIntroScreen: View {
             Spacer()
 
             RippleLogoView()
-                .padding(.bottom, 18)
+                .padding(.bottom, AppSpacing.l)
 
-            VStack(spacing: 8) {
-                Text("Una semana.")
-                    .font(AppFont.title1)
-                    .foregroundStyle(AppColor.strongText)
-
-                Text("Un ritmo.")
-                    .font(AppFont.title1.italic())
-                    .foregroundStyle(AppColor.accent)
-
-                Text("Construye hábitos que sí se sostienen: día a día, sin presión.")
-                    .font(AppFont.body2)
-                    .foregroundStyle(AppColor.mutedText)
+            VStack(spacing: AppSpacing.s) {
+                headlineText
                     .multilineTextAlignment(.center)
-                    .padding(.horizontal, 46)
-                    .padding(.top, 4)
+
+                Text("Construye hábitos que sí se sostienen: una semana a la vez, con espacio para volver.")
+                    .font(AppFont.callout)
+                    .foregroundStyle(AppColor.textSecondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, AppSpacing.xxl)
+                    .padding(.top, AppSpacing.xs)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
             Spacer()
 
-            OnboardingPrimaryButton(title: "Iniciar onboarding", action: onStart)
-                .padding(.horizontal, 28)
-                .padding(.bottom, 22)
+            WHButton(title: "Empezar", variant: .primary, action: onStart)
+                .padding(.horizontal, AppSpacing.xl)
+                .padding(.bottom, AppSpacing.l)
 
             Button("Saltar introducción", action: onSkip)
-                .font(AppFont.captionApp)
-                .foregroundStyle(AppColor.subtleText)
-                .padding(.bottom, 32)
+                .font(AppFont.label)
+                .foregroundStyle(AppColor.textTertiary)
+                .padding(.bottom, AppSpacing.xxl)
+        }
+    }
+
+    private var headlineText: some View {
+        VStack(spacing: 4) {
+            Text("Una semana.")
+                .font(.system(size: 38, weight: .regular, design: .serif))
+                .foregroundStyle(AppColor.textPrimary)
+
+            Text("Un ritmo.")
+                .font(.system(size: 38, weight: .regular, design: .serif))
+                .italic()
+                .foregroundStyle(AppColor.accent)
         }
     }
 }
