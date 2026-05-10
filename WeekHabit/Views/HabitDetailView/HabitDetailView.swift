@@ -34,6 +34,7 @@ struct HabitDetailView: View {
 
     private var currentStreak: Int { habit.currentStreak() }
     private var bestStreak: Int { habit.bestStreak() }
+    private var streakBreakdown: StreakBreakdown { habit.currentStreakBreakdown() }
     private var completedThisWeek: Int { habit.completedDaysThisWeek() }
     private var weekProgress: Double { habit.weekProgress() }
     private var activeExperiment: HabitExperiment? {
@@ -52,6 +53,11 @@ struct HabitDetailView: View {
                         habit: habit,
                         currentStreak: currentStreak,
                         bestStreak: bestStreak
+                    )
+
+                    StreakBreakdownCard(
+                        breakdown: streakBreakdown,
+                        color: habit.habitColor
                     )
 
                     HStack(spacing: AppSpacing.s) {

@@ -33,7 +33,7 @@ El enfoque principal no es solo “marcar tareas”, sino ayudar a entender el r
 - Vista Semana con grilla editable, navegación por semanas, resumen y logging retroactivo.
 - Insights de 30 días con consistencia, confianza, tendencias, mejores días/horas y sugerencias.
 - Experimentos de ritmo de 7 días sugeridos desde Insights, con mantener/revertir.
-- Detalle de hábito con racha, progreso semanal, dots, heatmap y estado de experimento.
+- Detalle de hábito con racha, desglose honesto de racha, progreso semanal, dots, heatmap y estado de experimento.
 - Sesiones de enfoque con timer, selección de hábitos, revisión final y persistencia de `FocusSession`.
 - Separación entre marcas confiables para Insights (`today`, `focusSession`) y marcas manuales retroactivas (`manual`).
 
@@ -144,9 +144,11 @@ Registro de avance para un hábito en un día.
 | `date` | Día normalizado con `AppCalendar.startOfDay` |
 | `completedAt` | Timestamp real cuando la marca sucede en tiempo real; `nil` para retroactivas |
 | `sourceRaw` | Origen persistido de la marca |
+| `kindRaw` | Tipo de entrada: completado, descanso intencional o fallo recuperado |
 | `focusSessionID` | ID de la sesión de enfoque que originó la marca, si aplica |
 | `completedCount` | Conteo entero histórico/compatibilidad |
 | `value` | Valor real para hábitos cuantificables |
+| `failureReason` | Razón opcional de fallo post-prompt para entradas `.missed` |
 | `habit` | Relación inversa |
 
 Fuentes:
@@ -156,6 +158,16 @@ Fuentes:
 | `.today` | Registro desde Hoy | Sí |
 | `.focusSession` | Registro desde una sesión de enfoque | Sí |
 | `.manual` | Registro retroactivo desde Semana | No |
+
+Tipos de entrada:
+
+| Tipo | Uso |
+|---|---|
+| `.completed` | El hábito se completó o avanzó en un día |
+| `.skipped` | Descanso intencional; preserva racha y no cuenta como fallo |
+| `.missed` | Fallo reconocido desde el prompt de recuperación; puede tener `failureReason` |
+
+Razones de fallo (`HabitFailureReason`): `.tooDifficult`, `.forgot`, `.badTiming`, `.lowEnergy`, `.other`.
 
 ### `Plan`
 
@@ -220,10 +232,12 @@ SchemaV3: + FocusSession
 SchemaV4: cambios aditivos en modelos existentes
 SchemaV5: + Plan
 SchemaV6: cambios aditivos
-SchemaV7: cambios aditivos actuales
+SchemaV7: cambios aditivos
+SchemaV8: + StreakFreeze
+SchemaV9: + HabitEntry.failureReason y EntryKind.missed
 ```
 
-`HabitMigrationPlan` registra migraciones lightweight de V1 a V7.
+`HabitMigrationPlan` registra migraciones lightweight de V1 a V9.
 
 Regla importante: no editar schemas antiguos para cambios de forma persistida. Crear el siguiente `SchemaV*`, incluir los modelos vigentes y agregar el `MigrationStage` correspondiente.
 
@@ -243,6 +257,7 @@ Contiene la lógica reusable de hábitos:
 - `completedDaysThisWeek(reference:)`
 - `weekProgress(reference:)`
 - `currentStreak(reference:)`
+- `currentStreakBreakdown(reference:)`
 - `displayStreak(reference:)`
 - `bestStreak(reference:)`
 - `completionMatrix(weeks:reference:)`
@@ -277,6 +292,7 @@ Conceptos principales:
 - `ContextualWeekdayInsight`
 
 Los cálculos que intentan representar ritmo real deben usar solo marcas con `entry.source.isTrustedForInsights`.
+Las entradas `.missed` alimentan razones de fallo y recomendaciones, pero no cuentan como completitud ni como descanso.
 
 ### `HabitExperiment+Domain`
 
@@ -463,6 +479,7 @@ Muestra:
 
 - estado de experimento activo o pendiente;
 - racha actual y mejor racha;
+- desglose de racha actual por días hechos, descansos intencionales y comodines usados;
 - progreso semanal;
 - dots de la semana actual;
 - heatmap de las últimas 10 semanas;
@@ -552,4 +569,4 @@ Reglas prácticas:
 
 ## Estado de documentación
 
-Esta documentación describe la versión actual del repo con `SchemaV7`, navegación de 3 tabs, onboarding conectado, planes, recordatorios y hábitos cuantificables.
+Esta documentación describe la versión actual del repo con `SchemaV9`, navegación de 3 tabs, onboarding conectado, planes, recordatorios, hábitos cuantificables y recuperación post-fallo.

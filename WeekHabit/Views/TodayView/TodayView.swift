@@ -30,6 +30,7 @@ struct TodayView: View {
     @State private var planToDelete: Plan?
     @State private var showDeletePlanAlert = false
     @State private var expandedPlans: Set<UUID> = []
+    @State private var didShowRecoveryPromptThisSession = false
     @Namespace private var habitSectionNamespace
 
     private var referenceDate: Date { Date() }
@@ -159,6 +160,7 @@ struct TodayView: View {
             )
             .task {
                 applyWeeklyFreezes(reference: referenceDate)
+                presentRecoveryPromptIfNeeded()
             }
         }
     }
@@ -507,6 +509,20 @@ struct TodayView: View {
                 upsertQuantityEntry(for: habit, on: date, value: value, source: .today)
             }
             .presentationDetents([.height(310)])
+        case .recoveryPrompt(let candidate):
+            RecoveryPromptView(
+                candidate: candidate,
+                referenceDate: referenceDate,
+                onSave: { reason in
+                    persistRecoveryMiss(candidate, reason: reason)
+                },
+                onSkip: {
+                    persistRecoveryMiss(candidate, reason: nil)
+                }
+            )
+            .presentationDetents([.height(570), .medium])
+            .presentationDragIndicator(.visible)
+            .presentationBackground(AppColor.bgCanvas)
         }
     }
 
@@ -572,6 +588,18 @@ struct TodayView: View {
 
             modelContext.insert(StreakFreeze(habit: habit, protectedDate: protectedDate))
         }
+    }
+
+    private func presentRecoveryPromptIfNeeded() {
+        guard !didShowRecoveryPromptThisSession,
+              sheetRoute == nil,
+              coverRoute == nil,
+              let candidate = habits.recoveryPromptCandidate(reference: referenceDate) else {
+            return
+        }
+
+        didShowRecoveryPromptThisSession = true
+        sheetRoute = .recoveryPrompt(candidate)
     }
 
     private func weekdayName(for date: Date) -> String {
@@ -682,6 +710,40 @@ struct TodayView: View {
         }
     }
 
+    private func persistRecoveryMiss(_ candidate: RecoveryPromptCandidate, reason: HabitFailureReason?) {
+        let entriesForDay = candidate.habit.entries.filter {
+            AppCalendar.isSameDay($0.date, candidate.date)
+        }
+
+        if let existingMiss = entriesForDay.first(where: { $0.kind == .missed }) {
+            existingMiss.failureReasonKind = reason
+            entriesForDay
+                .filter { $0.kind == .missed && $0.id != existingMiss.id }
+                .forEach { modelContext.delete($0) }
+            sheetRoute = nil
+            return
+        }
+
+        guard entriesForDay.isEmpty else {
+            sheetRoute = nil
+            return
+        }
+
+        modelContext.insert(
+            HabitEntry(
+                date: candidate.date,
+                completedAt: nil,
+                source: .today,
+                kind: .missed,
+                completedCount: 0,
+                value: 0,
+                failureReason: reason,
+                habit: candidate.habit
+            )
+        )
+        sheetRoute = nil
+    }
+
     private func transitionHabitBetweenSections(_ mutation: @escaping () -> Void) {
         guard let animation = AppMotion.respectful(AppMotion.gentle, reduceMotion) else {
             withoutTodayListAnimation(mutation)
@@ -746,11 +808,13 @@ private enum TodayCoverRoute: Identifiable {
 private enum TodaySheetRoute: Identifiable {
     case createMenu
     case quantityLog(habit: Habit, date: Date)
+    case recoveryPrompt(RecoveryPromptCandidate)
 
     var id: String {
         switch self {
         case .createMenu: return "createMenu"
         case .quantityLog(let habit, _): return "quantityLog-\(habit.id)"
+        case .recoveryPrompt(let candidate): return "recoveryPrompt-\(candidate.id)"
         }
     }
 }

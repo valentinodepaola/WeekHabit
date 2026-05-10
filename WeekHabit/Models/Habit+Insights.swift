@@ -131,6 +131,7 @@ struct HabitInsightSummary: Identifiable {
 enum AttentionFailureType {
     case notDone
     case manualOnly
+    case knownReason(HabitFailureReason)
 
     var title: String {
         switch self {
@@ -138,7 +139,20 @@ enum AttentionFailureType {
             return "No lo hizo"
         case .manualOnly:
             return "Lo hizo manual"
+        case .knownReason(let reason):
+            return reason.title
         }
+    }
+}
+
+struct DominantFailureReason {
+    let reason: HabitFailureReason
+    let count: Int
+    let total: Int
+
+    var ratio: Double {
+        guard total > 0 else { return 0 }
+        return Double(count) / Double(total)
     }
 }
 
@@ -451,7 +465,40 @@ extension Habit {
         )
     }
 
+    func failureReasonCounts(lastDays: Int = 30, reference: Date = .now) -> [HabitFailureReason: Int] {
+        let range = insightDateRange(days: lastDays, reference: reference)
+        var counts: [HabitFailureReason: Int] = [:]
+
+        for entry in entries where range.contains(entry.date) && entry.kind == .missed {
+            guard let reason = entry.failureReasonKind else { continue }
+            counts[reason, default: 0] += 1
+        }
+
+        return counts
+    }
+
+    func dominantFailureReason(lastDays: Int = 30, reference: Date = .now) -> DominantFailureReason? {
+        let counts = failureReasonCounts(lastDays: lastDays, reference: reference)
+        let total = counts.values.reduce(0, +)
+        guard total > 0,
+              let best = counts.max(by: { lhs, rhs in
+                  if lhs.value == rhs.value {
+                      return lhs.key.rawValue > rhs.key.rawValue
+                  }
+                  return lhs.value < rhs.value
+              }),
+              best.value >= 2 || total == 1 else {
+            return nil
+        }
+
+        return DominantFailureReason(reason: best.key, count: best.value, total: total)
+    }
+
     func attentionFailureType(reference: Date = .now) -> AttentionFailureType? {
+        if let dominantReason = dominantFailureReason(reference: reference) {
+            return .knownReason(dominantReason.reason)
+        }
+
         let range = insightDateRange(days: 30, reference: reference)
         var notDoneCount = 0
         var manualOnlyCount = 0
@@ -556,6 +603,31 @@ extension Sequence where Element == Habit {
         )
     }
 
+    func failureReasonCounts(lastDays: Int = 30, reference: Date = .now) -> [HabitFailureReason: Int] {
+        reduce(into: [HabitFailureReason: Int]()) { partial, habit in
+            for (reason, count) in habit.failureReasonCounts(lastDays: lastDays, reference: reference) {
+                partial[reason, default: 0] += count
+            }
+        }
+    }
+
+    func dominantFailureReason(lastDays: Int = 30, reference: Date = .now) -> DominantFailureReason? {
+        let counts = failureReasonCounts(lastDays: lastDays, reference: reference)
+        let total = counts.values.reduce(0, +)
+        guard total > 0,
+              let best = counts.max(by: { lhs, rhs in
+                  if lhs.value == rhs.value {
+                      return lhs.key.rawValue > rhs.key.rawValue
+                  }
+                  return lhs.value < rhs.value
+              }),
+              best.value >= 2 || total == 1 else {
+            return nil
+        }
+
+        return DominantFailureReason(reason: best.key, count: best.value, total: total)
+    }
+
     func attentionHabit(reference: Date = .now) -> HabitInsightSummary? {
         filter { $0.insightReadiness(reference: reference).isReady }
         .map { habit in
@@ -572,6 +644,8 @@ extension Sequence where Element == Habit {
             }
 
             switch failureType {
+            case .knownReason(let reason):
+                recommendation = recommendation(for: reason)
             case .manualOnly:
                 recommendation = "Se está haciendo; hagamos más fácil marcarlo en el momento."
             case .notDone:
@@ -818,11 +892,28 @@ extension Sequence where Element == Habit {
         let confidence = habit.rhythmConfidence(reference: reference).ratio
         let daysSince = habit.daysSinceLastCompletion(reference: reference) ?? 14
         let recency = Swift.min(1, Double(daysSince) / 14)
+        let timingSignal = habit.dominantFailureReason(reference: reference)?.reason == .badTiming ? 0.12 : 0
 
         return (consistencyGap * 0.45)
             + (opportunity * 0.25)
             + (confidence * 0.20)
             + (recency * 0.10)
+            + timingSignal
+    }
+
+    private func recommendation(for reason: HabitFailureReason) -> String {
+        switch reason {
+        case .tooDifficult:
+            return "Se está sintiendo pesado; bajemos la fricción o reduzcamos la meta por una semana."
+        case .forgot:
+            return "El patrón apunta a olvido; conviene atarlo a una señal o activar un recordatorio amable."
+        case .badTiming:
+            return "El horario parece estar estorbando; probemos una ventana más realista."
+        case .lowEnergy:
+            return "Suele fallar por energía; muévelo a un momento más ligero o reduce la carga."
+        case .other:
+            return "Hay una razón repetida; revisa si el ritmo todavía acompaña tu semana."
+        }
     }
 
     private func suggestionPriorityReason(
