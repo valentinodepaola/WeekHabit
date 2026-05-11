@@ -14,6 +14,13 @@ struct CurrentStreakHeroCard: View {
 
     private var gradient: LinearGradient {
         if isActive {
+            if habit.isBreakHabit {
+                return LinearGradient(
+                    colors: [AppColor.info, AppColor.success],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            }
             return LinearGradient(
                 colors: [AppColor.accent, AppColor.warning],
                 startPoint: .topLeading,
@@ -46,7 +53,7 @@ struct CurrentStreakHeroCard: View {
                 .offset(x: 22, y: 10)
 
             VStack(alignment: .leading, spacing: AppSpacing.m) {
-                Text("CONSTANCIA ACTUAL")
+                Text(habit.isBreakHabit ? "DÍAS SIN HACERLO" : "CONSTANCIA ACTUAL")
                     .font(AppFont.label)
                     .tracking(0.8)
                     .foregroundStyle(captionColor)
@@ -77,6 +84,15 @@ struct CurrentStreakHeroCard: View {
     }
 
     private var flavorText: String {
+        if habit.isBreakHabit {
+            if currentStreak == 0 {
+                return "Hoy podés empezar a evitarlo. Un día a la vez."
+            }
+            if currentStreak == bestStreak {
+                return "Estás construyendo tu mejor marca de abstinencia, día a día."
+            }
+            return "Llevas \(currentStreak) \(currentStreak == 1 ? "día" : "días") evitándolo. Tu récord: \(bestStreak) \(bestStreak == 1 ? "día" : "días")."
+        }
         if currentStreak == 0 {
             return "Hoy también cuenta. Vuelve con una marca pequeña."
         }

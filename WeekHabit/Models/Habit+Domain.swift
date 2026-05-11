@@ -67,6 +67,20 @@ extension Habit {
         return unit.isEmpty ? "\(value) por sesión" : "\(value) \(unit) por sesión"
     }
 
+    var isBreakHabit: Bool { direction == .`break` }
+
+    var completionCTA: String {
+        isBreakHabit ? "Lo evité hoy" : "Completado"
+    }
+
+    var streakLabel: String {
+        isBreakHabit ? "días sin hacerlo" : "días de racha"
+    }
+
+    var breakdownCompletedLabel: String {
+        isBreakHabit ? "evitado" : "hecho"
+    }
+
     var scheduleSummaryText: String {
         switch scheduleKind {
         case .daily:
@@ -78,7 +92,7 @@ extension Habit {
                 .joined(separator: ", ")
             return days.isEmpty ? "Sin días" : days
         case .timesPerWeek:
-            return "\(targetDaysPerWeek) veces/sem"
+            return isBreakHabit ? "Diario" : "\(targetDaysPerWeek) veces/sem"
         }
     }
 

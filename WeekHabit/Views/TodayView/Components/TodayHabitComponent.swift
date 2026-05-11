@@ -136,7 +136,7 @@ struct TodayHabitComponent: View {
                             )
                     }
                 if isCompleted {
-                    Image(systemName: "checkmark")
+                    Image(systemName: habit.isBreakHabit ? "xmark" : "checkmark")
                         .font(.system(size: 14, weight: .bold))
                         .foregroundStyle(.white)
                         .symbolEffect(.bounce, value: isCompleted)
@@ -178,6 +178,9 @@ struct TodayHabitComponent: View {
     private var scheduleFallbackText: String {
         if isSkipped {
             return "Descanso intencional"
+        }
+        if habit.isBreakHabit && !isCompleted {
+            return "Lo evité hoy"
         }
         if habit.trackingKind == .quantity {
             return habit.targetPerSessionText

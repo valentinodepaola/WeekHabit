@@ -57,14 +57,17 @@ struct HabitDetailView: View {
 
                     StreakBreakdownCard(
                         breakdown: streakBreakdown,
-                        color: habit.habitColor
+                        color: habit.habitColor,
+                        isBreakHabit: habit.isBreakHabit
                     )
 
                     HStack(spacing: AppSpacing.s) {
                         StatTileView(
-                            caption: "ESTA SEMANA",
+                            caption: habit.isBreakHabit ? "ESTA SEMANA" : "ESTA SEMANA",
                             value: "\(completedThisWeek)/\(habit.targetDaysPerWeek)",
-                            footer: "\(Int(weekProgress * 100))% de meta"
+                            footer: habit.isBreakHabit
+                                ? "\(completedThisWeek) \(completedThisWeek == 1 ? "día evitado" : "días evitados")"
+                                : "\(Int(weekProgress * 100))% de meta"
                         )
                         StatTileView(
                             caption: "REFERENCIA",
@@ -155,12 +158,12 @@ struct HabitDetailView: View {
 
     private var bestStreakFooter: String {
         if bestStreak == 0 {
-            return "lista para empezar"
+            return habit.isBreakHabit ? "lista para evitarlo" : "lista para empezar"
         }
         if currentStreak == bestStreak {
-            return "la estás construyendo hoy"
+            return habit.isBreakHabit ? "tu mejor racha activa" : "la estás construyendo hoy"
         }
-        return "tu marca para volver"
+        return habit.isBreakHabit ? "tu récord de abstinencia" : "tu marca para volver"
     }
 
     private var detailSummary: String {

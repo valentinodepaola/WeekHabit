@@ -8,18 +8,26 @@ import SwiftUI
 struct StreakBreakdownCard: View {
     let breakdown: StreakBreakdown
     let color: Color
+    var isBreakHabit: Bool = false
 
     private var totalLabel: String {
-        "\(breakdown.totalDays) \(breakdown.totalDays == 1 ? "día sostenido" : "días sostenidos")"
+        if isBreakHabit {
+            return "\(breakdown.totalDays) \(breakdown.totalDays == 1 ? "día sin hacerlo" : "días sin hacerlo")"
+        }
+        return "\(breakdown.totalDays) \(breakdown.totalDays == 1 ? "día sostenido" : "días sostenidos")"
     }
 
     private var statusText: String {
         if !breakdown.hasHistory {
-            return "Aún no hay una racha activa para desglosar."
+            return isBreakHabit
+                ? "Aún no hay días evitados para mostrar."
+                : "Aún no hay una racha activa para desglosar."
         }
 
         if breakdown.protectedDays == 0 {
-            return "Tu racha viene solo de días completados."
+            return isBreakHabit
+                ? "Tu racha viene solo de días evitados."
+                : "Tu racha viene solo de días completados."
         }
 
         return "Los descansos y comodines mantuvieron la racha sin contarlos como días hechos."
@@ -28,7 +36,7 @@ struct StreakBreakdownCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: AppSpacing.m) {
             HStack(alignment: .firstTextBaseline) {
-                Text("RACHA HONESTA")
+                Text(isBreakHabit ? "HISTORIAL HONESTO" : "RACHA HONESTA")
                     .font(AppFont.label)
                     .foregroundStyle(AppColor.textTertiary)
                     .tracking(0.6)
@@ -43,9 +51,11 @@ struct StreakBreakdownCard: View {
 
             HStack(spacing: AppSpacing.s) {
                 StreakBreakdownMetric(
-                    icon: "checkmark",
+                    icon: isBreakHabit ? "xmark" : "checkmark",
                     value: breakdown.completedDays,
-                    label: breakdown.completedDays == 1 ? "hecho" : "hechos",
+                    label: breakdown.completedDays == 1
+                        ? (isBreakHabit ? "evitado" : "hecho")
+                        : (isBreakHabit ? "evitados" : "hechos"),
                     tint: color,
                     fill: color.opacity(0.16)
                 )

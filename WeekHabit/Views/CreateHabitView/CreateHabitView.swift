@@ -28,6 +28,7 @@ struct CreateHabitView: View {
     @State private var cue: String = ""
     @State private var selectedIconName: String = HabitAppearance.defaultIconName
     @State private var selectedColorHex: String = HabitAppearance.defaultColorHex
+    @State private var direction: HabitDirection = .build
     @State private var trackingKind: HabitTrackingKind = .check
     @State private var measurementUnit: HabitMeasurementUnit = .none
     @State private var targetValueText: String = "1"
@@ -94,6 +95,7 @@ struct CreateHabitView: View {
         _cue = State(initialValue: habitToEdit?.cue ?? "")
         _selectedIconName = State(initialValue: habitToEdit?.iconName ?? HabitAppearance.defaultIconName)
         _selectedColorHex = State(initialValue: habitToEdit?.colorHex ?? HabitAppearance.defaultColorHex)
+        _direction = State(initialValue: habitToEdit?.direction ?? .build)
         _trackingKind = State(initialValue: habitToEdit?.trackingKind ?? .check)
         _measurementUnit = State(initialValue: Self.normalizedInitialUnit(habitToEdit?.measurementUnit ?? .none))
         _targetValueText = State(initialValue: Habit.formattedQuantity(habitToEdit?.sessionTargetValue ?? 1))
@@ -123,6 +125,9 @@ struct CreateHabitView: View {
                         .foregroundStyle(AppColor.textPrimary)
                         .padding(.bottom, AppSpacing.xs)
 
+                    // 0. Dirección
+                    HabitDirectionSection(direction: $direction)
+
                     // 1. Acción
                     HabitBasicInfoSection(
                         habitName: $habitName,
@@ -145,7 +150,8 @@ struct CreateHabitView: View {
                     HabitScheduleSection(
                         scheduleKind: $scheduleKind,
                         timesPerWeek: $timesPerWeek,
-                        selectedActiveDays: $selectedActiveDays
+                        selectedActiveDays: $selectedActiveDays,
+                        showFlexible: direction != .`break`
                     )
 
                     HabitEndDateSection(
@@ -169,6 +175,11 @@ struct CreateHabitView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(AppSpacing.l)
                 .padding(.bottom, AppSpacing.xxl)
+                .onChange(of: direction) { _, newValue in
+                    if newValue == .`break` && scheduleKind == .timesPerWeek {
+                        scheduleKind = .daily
+                    }
+                }
                 .onChange(of: trackingKind) { _, newValue in
                     if newValue == .check {
                         measurementUnit = .none
@@ -216,6 +227,7 @@ struct CreateHabitView: View {
             habitToEdit.cue = trimmedCue.isEmpty ? nil : trimmedCue
             habitToEdit.iconName = selectedIconName
             habitToEdit.colorHex = selectedColorHex
+            habitToEdit.direction = direction
             habitToEdit.trackingKind = trackingKind
             habitToEdit.measurementUnit = normalizedMeasurementUnit
             habitToEdit.customUnitName = nil
@@ -244,6 +256,7 @@ struct CreateHabitView: View {
                 targetValuePerSession: normalizedTargetValue,
                 scheduleKind: scheduleKind,
                 endsAt: normalizedEndsAt,
+                direction: direction,
                 allowsWeeklyFreeze: allowsWeeklyFreeze,
                 isReminderEnabled: normalizedReminderEnabled,
                 reminderTime: normalizedReminderEnabled ? reminderTime : nil

@@ -9,6 +9,7 @@ struct HabitScheduleSection: View {
     @Binding var scheduleKind: HabitScheduleKind
     @Binding var timesPerWeek: Int
     @Binding var selectedActiveDays: Set<Weekday>
+    var showFlexible: Bool = true
 
     var body: some View {
         CreateHabitFormSection(
@@ -18,7 +19,8 @@ struct HabitScheduleSection: View {
             VStack(alignment: .leading, spacing: AppSpacing.m) {
                 HabitScheduleSelector(
                     scheduleKind: $scheduleKind,
-                    selectedActiveDays: $selectedActiveDays
+                    selectedActiveDays: $selectedActiveDays,
+                    showFlexible: showFlexible
                 )
 
                 if scheduleKind == .specificDays {

@@ -8,6 +8,7 @@ import SwiftUI
 struct HabitScheduleSelector: View {
     @Binding var scheduleKind: HabitScheduleKind
     @Binding var selectedActiveDays: Set<Weekday>
+    var showFlexible: Bool = true
 
     var body: some View {
         VStack(spacing: 10) {
@@ -32,13 +33,15 @@ struct HabitScheduleSelector: View {
                 }
             }
 
-            HabitOptionButton(
-                title: "Veces por semana",
-                subtitle: "Flexible, sin días fijos",
-                icon: "repeat.circle.fill",
-                isSelected: scheduleKind == .timesPerWeek
-            ) {
-                scheduleKind = .timesPerWeek
+            if showFlexible {
+                HabitOptionButton(
+                    title: "Veces por semana",
+                    subtitle: "Flexible, sin días fijos",
+                    icon: "repeat.circle.fill",
+                    isSelected: scheduleKind == .timesPerWeek
+                ) {
+                    scheduleKind = .timesPerWeek
+                }
             }
         }
     }

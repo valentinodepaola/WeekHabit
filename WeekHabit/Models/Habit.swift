@@ -59,6 +59,11 @@ enum HabitMeasurementUnit: String, Codable, CaseIterable, Identifiable {
     }
 }
 
+enum HabitDirection: String, Codable {
+    case build
+    case `break`
+}
+
 enum HabitScheduleKind: String, Codable, CaseIterable, Identifiable {
     case daily
     case specificDays
@@ -92,6 +97,7 @@ final class Habit {
     var customUnitName: String?
     var targetValuePerSession: Double?
     var scheduleKindRaw: String?
+    var directionRaw: String?
     var endsAt: Date?
     var allowsWeeklyFreeze: Bool = true
     var isReminderEnabled: Bool = false
@@ -147,6 +153,11 @@ final class Habit {
         set { scheduleKindRaw = newValue.rawValue }
     }
 
+    var direction: HabitDirection {
+        get { directionRaw.flatMap(HabitDirection.init) ?? .build }
+        set { directionRaw = newValue.rawValue }
+    }
+
     init(
         title: String,
         note: String? = nil,
@@ -161,6 +172,7 @@ final class Habit {
         targetValuePerSession: Double = 1,
         scheduleKind: HabitScheduleKind = .specificDays,
         endsAt: Date? = nil,
+        direction: HabitDirection = .build,
         allowsWeeklyFreeze: Bool = true,
         isReminderEnabled: Bool = false,
         reminderTime: Date? = nil,
@@ -180,6 +192,7 @@ final class Habit {
         self.customUnitName = customUnitName
         self.targetValuePerSession = targetValuePerSession
         self.scheduleKindRaw = scheduleKind.rawValue
+        self.directionRaw = direction.rawValue
         self.endsAt = endsAt
         self.allowsWeeklyFreeze = allowsWeeklyFreeze
         self.isReminderEnabled = isReminderEnabled

@@ -36,8 +36,12 @@ struct InsightsView: View {
         experiments.activeHabitIDs(reference: referenceDate)
     }
 
+    private var buildHabits: [Habit] {
+        habits.filter { !$0.isBreakHabit }
+    }
+
     private var suggestions: [RankedRhythmSuggestion] {
-        habits.rhythmExperimentSuggestions(
+        buildHabits.rhythmExperimentSuggestions(
             reference: referenceDate,
             excludingHabitIDs: activeExperimentIDs
         )
@@ -239,7 +243,7 @@ struct InsightsView: View {
                 )
             }
 
-            if let peakHour = habits.contextualPeakHour(reference: referenceDate) {
+            if let peakHour = buildHabits.contextualPeakHour(reference: referenceDate) {
                 InsightSummaryCard(
                     icon: "clock",
                     iconColor: AppColor.info,
