@@ -10,6 +10,9 @@ struct WeekGridCell: View {
         case completed
         /// Marca registrada retroactivamente (todos los entries del día son `.manual`).
         case completedRetro
+        case skipped
+        case frozen
+        case missed
         case partial
         /// Misma idea para cantidades parciales registradas retroactivamente.
         case partialRetro
@@ -21,6 +24,7 @@ struct WeekGridCell: View {
     let state: State
     let habitColor: Color
     let onTap: () -> Void
+    let onSkip: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -39,6 +43,18 @@ struct WeekGridCell: View {
                     Image(systemName: "checkmark")
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(.white)
+                case .skipped:
+                    Image(systemName: "pause.circle.fill")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(habitColor)
+                case .frozen:
+                    Image(systemName: "shield.fill")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(habitColor)
+                case .missed:
+                    Image(systemName: "xmark")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(AppColor.textTertiary)
                 case .partial:
                     Circle()
                         .fill(habitColor)
@@ -60,6 +76,15 @@ struct WeekGridCell: View {
         }
         .buttonStyle(WeekGridCellButtonStyle())
         .disabled(state == .inactive || state == .future)
+        .contextMenu {
+            if state != .inactive && state != .future {
+                Button {
+                    onSkip()
+                } label: {
+                    Label(state == .skipped ? "Quitar descanso" : "Descanso intencional", systemImage: "pause.circle")
+                }
+            }
+        }
         .frame(maxWidth: .infinity)
         .accessibilityLabel(accessibilityLabel)
     }
@@ -78,6 +103,27 @@ struct WeekGridCell: View {
                     RoundedRectangle(cornerRadius: AppRadius.s - 3)
                         .strokeBorder(Color.white.opacity(0.85), style: StrokeStyle(lineWidth: 1, dash: [2, 2]))
                         .padding(3)
+                }
+        case .skipped:
+            RoundedRectangle(cornerRadius: AppRadius.s)
+                .fill(habitColor.opacity(0.10))
+                .overlay {
+                    RoundedRectangle(cornerRadius: AppRadius.s)
+                        .strokeBorder(habitColor.opacity(0.45), style: StrokeStyle(lineWidth: 1.3, dash: [3, 2]))
+                }
+        case .frozen:
+            RoundedRectangle(cornerRadius: AppRadius.s)
+                .fill(AppColor.info.opacity(0.12))
+                .overlay {
+                    RoundedRectangle(cornerRadius: AppRadius.s)
+                        .strokeBorder(AppColor.info.opacity(0.5), lineWidth: 1.2)
+                }
+        case .missed:
+            RoundedRectangle(cornerRadius: AppRadius.s)
+                .fill(habitColor.opacity(0.08))
+                .overlay {
+                    RoundedRectangle(cornerRadius: AppRadius.s)
+                        .strokeBorder(AppColor.textTertiary.opacity(0.28), lineWidth: 1)
                 }
         case .partial:
             RoundedRectangle(cornerRadius: AppRadius.s)
@@ -117,6 +163,9 @@ struct WeekGridCell: View {
         switch state {
         case .completed: return "Completado"
         case .completedRetro: return "Completado, registrado más tarde"
+        case .skipped: return "Descanso intencional"
+        case .frozen: return "Comodín de racha usado"
+        case .missed: return "Fallo registrado"
         case .partial: return "Avance parcial"
         case .partialRetro: return "Avance parcial, registrado más tarde"
         case .pending: return "Pendiente"

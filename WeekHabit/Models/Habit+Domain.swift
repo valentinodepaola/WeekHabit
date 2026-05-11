@@ -11,9 +11,39 @@ import Foundation
 
 enum CellState: Equatable {
     case completed
+    case skipped
+    case frozen
     case missed
     case inactive
     case future
+}
+
+struct RecoveryPromptCandidate: Identifiable {
+    let habit: Habit
+    let date: Date
+    let isWeeklyFlexibleMiss: Bool
+
+    var id: String {
+        "\(habit.id.uuidString)-\(date.timeIntervalSinceReferenceDate)-\(isWeeklyFlexibleMiss)"
+    }
+}
+
+struct StreakBreakdown {
+    let completedDays: Int
+    let skippedDays: Int
+    let frozenDays: Int
+
+    var protectedDays: Int {
+        skippedDays + frozenDays
+    }
+
+    var totalDays: Int {
+        completedDays + protectedDays
+    }
+
+    var hasHistory: Bool {
+        totalDays > 0
+    }
 }
 
 extension Habit {
@@ -94,9 +124,42 @@ extension Habit {
         totalValue(on: date) >= sessionTargetValue
     }
 
+    func isSkipped(on date: Date) -> Bool {
+        entries.contains {
+            AppCalendar.isSameDay($0.date, date) && $0.kind == .skipped
+        }
+    }
+
+    func isMissed(on date: Date) -> Bool {
+        entries.contains {
+            AppCalendar.isSameDay($0.date, date) && $0.kind == .missed
+        }
+    }
+
+    func hasAnyEntry(on date: Date) -> Bool {
+        entries.contains {
+            AppCalendar.isSameDay($0.date, date)
+        }
+    }
+
+    func isFreezeProtected(on date: Date) -> Bool {
+        guard allowsWeeklyFreeze else { return false }
+        return streakFreezes.contains {
+            AppCalendar.isSameDay($0.protectedDate, date)
+        }
+    }
+
+    func weeklyFreeze(containing date: Date) -> StreakFreeze? {
+        guard allowsWeeklyFreeze else { return nil }
+        let weekStart = AppCalendar.weekRange(containing: date).lowerBound
+        return streakFreezes.first {
+            AppCalendar.isSameDay($0.weekStartDate, weekStart)
+        }
+    }
+
     func totalValue(on date: Date) -> Double {
         entries
-            .filter { AppCalendar.isSameDay($0.date, date) }
+            .filter { AppCalendar.isSameDay($0.date, date) && $0.kind == .completed }
             .reduce(0) { partial, entry in
                 partial + (entry.value ?? Double(entry.completedCount))
             }
@@ -141,8 +204,11 @@ extension Habit {
 
         while scannedDays < 365 * 5 {
             if isLoggable(on: cursor) {
-                guard isCompleted(on: cursor) else { break }
-                streak += 1
+                if isCompleted(on: cursor) {
+                    streak += 1
+                } else if !preservesStreakWithoutCompletion(on: cursor) {
+                    break
+                }
             }
             guard let previous = calendar.date(byAdding: .day, value: -1, to: cursor) else {
                 break
@@ -151,6 +217,43 @@ extension Habit {
             scannedDays += 1
         }
         return streak
+    }
+
+    /// Composition of the current unbroken streak span.
+    /// Completed days add evidence; skips and freezes keep the span intact without adding completion.
+    func currentStreakBreakdown(reference: Date = .now) -> StreakBreakdown {
+        var completedDays = 0
+        var skippedDays = 0
+        var frozenDays = 0
+        var cursor = AppCalendar.startOfDay(for: reference)
+        let calendar = AppCalendar.current
+        var scannedDays = 0
+
+        while scannedDays < 365 * 5 {
+            if isLoggable(on: cursor) {
+                if isCompleted(on: cursor) {
+                    completedDays += 1
+                } else if isSkipped(on: cursor) {
+                    skippedDays += 1
+                } else if isFreezeProtected(on: cursor) {
+                    frozenDays += 1
+                } else {
+                    break
+                }
+            }
+
+            guard let previous = calendar.date(byAdding: .day, value: -1, to: cursor) else {
+                break
+            }
+            cursor = previous
+            scannedDays += 1
+        }
+
+        return StreakBreakdown(
+            completedDays: completedDays,
+            skippedDays: skippedDays,
+            frozenDays: frozenDays
+        )
     }
     
     func displayStreak(reference: Date = .now) -> Int {
@@ -184,6 +287,8 @@ extension Habit {
             if isLoggable(on: cursor) {
                 if isCompleted(on: cursor) {
                     running += 1
+                    best = max(best, running)
+                } else if preservesStreakWithoutCompletion(on: cursor) {
                     best = max(best, running)
                 } else {
                     running = 0
@@ -227,6 +332,18 @@ extension Habit {
                     return .inactive
                 }
 
+                if isSkipped(on: day) {
+                    return .skipped
+                }
+
+                if isFreezeProtected(on: day) {
+                    return .frozen
+                }
+
+                if isMissed(on: day) {
+                    return .missed
+                }
+
                 if isFlexibleSchedule && !isCompleted(on: day) {
                     return .inactive
                 }
@@ -240,6 +357,51 @@ extension Habit {
         (0..<7).compactMap { dayOffset in
             AppCalendar.current.date(byAdding: .day, value: dayOffset, to: week.lowerBound)
         }
+    }
+
+    func weeklyFreezeCandidate(reference: Date = .now) -> Date? {
+        guard allowsWeeklyFreeze else { return nil }
+
+        let referenceDay = AppCalendar.startOfDay(for: reference)
+        let week = AppCalendar.weekRange(containing: referenceDay)
+        guard weeklyFreeze(containing: referenceDay) == nil else { return nil }
+
+        if isFlexibleSchedule {
+            return flexibleWeeklyFreezeCandidate(in: week, referenceDay: referenceDay)
+        }
+
+        return weekDays(in: week)
+            .filter { $0 < referenceDay }
+            .first { isMissedFreezeCandidate(on: $0) }
+    }
+
+    private func flexibleWeeklyFreezeCandidate(in week: Range<Date>, referenceDay: Date) -> Date? {
+        let weekDays = weekDays(in: week)
+        let completed = weekDays.filter { isCompleted(on: $0) }.count
+        guard completed < targetDaysPerWeek else { return nil }
+
+        let remainingPossible = weekDays
+            .filter { $0 >= referenceDay }
+            .filter { isLoggable(on: $0) }
+            .count
+
+        guard completed + remainingPossible < targetDaysPerWeek else { return nil }
+
+        return weekDays
+            .filter { $0 < referenceDay }
+            .first { isMissedFreezeCandidate(on: $0) }
+    }
+
+    private func isMissedFreezeCandidate(on date: Date) -> Bool {
+        isLoggable(on: date)
+            && !isCompleted(on: date)
+            && !isSkipped(on: date)
+            && !isMissed(on: date)
+            && !isFreezeProtected(on: date)
+    }
+
+    private func preservesStreakWithoutCompletion(on date: Date) -> Bool {
+        isSkipped(on: date) || isFreezeProtected(on: date)
     }
 
     /// Días completados desde `startDate` hasta `reference` (inclusive en ambos extremos).
@@ -272,7 +434,7 @@ extension Habit {
         var cursor = start
         var scanned = 0
         while cursor <= end && scanned < 365 * 5 {
-            if isLoggable(on: cursor) { count += 1 }
+            if isLoggable(on: cursor), !preservesStreakWithoutCompletion(on: cursor) { count += 1 }
             guard let next = calendar.date(byAdding: .day, value: 1, to: cursor) else { break }
             cursor = next
             scanned += 1
@@ -294,6 +456,80 @@ extension Habit {
 
         return String(format: "%.1f", value)
     }
+
+    func recoveryPromptCandidate(before reference: Date = .now, lookbackDays: Int = 30) -> RecoveryPromptCandidate? {
+        let referenceDay = AppCalendar.startOfDay(for: reference)
+
+        if isFlexibleSchedule {
+            return flexibleRecoveryPromptCandidate(before: referenceDay, lookbackDays: lookbackDays)
+        }
+
+        guard let yesterday = AppCalendar.current.date(byAdding: .day, value: -1, to: referenceDay) else {
+            return nil
+        }
+
+        var cursor = yesterday
+        var scannedDays = 0
+
+        while scannedDays < lookbackDays {
+            if isRecoveryPromptCandidate(on: cursor) {
+                return RecoveryPromptCandidate(habit: self, date: cursor, isWeeklyFlexibleMiss: false)
+            }
+
+            guard let previous = AppCalendar.current.date(byAdding: .day, value: -1, to: cursor) else {
+                break
+            }
+            cursor = previous
+            scannedDays += 1
+        }
+
+        return nil
+    }
+
+    private func isRecoveryPromptCandidate(on date: Date) -> Bool {
+        isLoggable(on: date)
+            && !hasAnyEntry(on: date)
+            && !isFreezeProtected(on: date)
+    }
+
+    private func flexibleRecoveryPromptCandidate(before referenceDay: Date, lookbackDays: Int) -> RecoveryPromptCandidate? {
+        let currentWeekStart = AppCalendar.weekRange(containing: referenceDay).lowerBound
+        var weekStart = AppCalendar.current.date(byAdding: .weekOfYear, value: -1, to: currentWeekStart)
+        var scannedWeeks = 0
+        let maxWeeks = max(1, Int(ceil(Double(lookbackDays) / 7.0)))
+
+        while let start = weekStart, scannedWeeks < maxWeeks {
+            let week = start..<(AppCalendar.current.date(byAdding: .day, value: 7, to: start) ?? start)
+            if let candidate = flexibleRecoveryPromptCandidate(in: week) {
+                return candidate
+            }
+
+            weekStart = AppCalendar.current.date(byAdding: .weekOfYear, value: -1, to: start)
+            scannedWeeks += 1
+        }
+
+        return nil
+    }
+
+    private func flexibleRecoveryPromptCandidate(in week: Range<Date>) -> RecoveryPromptCandidate? {
+        let days = weekDays(in: week)
+        let eligibleDays = days.filter {
+            isLoggable(on: $0)
+                && !isSkipped(on: $0)
+                && !isFreezeProtected(on: $0)
+        }
+        let expected = min(targetDaysPerWeek, eligibleDays.count)
+        guard expected > 0 else { return nil }
+
+        let completed = eligibleDays.filter { isCompleted(on: $0) }.count
+        guard completed < expected else { return nil }
+        guard !days.contains(where: { isMissed(on: $0) }) else { return nil }
+        guard let candidateDate = eligibleDays.reversed().first(where: { !hasAnyEntry(on: $0) }) else {
+            return nil
+        }
+
+        return RecoveryPromptCandidate(habit: self, date: candidateDate, isWeeklyFlexibleMiss: true)
+    }
 }
 
 extension Sequence where Element == Habit {
@@ -310,6 +546,17 @@ extension Sequence where Element == Habit {
         let streaks = map { $0.currentStreak(reference: reference) }
         guard streaks.count >= 2, let first = streaks.first, first > 0 else { return false }
         return streaks.allSatisfy { $0 == first }
+    }
+
+    func recoveryPromptCandidate(reference: Date = .now) -> RecoveryPromptCandidate? {
+        compactMap { $0.recoveryPromptCandidate(before: reference) }
+            .max { lhs, rhs in
+                if AppCalendar.isSameDay(lhs.date, rhs.date) {
+                    return lhs.habit.createdAt < rhs.habit.createdAt
+                }
+
+                return lhs.date < rhs.date
+            }
     }
 }
 

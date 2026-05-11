@@ -36,21 +36,21 @@ The app uses a lightweight Model-View style with SwiftUI + SwiftData.
 - Domain logic lives in model extensions, not in layout code.
 - There is no ViewModel, repository, networking, authentication, or external sync layer.
 
-`WeekHabitApp.swift` creates the `ModelContainer` with `Schema(versionedSchema: SchemaV7.self)` and `HabitMigrationPlan.self`.
+`WeekHabitApp.swift` creates the `ModelContainer` with `Schema(versionedSchema: SchemaV9.self)` and `HabitMigrationPlan.self`.
 
 `RootView` switches between `OnboardingView` and `ContentView` using `@AppStorage("hasCompletedAppOnboarding")`. It also refreshes habit reminders when the app starts or returns active.
 
 ## Main Models
 
 - `Habit`: core habit entity. Supports check or quantity tracking, units, daily/specific/flexible weekly schedules, optional end date, reminders, entries, and plan associations.
-- `HabitEntry`: one day/value record. `date` is normalized to start of day. `source` distinguishes `.today`, `.focusSession`, and `.manual`.
+- `HabitEntry`: one day/value record. `date` is normalized to start of day. `source` distinguishes `.today`, `.focusSession`, and `.manual`; `kind` distinguishes `.completed`, `.skipped`, and `.missed`.
 - `Plan`: groups habits around a goal with motivation, end date, target completion rate, and review state.
 - `HabitExperiment`: 7-day rhythm experiment suggested by Insights.
 - `FocusSession`: timer/review workflow for focused habit completion.
 
 Important domain files:
 
-- `Habit+Domain.swift`: schedule checks, loggability, quantities, streaks, weekly progress, heatmap matrix.
+- `Habit+Domain.swift`: schedule checks, loggability, quantities, streaks and streak breakdowns, weekly progress, heatmap matrix.
 - `Habit+Insights.swift`: 30-day metrics, confidence, trends, best day/hour, suggestions.
 - `HabitExperiment+Domain.swift`: apply, keep, revert, cancel, review experiments.
 - `FocusSession+Domain.swift`: timer progress, review/completion/cancel.

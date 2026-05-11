@@ -36,6 +36,7 @@ struct CreateHabitView: View {
     @State private var selectedActiveDays: Set<Weekday> = []
     @State private var hasEndDate: Bool = false
     @State private var endsAt: Date = .now
+    @State private var allowsWeeklyFreeze: Bool = true
     @State private var isReminderEnabled: Bool = false
     @State private var reminderTime: Date = Self.defaultReminderTime()
     @State private var notificationAuthorizationStatus: UNAuthorizationStatus = .notDetermined
@@ -101,6 +102,7 @@ struct CreateHabitView: View {
         _selectedActiveDays = State(initialValue: habitToEdit?.activeDaysOfWeek ?? initialActiveDays)
         _hasEndDate = State(initialValue: habitToEdit?.endsAt != nil)
         _endsAt = State(initialValue: habitToEdit?.endsAt ?? .now)
+        _allowsWeeklyFreeze = State(initialValue: habitToEdit?.allowsWeeklyFreeze ?? true)
         _isReminderEnabled = State(initialValue: habitToEdit?.isReminderEnabled ?? false)
         _reminderTime = State(initialValue: habitToEdit?.reminderTime ?? Self.defaultReminderTime())
         _selectedPlans = State(initialValue: Set(habitToEdit?.plans.map(\.id) ?? []))
@@ -150,6 +152,8 @@ struct CreateHabitView: View {
                         hasEndDate: $hasEndDate,
                         endsAt: $endsAt
                     )
+
+                    HabitWeeklyFreezeSection(allowsWeeklyFreeze: $allowsWeeklyFreeze)
 
                     // 5. Recordatorio
                     HabitReminderSection(
@@ -220,6 +224,7 @@ struct CreateHabitView: View {
             habitToEdit.targetDaysPerWeek = normalizedPlan.targetDaysPerWeek
             habitToEdit.activeDaysOfWeek = normalizedPlan.activeDays
             habitToEdit.endsAt = normalizedEndsAt
+            habitToEdit.allowsWeeklyFreeze = allowsWeeklyFreeze
             habitToEdit.isReminderEnabled = normalizedReminderEnabled
             habitToEdit.reminderTime = normalizedReminderEnabled ? reminderTime : nil
             habitToEdit.plans = linkedPlans
@@ -239,6 +244,7 @@ struct CreateHabitView: View {
                 targetValuePerSession: normalizedTargetValue,
                 scheduleKind: scheduleKind,
                 endsAt: normalizedEndsAt,
+                allowsWeeklyFreeze: allowsWeeklyFreeze,
                 isReminderEnabled: normalizedReminderEnabled,
                 reminderTime: normalizedReminderEnabled ? reminderTime : nil
             )

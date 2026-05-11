@@ -8,6 +8,7 @@ import SwiftUI
 struct TodayHabitComponent: View {
     let habit: Habit
     let isCompleted: Bool
+    var isSkipped: Bool = false
     var activeExperiment: HabitExperiment?
     var referenceDate: Date = .now
     let onToggle: () -> Void
@@ -31,7 +32,7 @@ struct TodayHabitComponent: View {
         .clipShape(RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous)
-                .strokeBorder(AppColor.divider, lineWidth: 1)
+                .strokeBorder(isSkipped ? habit.habitColor.opacity(0.38) : AppColor.divider, lineWidth: 1)
         }
         .appElevation(.low)
     }
@@ -44,7 +45,12 @@ struct TodayHabitComponent: View {
                 .lineLimit(1)
 
             VStack(alignment: .leading, spacing: AppSpacing.xxs) {
-                if let trimmedCue {
+                if isSkipped {
+                    Text("Descanso intencional")
+                        .font(AppFont.label)
+                        .foregroundStyle(habit.habitColor)
+                        .lineLimit(1)
+                } else if let trimmedCue {
                     cueLine(trimmedCue)
                 }
 
@@ -76,11 +82,16 @@ struct TodayHabitComponent: View {
     }
 
     private var iconBadge: some View {
-        Image(systemName: habit.iconName)
-            .font(.system(size: 22, weight: .semibold))
-            .foregroundStyle(habit.habitColor)
-            .frame(width: 36, height: 36)
-            .accessibilityHidden(true)
+        ZStack {
+            Circle()
+                .fill(habit.habitColor.opacity(0.14))
+
+            Image(systemName: habit.iconName)
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(habit.habitColor)
+        }
+        .frame(width: 38, height: 38)
+        .accessibilityHidden(true)
     }
 
     private func cueLine(_ cue: String) -> some View {
@@ -115,12 +126,12 @@ struct TodayHabitComponent: View {
         Button(action: handleToggle) {
             ZStack {
                 RoundedRectangle(cornerRadius: AppRadius.s, style: .continuous)
-                    .fill(isCompleted ? habit.habitColor : AppColor.bgElevated)
+                    .fill(toggleFill)
                     .frame(width: 34, height: 34)
                     .overlay {
                         RoundedRectangle(cornerRadius: AppRadius.s, style: .continuous)
                             .strokeBorder(
-                                isCompleted ? habit.habitColor : AppColor.divider,
+                                isCompleted || isSkipped ? habit.habitColor : AppColor.divider,
                                 lineWidth: 1
                             )
                     }
@@ -128,17 +139,23 @@ struct TodayHabitComponent: View {
                     Image(systemName: "checkmark")
                         .font(.system(size: 14, weight: .bold))
                         .foregroundStyle(.white)
+                        .symbolEffect(.bounce, value: isCompleted)
+                } else if isSkipped {
+                    Image(systemName: "pause.circle.fill")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(habit.habitColor)
+                        .symbolEffect(.pulse, value: isSkipped)
                 }
             }
-            .scaleEffect(isCompleted ? 1.0 : 1.0)
+            .scaleEffect(isCompleted ? 1.04 : 1.0)
         }
         .buttonStyle(.plain)
-        .animation(AppMotion.respectful(AppMotion.celebration, reduceMotion), value: isCompleted)
-        .accessibilityLabel(isCompleted ? "Desmarcar hábito" : "Marcar hábito")
+        .animation(AppMotion.respectful(AppMotion.celebration, reduceMotion), value: isCompleted || isSkipped)
+        .accessibilityLabel(toggleAccessibilityLabel)
     }
 
     private func handleToggle() {
-        if !isCompleted {
+        if !isCompleted && !isSkipped {
             AppHaptics.play(.habitCompleted)
         }
         onToggle()
@@ -159,10 +176,33 @@ struct TodayHabitComponent: View {
     }
 
     private var scheduleFallbackText: String {
+        if isSkipped {
+            return "Descanso intencional"
+        }
         if habit.trackingKind == .quantity {
             return habit.targetPerSessionText
         }
         return "Diario"
+    }
+
+    private var toggleFill: Color {
+        if isCompleted {
+            return habit.habitColor
+        }
+        if isSkipped {
+            return habit.habitColor.opacity(0.10)
+        }
+        return AppColor.bgElevated
+    }
+
+    private var toggleAccessibilityLabel: String {
+        if isCompleted {
+            return "Desmarcar hábito"
+        }
+        if isSkipped {
+            return "Marcar hábito"
+        }
+        return "Marcar hábito"
     }
 
     private var streakCount: Int {

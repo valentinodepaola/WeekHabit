@@ -12,6 +12,7 @@ struct WeekGridRow: View {
     let today: Date
     let onSelectHabit: () -> Void
     let onToggle: (Date) -> Void
+    let onSkip: (Date) -> Void
 
     private var habitColor: Color { habit.habitColor }
     private var completedCount: Int { habit.completedDaysThisWeek(reference: referenceDate) }
@@ -65,7 +66,8 @@ struct WeekGridRow: View {
                     WeekGridCell(
                         state: cellState(for: date),
                         habitColor: habitColor,
-                        onTap: { onToggle(date) }
+                        onTap: { onToggle(date) },
+                        onSkip: { onSkip(date) }
                     )
                 }
             }
@@ -112,6 +114,7 @@ struct WeekGridRow: View {
 
         let entriesForDay = habit.entries.filter { AppCalendar.isSameDay($0.date, date) }
         let isCompleted = habit.isCompleted(on: date)
+        let isSkipped = habit.isSkipped(on: date)
         let totalValue = habit.totalValue(on: date)
         let isPartial = habit.trackingKind == .quantity && totalValue > 0 && !isCompleted
 
@@ -121,6 +124,15 @@ struct WeekGridRow: View {
 
         if isCompleted {
             return onlyManualEntries ? .completedRetro : .completed
+        }
+        if isSkipped {
+            return .skipped
+        }
+        if habit.isFreezeProtected(on: date) {
+            return .frozen
+        }
+        if habit.isMissed(on: date) {
+            return .missed
         }
         if isPartial {
             return onlyManualEntries ? .partialRetro : .partial

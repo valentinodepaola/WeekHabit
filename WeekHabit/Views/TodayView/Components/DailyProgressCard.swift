@@ -11,10 +11,10 @@ struct DailyProgressCard: View {
     let totalCount: Int
     let remainingCount: Int
 
-    private var ringColor: Color {
-        if totalCount == 0 { return AppColor.textTertiary }
-        if remainingCount == 0 { return AppColor.success }
-        return AppColor.accent
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var completionBlend: Double {
+        totalCount > 0 && remainingCount == 0 ? 1 : 0
     }
 
     private var headlineText: String {
@@ -41,19 +41,27 @@ struct DailyProgressCard: View {
                     progress: progress,
                     lineWidth: 8,
                     size: 86,
-                    progressColor: ringColor
+                    progressColor: AppColor.accent
                 ) {
                     VStack(spacing: 0) {
                         Text("\(completedCount)")
                             .font(.system(size: 22, weight: .regular, design: .serif))
                             .foregroundStyle(AppColor.textPrimary)
                             .monospacedDigit()
+                            .contentTransition(.numericText())
                         Text("de \(totalCount)")
                             .font(AppFont.label)
                             .foregroundStyle(AppColor.textTertiary)
                             .monospacedDigit()
+                            .contentTransition(.numericText())
                     }
                 }
+                .todayProgressCompletionOverlay(
+                    progress: progress,
+                    lineWidth: 8,
+                    completionBlend: completionBlend,
+                    reduceMotion: reduceMotion
+                )
 
                 VStack(alignment: .leading, spacing: AppSpacing.xs) {
                     Text("HOY")
@@ -64,15 +72,41 @@ struct DailyProgressCard: View {
                     Text(headlineText)
                         .font(AppFont.headline)
                         .foregroundStyle(AppColor.textPrimary)
+                        .contentTransition(.opacity)
 
                     Text(supportText)
                         .font(AppFont.callout)
                         .foregroundStyle(AppColor.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
+                        .contentTransition(.opacity)
                 }
 
                 Spacer(minLength: 0)
             }
+        }
+        .animation(AppMotion.respectful(AppMotion.gentle, reduceMotion), value: progress)
+        .animation(AppMotion.respectful(.easeInOut(duration: 0.5), reduceMotion), value: completionBlend)
+    }
+}
+
+private extension View {
+    func todayProgressCompletionOverlay(
+        progress: Double,
+        lineWidth: CGFloat,
+        completionBlend: Double,
+        reduceMotion: Bool
+    ) -> some View {
+        overlay {
+            Circle()
+                .trim(from: 0, to: max(0.001, min(1, progress)))
+                .stroke(
+                    AppColor.success,
+                    style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
+                )
+                .rotationEffect(.degrees(-90))
+                .opacity(completionBlend)
+                .scaleEffect(CGFloat(0.98 + (0.02 * completionBlend)))
+                .animation(AppMotion.respectful(AppMotion.gentle, reduceMotion), value: progress)
         }
     }
 }

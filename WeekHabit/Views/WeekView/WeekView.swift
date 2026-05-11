@@ -13,6 +13,9 @@ struct WeekView: View {
     @Query(sort: \Habit.createdAt, order: .reverse)
     private var habits: [Habit]
 
+    @Query(sort: \StreakFreeze.usedAt, order: .reverse)
+    private var streakFreezes: [StreakFreeze]
+
     @State private var weekOffset: Int = 0
     @State private var selectedHabit: Habit?
     @State private var coverRoute: WeekCoverRoute?
@@ -98,6 +101,9 @@ struct WeekView: View {
                 .sheet(item: $sheetRoute) { route in
                     routeSheet(route)
                 }
+                .task {
+                    applyWeeklyFreezes(reference: .now)
+                }
             }
         }
     }
@@ -128,7 +134,8 @@ struct WeekView: View {
                         referenceDate: referenceDate,
                         today: .now,
                         onSelectHabit: { selectedHabit = habit },
-                        onToggle: { date in toggleCompletion(for: habit, on: date) }
+                        onToggle: { date in toggleCompletion(for: habit, on: date) },
+                        onSkip: { date in toggleRest(for: habit, on: date) }
                     )
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
@@ -222,7 +229,7 @@ struct WeekView: View {
             case .plan:
                 coverRoute = .plan(.create)
             case .focus:
-                let todayHabits = habits.filter { $0.isLoggable(on: .now) }
+                let todayHabits = habits.filter { $0.isLoggable(on: .now) && !$0.isSkipped(on: .now) }
                 coverRoute = .focus(habits: todayHabits)
             }
         }
@@ -239,10 +246,12 @@ struct WeekView: View {
         let entriesForDay = habit.entries.filter {
             AppCalendar.isSameDay($0.date, date)
         }
-        let willMark = entriesForDay.isEmpty
+        let willMark = !habit.isCompleted(on: date)
 
         withAnimation(AppMotion.respectful(AppMotion.smooth, reduceMotion)) {
             if willMark {
+                entriesForDay.forEach { modelContext.delete($0) }
+                deleteFreeze(for: habit, on: date)
                 modelContext.insert(
                     HabitEntry(
                         date: date,
@@ -258,6 +267,7 @@ struct WeekView: View {
         }
 
         AppHaptics.play(willMark ? .selection : .selection)
+        applyWeeklyFreezes(reference: .now)
     }
 
     private func upsertQuantityEntry(for habit: Habit, on date: Date, value: Double) {
@@ -269,12 +279,15 @@ struct WeekView: View {
             if value <= 0 {
                 entriesForDay.forEach { modelContext.delete($0) }
             } else if let entry = entriesForDay.first {
+                deleteFreeze(for: habit, on: date)
+                entry.kind = .completed
                 entry.value = value
                 entry.completedCount = Int(value.rounded())
                 entry.completedAt = nil
                 entry.source = .manual
                 entriesForDay.dropFirst().forEach { modelContext.delete($0) }
             } else {
+                deleteFreeze(for: habit, on: date)
                 modelContext.insert(
                     HabitEntry(
                         date: date,
@@ -289,6 +302,53 @@ struct WeekView: View {
         }
 
         AppHaptics.play(.selection)
+        applyWeeklyFreezes(reference: .now)
+    }
+
+    private func toggleRest(for habit: Habit, on date: Date) {
+        let entriesForDay = habit.entries.filter {
+            AppCalendar.isSameDay($0.date, date)
+        }
+        let willSkip = !habit.isSkipped(on: date)
+
+        withAnimation(AppMotion.respectful(AppMotion.smooth, reduceMotion)) {
+            entriesForDay.forEach { modelContext.delete($0) }
+
+            if willSkip {
+                deleteFreeze(for: habit, on: date)
+                modelContext.insert(
+                    HabitEntry(
+                        date: date,
+                        completedAt: nil,
+                        source: AppCalendar.isSameDay(date, .now) ? .today : .manual,
+                        kind: .skipped,
+                        completedCount: 0,
+                        value: 0,
+                        habit: habit
+                    )
+                )
+            }
+        }
+
+        AppHaptics.play(.selection)
+        applyWeeklyFreezes(reference: .now)
+    }
+
+    private func deleteFreeze(for habit: Habit, on date: Date) {
+        streakFreezes
+            .filter { $0.habitID == habit.id && AppCalendar.isSameDay($0.protectedDate, date) }
+            .forEach { modelContext.delete($0) }
+    }
+
+    private func applyWeeklyFreezes(reference: Date) {
+        for habit in habits where habit.allowsWeeklyFreeze {
+            guard let protectedDate = habit.weeklyFreezeCandidate(reference: reference),
+                  !streakFreezes.containsFreeze(for: habit, weekContaining: protectedDate) else {
+                continue
+            }
+
+            modelContext.insert(StreakFreeze(habit: habit, protectedDate: protectedDate))
+        }
     }
 }
 
