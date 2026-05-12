@@ -14,6 +14,7 @@ enum CellState: Equatable {
     case skipped
     case frozen
     case missed
+    case slip
     case inactive
     case future
 }
@@ -150,6 +151,29 @@ extension Habit {
         }
     }
 
+    func isSlip(on date: Date) -> Bool {
+        entries.contains {
+            AppCalendar.isSameDay($0.date, date) && $0.kind == .slip
+        }
+    }
+
+    func slipEntry(on date: Date) -> HabitEntry? {
+        entries
+            .filter { AppCalendar.isSameDay($0.date, date) && $0.kind == .slip }
+            .sorted { lhs, rhs in
+                (lhs.completedAt ?? lhs.date) > (rhs.completedAt ?? rhs.date)
+            }
+            .first
+    }
+
+    var slipEntries: [HabitEntry] {
+        entries
+            .filter { $0.kind == .slip }
+            .sorted { lhs, rhs in
+                (lhs.completedAt ?? lhs.date) > (rhs.completedAt ?? rhs.date)
+            }
+    }
+
     func hasAnyEntry(on date: Date) -> Bool {
         entries.contains {
             AppCalendar.isSameDay($0.date, date)
@@ -271,6 +295,10 @@ extension Habit {
     }
     
     func displayStreak(reference: Date = .now) -> Int {
+        if isSlip(on: reference) {
+            return 0
+        }
+
         if isLoggable(on: reference), !isCompleted(on: reference) {
             let yesterday = AppCalendar.current.date(
                 byAdding: .day,
@@ -352,6 +380,10 @@ extension Habit {
 
                 if isFreezeProtected(on: day) {
                     return .frozen
+                }
+
+                if isSlip(on: day) {
+                    return .slip
                 }
 
                 if isMissed(on: day) {

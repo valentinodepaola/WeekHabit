@@ -64,15 +64,27 @@ struct TodayView: View {
     }
 
     private var pendingHabits: [Habit] {
-        todayHabits.filter { !isCompleteForTodayList($0) && !$0.isSkipped(on: referenceDate) }
+        todayHabits.filter {
+            !isCompleteForTodayList($0)
+                && !$0.isSkipped(on: referenceDate)
+                && !$0.isSlip(on: referenceDate)
+        }
     }
 
     private var completedHabits: [Habit] {
-        todayHabits.filter { isCompleteForTodayList($0) && !$0.isSkipped(on: referenceDate) }
+        todayHabits.filter {
+            isCompleteForTodayList($0)
+                && !$0.isSkipped(on: referenceDate)
+                && !$0.isSlip(on: referenceDate)
+        }
     }
 
     private var skippedHabits: [Habit] {
         todayHabits.filter { $0.isSkipped(on: referenceDate) }
+    }
+
+    private var slippedHabits: [Habit] {
+        todayHabits.filter { $0.isSlip(on: referenceDate) }
     }
 
     private var weeklyFreezes: [StreakFreeze] {
@@ -100,7 +112,7 @@ struct TodayView: View {
     }
 
     private var remainingTodayCount: Int {
-        max(activeTodayCount - completedTodayCount, 0)
+        pendingHabits.count
     }
 
     private var dailyProgress: Double {
@@ -218,7 +230,8 @@ struct TodayView: View {
             progress: dailyProgress,
             completedCount: completedTodayCount,
             totalCount: activeTodayCount,
-            remainingCount: remainingTodayCount
+            remainingCount: remainingTodayCount,
+            slipCount: slippedHabits.count
         )
         .todayListRow(
             EdgeInsets(top: AppSpacing.s, leading: AppSpacing.l, bottom: AppSpacing.s, trailing: AppSpacing.l)
@@ -244,7 +257,10 @@ struct TodayView: View {
                     for: habit.id,
                     reference: referenceDate
                 ),
-                referenceDate: referenceDate
+                referenceDate: referenceDate,
+                onSlip: habit.isBreakHabit ? {
+                    sheetRoute = .slipLog(habit: habit)
+                } : nil
             ) {
                 toggleCompletion(for: habit)
             }
@@ -277,7 +293,11 @@ struct TodayView: View {
 
         FocusSessionLauncherCard(
             remainingCount: remainingTodayCount,
-            onStart: { coverRoute = .focus(habits: todayHabits.filter { !$0.isSkipped(on: referenceDate) }) }
+            onStart: {
+                coverRoute = .focus(habits: todayHabits.filter {
+                    !$0.isSkipped(on: referenceDate) && !$0.isSlip(on: referenceDate)
+                })
+            }
         )
         .todayListRow()
 
@@ -315,6 +335,42 @@ struct TodayView: View {
                         coverRoute = .habit(.edit(habit))
                     } label: {
                         Label("Editar", systemImage: "pencil")
+                    }
+                    .tint(AppColor.editAction)
+                }
+            }
+        }
+
+        if !slippedHabits.isEmpty {
+            sectionHeader(title: "Slips registrados", count: slippedHabits.count)
+                .padding(.top, AppSpacing.xl)
+                .todayListRow()
+
+            ForEach(slippedHabits) { habit in
+                TodaySlipHabitRow(
+                    habit: habit,
+                    metadata: slipMetadata(for: habit),
+                    onEdit: {
+                        sheetRoute = .slipLog(habit: habit)
+                    },
+                    onUndo: {
+                        undoSlip(for: habit)
+                    }
+                )
+                .todayHabitSectionMotion(habit.id, in: habitSectionNamespace, reduceMotion: reduceMotion)
+                .todayListRow()
+                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                    Button {
+                        undoSlip(for: habit)
+                    } label: {
+                        Label("Deshacer slip", systemImage: "arrow.uturn.backward.circle")
+                    }
+                    .tint(AppColor.warning)
+
+                    Button {
+                        sheetRoute = .slipLog(habit: habit)
+                    } label: {
+                        Label("Editar contexto", systemImage: "pencil")
                     }
                     .tint(AppColor.editAction)
                 }
@@ -399,8 +455,9 @@ struct TodayView: View {
         let pending = pendingHabits.map { "p:\($0.id.uuidString)" }
         let completed = completedHabits.map { "c:\($0.id.uuidString)" }
         let skipped = skippedHabits.map { "s:\($0.id.uuidString)" }
+        let slipped = slippedHabits.map { "sl:\($0.id.uuidString)" }
         let freezes = weeklyFreezes.map { "f:\($0.id.uuidString)" }
-        return (pending + completed + skipped + freezes).joined(separator: "|")
+        return (pending + completed + skipped + slipped + freezes).joined(separator: "|")
     }
 
     private var weeklyFreezeMessage: String? {
@@ -509,6 +566,16 @@ struct TodayView: View {
                 upsertQuantityEntry(for: habit, on: date, value: value, source: .today)
             }
             .presentationDetents([.height(310)])
+        case .slipLog(let habit):
+            SlipLogSheet(
+                habit: habit,
+                existingEntry: habit.slipEntry(on: referenceDate)
+            ) { trigger, context in
+                persistSlip(for: habit, trigger: trigger, context: context)
+            }
+            .presentationDetents([.height(560), .medium])
+            .presentationDragIndicator(.visible)
+            .presentationBackground(AppColor.bgCanvas)
         case .recoveryPrompt(let candidate):
             RecoveryPromptView(
                 candidate: candidate,
@@ -536,7 +603,9 @@ struct TodayView: View {
             case .plan:
                 coverRoute = .plan(.create)
             case .focus:
-                coverRoute = .focus(habits: todayHabits.filter { !$0.isSkipped(on: referenceDate) })
+                coverRoute = .focus(habits: todayHabits.filter {
+                    !$0.isSkipped(on: referenceDate) && !$0.isSlip(on: referenceDate)
+                })
             }
         }
     }
@@ -647,6 +716,33 @@ struct TodayView: View {
         return "\(formatter.string(from: completedAt)) · \(sourceText)"
     }
 
+    private func slipMetadata(for habit: Habit) -> String {
+        guard let entry = habit.slipEntry(on: referenceDate) else {
+            return "Slip registrado"
+        }
+
+        var parts: [String] = []
+
+        if let completedAt = entry.completedAt {
+            let formatter = DateFormatter()
+            formatter.calendar = AppCalendar.current
+            formatter.locale = Locale(identifier: "es_MX")
+            formatter.dateFormat = "HH:mm"
+            parts.append(formatter.string(from: completedAt))
+        }
+
+        if let trigger = entry.slipTrigger {
+            parts.append(trigger.title)
+        }
+
+        let trimmedContext = entry.slipContext?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if !trimmedContext.isEmpty {
+            parts.append(trimmedContext)
+        }
+
+        return parts.isEmpty ? "Slip registrado" : parts.joined(separator: " · ")
+    }
+
     private func upsertQuantityEntry(
         for habit: Habit,
         on date: Date,
@@ -708,6 +804,61 @@ struct TodayView: View {
                 )
             }
         }
+    }
+
+    private func persistSlip(for habit: Habit, trigger: SlipTrigger?, context: String?) {
+        guard habit.isBreakHabit else { return }
+
+        let entriesForToday = habit.entries.filter {
+            AppCalendar.isSameDay($0.date, referenceDate)
+        }
+
+        transitionHabitBetweenSections {
+            if let existingSlip = entriesForToday.first(where: { $0.kind == .slip }) {
+                existingSlip.completedAt = existingSlip.completedAt ?? .now
+                existingSlip.source = .today
+                existingSlip.completedCount = 0
+                existingSlip.value = 0
+                existingSlip.slipTrigger = trigger
+                existingSlip.slipContext = context
+                entriesForToday
+                    .filter { $0.id != existingSlip.id }
+                    .forEach { modelContext.delete($0) }
+            } else {
+                entriesForToday.forEach { modelContext.delete($0) }
+                modelContext.insert(
+                    HabitEntry(
+                        date: referenceDate,
+                        completedAt: .now,
+                        source: .today,
+                        kind: .slip,
+                        completedCount: 0,
+                        value: 0,
+                        slipTrigger: trigger,
+                        slipContext: context,
+                        habit: habit
+                    )
+                )
+            }
+
+            deleteFreeze(for: habit, on: referenceDate)
+        }
+    }
+
+    private func undoSlip(for habit: Habit) {
+        let entriesForToday = habit.entries.filter {
+            AppCalendar.isSameDay($0.date, referenceDate) && $0.kind == .slip
+        }
+
+        transitionHabitBetweenSections {
+            entriesForToday.forEach { modelContext.delete($0) }
+        }
+    }
+
+    private func deleteFreeze(for habit: Habit, on date: Date) {
+        streakFreezes
+            .filter { $0.habitID == habit.id && AppCalendar.isSameDay($0.protectedDate, date) }
+            .forEach { modelContext.delete($0) }
     }
 
     private func persistRecoveryMiss(_ candidate: RecoveryPromptCandidate, reason: HabitFailureReason?) {
@@ -808,12 +959,14 @@ private enum TodayCoverRoute: Identifiable {
 private enum TodaySheetRoute: Identifiable {
     case createMenu
     case quantityLog(habit: Habit, date: Date)
+    case slipLog(habit: Habit)
     case recoveryPrompt(RecoveryPromptCandidate)
 
     var id: String {
         switch self {
         case .createMenu: return "createMenu"
         case .quantityLog(let habit, _): return "quantityLog-\(habit.id)"
+        case .slipLog(let habit): return "slipLog-\(habit.id)"
         case .recoveryPrompt(let candidate): return "recoveryPrompt-\(candidate.id)"
         }
     }
@@ -916,6 +1069,75 @@ private struct TodayCompletedHabitRow: View {
         }
         .frame(width: 38, height: 38)
         .accessibilityHidden(true)
+    }
+}
+
+private struct TodaySlipHabitRow: View {
+    let habit: Habit
+    let metadata: String
+    let onEdit: () -> Void
+    let onUndo: () -> Void
+
+    var body: some View {
+        HStack(alignment: .center, spacing: AppSpacing.m) {
+            Image(systemName: "arrow.counterclockwise")
+                .font(.system(size: 14, weight: .bold))
+                .foregroundStyle(AppColor.warning)
+                .frame(width: 32, height: 32)
+                .background(AppColor.warning.opacity(0.13))
+                .clipShape(RoundedRectangle(cornerRadius: AppRadius.s, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: AppRadius.s, style: .continuous)
+                        .strokeBorder(AppColor.warning.opacity(0.34), lineWidth: 1)
+                }
+
+            VStack(alignment: .leading, spacing: AppSpacing.xxs) {
+                Text(habit.title)
+                    .font(AppFont.bodyEmphasis)
+                    .foregroundStyle(AppColor.textPrimary)
+                    .lineLimit(1)
+
+                Text(metadata)
+                    .font(AppFont.label)
+                    .foregroundStyle(AppColor.textSecondary)
+                    .lineLimit(2)
+            }
+
+            Spacer(minLength: 0)
+
+            HStack(spacing: AppSpacing.xs) {
+                Button(action: onEdit) {
+                    Image(systemName: "pencil")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(AppColor.editAction)
+                        .frame(width: 32, height: 32)
+                        .background(AppColor.editAction.opacity(0.12))
+                        .clipShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Editar contexto de \(habit.title)")
+
+                Button(action: onUndo) {
+                    Image(systemName: "arrow.uturn.backward")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(AppColor.warning)
+                        .frame(width: 32, height: 32)
+                        .background(AppColor.warning.opacity(0.12))
+                        .clipShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Deshacer slip de \(habit.title)")
+            }
+        }
+        .padding(.horizontal, AppSpacing.l)
+        .padding(.vertical, AppSpacing.m)
+        .frame(maxWidth: .infinity, minHeight: 76, alignment: .leading)
+        .background(AppColor.bgElevated)
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous)
+                .strokeBorder(AppColor.warning.opacity(0.20), lineWidth: 1)
+        }
     }
 }
 

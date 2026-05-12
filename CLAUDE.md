@@ -36,25 +36,35 @@ The app uses a lightweight Model-View style with SwiftUI + SwiftData.
 - Domain logic lives in model extensions, not in layout code.
 - There is no ViewModel, repository, networking, authentication, or external sync layer.
 
-`WeekHabitApp.swift` creates the `ModelContainer` with `Schema(versionedSchema: SchemaV9.self)` and `HabitMigrationPlan.self`.
+`WeekHabitApp.swift` creates the `ModelContainer` with `Schema(versionedSchema: SchemaV11.self)` and `HabitMigrationPlan.self`.
 
 `RootView` switches between `OnboardingView` and `ContentView` using `@AppStorage("hasCompletedAppOnboarding")`. It also refreshes habit reminders when the app starts or returns active.
 
 ## Main Models
 
 - `Habit`: core habit entity. Supports check or quantity tracking, units, daily/specific/flexible weekly schedules, optional end date, reminders, entries, and plan associations.
-- `HabitEntry`: one day/value record. `date` is normalized to start of day. `source` distinguishes `.today`, `.focusSession`, and `.manual`; `kind` distinguishes `.completed`, `.skipped`, and `.missed`.
+- `HabitEntry`: one day/value record. `date` is normalized to start of day. `source` distinguishes `.today`, `.focusSession`, and `.manual`; `kind` distinguishes `.completed`, `.skipped`, `.missed`, and `.slip`.
 - `Plan`: groups habits around a goal with motivation, end date, target completion rate, and review state.
 - `HabitExperiment`: 7-day rhythm experiment suggested by Insights.
 - `FocusSession`: timer/review workflow for focused habit completion.
 
+`Models/` is organized as the app's model layer:
+
+- `Entities/`: SwiftData `@Model` entities and persisted enums/value accessors.
+- `Domain/`: pure model behavior and business rules used by views.
+- `Insights/`: insight DTOs, per-habit metrics, aggregate habit collection metrics, and insight date helpers.
+- `Persistence/`: versioned SwiftData schemas and migration plan.
+- `Routing/`: lightweight route value types used by navigation.
+- `Support/`: model-adjacent value types such as appearance and weekday definitions.
+
 Important domain files:
 
-- `Habit+Domain.swift`: schedule checks, loggability, quantities, streaks and streak breakdowns, weekly progress, heatmap matrix.
-- `Habit+Insights.swift`: 30-day metrics, confidence, trends, best day/hour, suggestions.
-- `HabitExperiment+Domain.swift`: apply, keep, revert, cancel, review experiments.
-- `FocusSession+Domain.swift`: timer progress, review/completion/cancel.
-- `Plan+Domain.swift`: active/finished/review state, progress, goal status.
+- `Domain/Habit+Domain.swift`: schedule checks, loggability, quantities, streaks and streak breakdowns, weekly progress, heatmap matrix.
+- `Insights/Habit+InsightMetrics.swift`: 30-day per-habit metrics, confidence, failures, best day/hour inputs.
+- `Insights/HabitCollection+Insights.swift`: aggregate snapshots, attention habit, contextual best day/hour, experiment suggestions.
+- `Domain/HabitExperiment+Domain.swift`: apply, keep, revert, cancel, review experiments.
+- `Domain/FocusSession+Domain.swift`: timer progress, review/completion/cancel.
+- `Domain/Plan+Domain.swift`: active/finished/review state, progress, goal status.
 
 Use `AppCalendar` for date math instead of `Calendar.current` directly.
 
@@ -142,6 +152,10 @@ Reuse existing tokens/helpers:
 - `HabitAppearance`
 
 Top-level screens should use `AppBackground`. Avoid hardcoded colors, fonts, and date calculations when a local helper exists.
+
+Design quality is a product requirement, not a polish pass. Before implementing visible UI, inspect adjacent screens/components and match their density, radius, typography, spacing, icon language, motion, empty states, and semantic tone. Prefer small, complete interactions that feel native to the current app over large new visual patterns.
+
+For sensitive habit states such as misses, slips, breaks, recovery, or pauses, never use punitive copy or destructive styling unless the action truly deletes data. Use neutral language, calm semantic colors, and clear next actions so the UI treats the user's input as useful data.
 
 ## Persistence Conventions
 

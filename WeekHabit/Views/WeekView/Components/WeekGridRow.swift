@@ -131,6 +131,9 @@ struct WeekGridRow: View {
         if habit.isFreezeProtected(on: date) {
             return .frozen
         }
+        if habit.isSlip(on: date) {
+            return .slip
+        }
         if habit.isMissed(on: date) {
             return .missed
         }

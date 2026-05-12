@@ -11,19 +11,27 @@ struct TodayHabitComponent: View {
     var isSkipped: Bool = false
     var activeExperiment: HabitExperiment?
     var referenceDate: Date = .now
+    var onSlip: (() -> Void)? = nil
     let onToggle: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        HStack(alignment: .center, spacing: AppSpacing.m) {
-            completeToggle
+        VStack(alignment: .leading, spacing: AppSpacing.m) {
+            HStack(alignment: .center, spacing: AppSpacing.m) {
+                completeToggle
 
-            textContent
+                textContent
 
-            Spacer(minLength: AppSpacing.s)
+                Spacer(minLength: AppSpacing.s)
 
-            iconColumn
+                iconColumn
+            }
+
+            if shouldShowSlipAction {
+                slipAction
+                    .padding(.leading, 34 + AppSpacing.m)
+            }
         }
         .padding(.horizontal, AppSpacing.l)
         .padding(.vertical, AppSpacing.l)
@@ -154,6 +162,31 @@ struct TodayHabitComponent: View {
         .accessibilityLabel(toggleAccessibilityLabel)
     }
 
+    private var slipAction: some View {
+        Button {
+            onSlip?()
+        } label: {
+            HStack(spacing: AppSpacing.xs) {
+                Image(systemName: "arrow.counterclockwise")
+                    .font(.system(size: 12, weight: .semibold))
+
+                Text("Registrar slip")
+                    .font(AppFont.label)
+            }
+            .foregroundStyle(AppColor.warning)
+            .padding(.horizontal, AppSpacing.m)
+            .padding(.vertical, AppSpacing.s)
+            .background(AppColor.warning.opacity(0.10))
+            .clipShape(Capsule())
+            .overlay {
+                Capsule()
+                    .strokeBorder(AppColor.warning.opacity(0.24), lineWidth: 1)
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Registrar slip para \(habit.title)")
+    }
+
     private func handleToggle() {
         if !isCompleted && !isSkipped {
             AppHaptics.play(.habitCompleted)
@@ -173,6 +206,10 @@ struct TodayHabitComponent: View {
 
     private var shouldShowScheduleFallback: Bool {
         trimmedCue == nil
+    }
+
+    private var shouldShowSlipAction: Bool {
+        habit.isBreakHabit && !isCompleted && !isSkipped && onSlip != nil
     }
 
     private var scheduleFallbackText: String {
