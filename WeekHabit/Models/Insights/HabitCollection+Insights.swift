@@ -110,48 +110,77 @@ extension Sequence where Element == Habit {
     }
 
     func attentionHabit(reference: Date = .now) -> HabitInsightSummary? {
-        filter { $0.insightReadiness(reference: reference).isReady }
-        .map { habit in
-            let stats = habit.completionStats(reference: reference)
-            let daysSince = habit.daysSinceLastCompletion(reference: reference)
-            let failureType = habit.attentionFailureType(reference: reference)
-            let detail: String
-            let recommendation: String
-
-            if let daysSince {
-                detail = daysSince == 0 ? "marcado hoy" : "última marca hace \(daysSince) días"
-            } else {
-                detail = "aún sin marcas"
-            }
-
-            switch failureType {
-            case .knownReason(let reason):
-                recommendation = recommendation(for: reason)
-            case .manualOnly:
-                recommendation = "Se está haciendo; hagamos más fácil marcarlo en el momento."
-            case .notDone:
-                recommendation = "Bajemos la fricción: menos días, mejor horario o un recordatorio más amable."
-            case nil:
-                recommendation = "Revisa si este ritmo todavía te acompaña."
-            }
-
-            return HabitInsightSummary(
-                habit: habit,
-                stats: stats,
-                detail: detail,
-                failureType: failureType,
-                recommendation: recommendation
-            )
+        let readyHabits = filter { habit in
+            habit.insightReadiness(reference: reference).isReady
         }
-        .filter { summary in
-            summary.stats.scheduled > 0 && (summary.stats.ratio < 0.75 || summary.habit.displayStreak(reference: reference) == 0)
+
+        let summaries = readyHabits.map { habit in
+            attentionSummary(for: habit, reference: reference)
         }
-        .min { lhs, rhs in
-            if lhs.stats.ratio == rhs.stats.ratio {
-                return lhs.stats.scheduled > rhs.stats.scheduled
-            }
-            return lhs.stats.ratio < rhs.stats.ratio
+
+        let candidates = summaries.filter { summary in
+            isAttentionCandidate(summary, reference: reference)
         }
+
+        return candidates.min { lhs, rhs in
+            isHigherAttentionPriority(lhs, than: rhs)
+        }
+    }
+
+    private func attentionSummary(for habit: Habit, reference: Date) -> HabitInsightSummary {
+        let stats = habit.completionStats(reference: reference)
+        let daysSince = habit.daysSinceLastCompletion(reference: reference)
+        let failureType = habit.attentionFailureType(reference: reference)
+
+        return HabitInsightSummary(
+            habit: habit,
+            stats: stats,
+            detail: attentionDetail(daysSince: daysSince),
+            failureType: failureType,
+            recommendation: attentionRecommendation(for: failureType)
+        )
+    }
+
+    private func attentionDetail(daysSince: Int?) -> String {
+        guard let daysSince else {
+            return "aún sin marcas"
+        }
+
+        if daysSince == 0 {
+            return "marcado hoy"
+        }
+
+        return "última marca hace \(daysSince) días"
+    }
+
+    private func attentionRecommendation(for failureType: AttentionFailureType?) -> String {
+        switch failureType {
+        case .knownReason(let reason):
+            return recommendation(for: reason)
+        case .manualOnly:
+            return "Se está haciendo; hagamos más fácil marcarlo en el momento."
+        case .notDone:
+            return "Bajemos la fricción: menos días, mejor horario o un recordatorio más amable."
+        case nil:
+            return "Revisa si este ritmo todavía te acompaña."
+        }
+    }
+
+    private func isAttentionCandidate(_ summary: HabitInsightSummary, reference: Date) -> Bool {
+        guard summary.stats.scheduled > 0 else { return false }
+        if summary.stats.ratio < 0.75 { return true }
+        return summary.habit.displayStreak(reference: reference) == 0
+    }
+
+    private func isHigherAttentionPriority(
+        _ lhs: HabitInsightSummary,
+        than rhs: HabitInsightSummary
+    ) -> Bool {
+        if lhs.stats.ratio == rhs.stats.ratio {
+            return lhs.stats.scheduled > rhs.stats.scheduled
+        }
+
+        return lhs.stats.ratio < rhs.stats.ratio
     }
 
     func contextualBestWeekday(reference: Date = .now) -> ContextualWeekdayInsight? {
