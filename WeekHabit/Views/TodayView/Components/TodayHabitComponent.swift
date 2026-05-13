@@ -11,6 +11,7 @@ struct TodayHabitComponent: View {
     var isSkipped: Bool = false
     var activeExperiment: HabitExperiment?
     var referenceDate: Date = .now
+    var onUrge: (() -> Void)? = nil
     var onSlip: (() -> Void)? = nil
     let onToggle: () -> Void
 
@@ -28,8 +29,8 @@ struct TodayHabitComponent: View {
                 iconColumn
             }
 
-            if shouldShowSlipAction {
-                slipAction
+            if shouldShowBreakActions {
+                breakActions
                     .padding(.leading, 34 + AppSpacing.m)
             }
         }
@@ -162,29 +163,52 @@ struct TodayHabitComponent: View {
         .accessibilityLabel(toggleAccessibilityLabel)
     }
 
-    private var slipAction: some View {
-        Button {
-            onSlip?()
-        } label: {
-            HStack(spacing: AppSpacing.xs) {
-                Image(systemName: "arrow.counterclockwise")
-                    .font(.system(size: 12, weight: .semibold))
-
-                Text("Registrar slip")
-                    .font(AppFont.label)
+    private var breakActions: some View {
+        HStack(spacing: AppSpacing.s) {
+            if let onUrge {
+                Button(action: onUrge) {
+                    actionPill(
+                        title: "Tengo el impulso",
+                        icon: "waveform.path.ecg",
+                        color: habit.habitColor
+                    )
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Tengo el impulso de \(habit.title)")
             }
-            .foregroundStyle(AppColor.warning)
-            .padding(.horizontal, AppSpacing.m)
-            .padding(.vertical, AppSpacing.s)
-            .background(AppColor.warning.opacity(0.10))
-            .clipShape(Capsule())
-            .overlay {
-                Capsule()
-                    .strokeBorder(AppColor.warning.opacity(0.24), lineWidth: 1)
+
+            if let onSlip {
+                Button(action: onSlip) {
+                    actionPill(
+                        title: "Registrar slip",
+                        icon: "arrow.counterclockwise",
+                        color: AppColor.warning
+                    )
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Registrar slip para \(habit.title)")
             }
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Registrar slip para \(habit.title)")
+    }
+
+    private func actionPill(title: String, icon: String, color: Color) -> some View {
+        HStack(spacing: AppSpacing.xs) {
+            Image(systemName: icon)
+                .font(.system(size: 12, weight: .semibold))
+
+            Text(title)
+                .font(AppFont.label)
+                .lineLimit(1)
+        }
+        .foregroundStyle(color)
+        .padding(.horizontal, AppSpacing.m)
+        .padding(.vertical, AppSpacing.s)
+        .background(color.opacity(0.10))
+        .clipShape(Capsule())
+        .overlay {
+            Capsule()
+                .strokeBorder(color.opacity(0.24), lineWidth: 1)
+        }
     }
 
     private func handleToggle() {
@@ -208,8 +232,8 @@ struct TodayHabitComponent: View {
         trimmedCue == nil
     }
 
-    private var shouldShowSlipAction: Bool {
-        habit.isBreakHabit && !isCompleted && !isSkipped && onSlip != nil
+    private var shouldShowBreakActions: Bool {
+        habit.isBreakHabit && !isCompleted && !isSkipped && (onSlip != nil || onUrge != nil)
     }
 
     private var scheduleFallbackText: String {

@@ -258,6 +258,9 @@ struct TodayView: View {
                     reference: referenceDate
                 ),
                 referenceDate: referenceDate,
+                onUrge: habit.replacementHabit == nil ? nil : {
+                    presentReplacementPrompt(for: habit)
+                },
                 onSlip: habit.isBreakHabit ? {
                     sheetRoute = .slipLog(habit: habit)
                 } : nil
@@ -590,6 +593,23 @@ struct TodayView: View {
             .presentationDetents([.height(570), .medium])
             .presentationDragIndicator(.visible)
             .presentationBackground(AppColor.bgCanvas)
+        case .replacementPrompt(let breakHabit, let replacementHabit):
+            ReplacementPromptView(
+                breakHabit: breakHabit,
+                replacementHabit: replacementHabit,
+                onStart: {
+                    sheetRoute = nil
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                        coverRoute = .focus(habits: [replacementHabit])
+                    }
+                },
+                onSkip: {
+                    sheetRoute = nil
+                }
+            )
+            .presentationDetents([.height(360), .medium])
+            .presentationDragIndicator(.visible)
+            .presentationBackground(AppColor.bgCanvas)
         }
     }
 
@@ -809,6 +829,7 @@ struct TodayView: View {
     private func persistSlip(for habit: Habit, trigger: SlipTrigger?, context: String?) {
         guard habit.isBreakHabit else { return }
 
+        let hadSlipBefore = habit.isSlip(on: referenceDate)
         let entriesForToday = habit.entries.filter {
             AppCalendar.isSameDay($0.date, referenceDate)
         }
@@ -843,6 +864,10 @@ struct TodayView: View {
 
             deleteFreeze(for: habit, on: referenceDate)
         }
+
+        if !hadSlipBefore {
+            presentReplacementPromptAfterCurrentSheet(for: habit)
+        }
     }
 
     private func undoSlip(for habit: Habit) {
@@ -852,6 +877,20 @@ struct TodayView: View {
 
         transitionHabitBetweenSections {
             entriesForToday.forEach { modelContext.delete($0) }
+        }
+    }
+
+    private func presentReplacementPrompt(for habit: Habit) {
+        guard let replacementHabit = habit.replacementHabit else { return }
+        sheetRoute = .replacementPrompt(breakHabit: habit, replacementHabit: replacementHabit)
+    }
+
+    private func presentReplacementPromptAfterCurrentSheet(for habit: Habit) {
+        guard let replacementHabit = habit.replacementHabit else { return }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.32) {
+            guard coverRoute == nil else { return }
+            sheetRoute = .replacementPrompt(breakHabit: habit, replacementHabit: replacementHabit)
         }
     }
 
@@ -961,6 +1000,7 @@ private enum TodaySheetRoute: Identifiable {
     case quantityLog(habit: Habit, date: Date)
     case slipLog(habit: Habit)
     case recoveryPrompt(RecoveryPromptCandidate)
+    case replacementPrompt(breakHabit: Habit, replacementHabit: Habit)
 
     var id: String {
         switch self {
@@ -968,6 +1008,8 @@ private enum TodaySheetRoute: Identifiable {
         case .quantityLog(let habit, _): return "quantityLog-\(habit.id)"
         case .slipLog(let habit): return "slipLog-\(habit.id)"
         case .recoveryPrompt(let candidate): return "recoveryPrompt-\(candidate.id)"
+        case .replacementPrompt(let breakHabit, let replacementHabit):
+            return "replacementPrompt-\(breakHabit.id)-\(replacementHabit.id)"
         }
     }
 }

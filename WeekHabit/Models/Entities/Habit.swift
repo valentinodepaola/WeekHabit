@@ -110,6 +110,9 @@ final class Habit {
     @Relationship(deleteRule: .cascade, inverse: \StreakFreeze.habit)
     var streakFreezes: [StreakFreeze] = []
 
+    @Relationship(deleteRule: .nullify)
+    var replacementHabit: Habit?
+
     var plans: [Plan] = []
 
     /// Set-based view of `activeDaysOfWeekRaw`.
@@ -173,6 +176,7 @@ final class Habit {
         scheduleKind: HabitScheduleKind = .specificDays,
         endsAt: Date? = nil,
         direction: HabitDirection = .build,
+        replacementHabit: Habit? = nil,
         allowsWeeklyFreeze: Bool = true,
         isReminderEnabled: Bool = false,
         reminderTime: Date? = nil,
@@ -193,6 +197,7 @@ final class Habit {
         self.targetValuePerSession = targetValuePerSession
         self.scheduleKindRaw = scheduleKind.rawValue
         self.directionRaw = direction.rawValue
+        self.replacementHabit = replacementHabit
         self.endsAt = endsAt
         self.allowsWeeklyFreeze = allowsWeeklyFreeze
         self.isReminderEnabled = isReminderEnabled

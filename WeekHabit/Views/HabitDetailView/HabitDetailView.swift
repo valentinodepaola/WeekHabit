@@ -157,6 +157,11 @@ struct HabitDetailView: View {
                 )
                 .padding(.top, AppSpacing.xs)
             }
+
+            if habit.isBreakHabit, let replacementHabit = habit.replacementHabit {
+                ReplacementHabitCard(replacementHabit: replacementHabit)
+                    .padding(.top, AppSpacing.xs)
+            }
         }
     }
 
@@ -188,6 +193,57 @@ struct HabitDetailView: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+private struct ReplacementHabitCard: View {
+    let replacementHabit: Habit
+
+    var body: some View {
+        HStack(alignment: .top, spacing: AppSpacing.m) {
+            Image(systemName: replacementHabit.iconName)
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(replacementHabit.habitColor)
+                .frame(width: 36, height: 36)
+                .background(replacementHabit.habitColor.opacity(0.14))
+                .clipShape(Circle())
+
+            VStack(alignment: .leading, spacing: AppSpacing.xs) {
+                Text("Reemplazo")
+                    .font(AppFont.label)
+                    .foregroundStyle(AppColor.textTertiary)
+                    .tracking(0.4)
+
+                Text(replacementHabit.title)
+                    .font(AppFont.bodyEmphasis)
+                    .foregroundStyle(AppColor.textPrimary)
+                    .lineLimit(2)
+
+                if let cue = replacementCue {
+                    Text(cue)
+                        .font(AppFont.label)
+                        .foregroundStyle(AppColor.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(AppSpacing.m)
+        .background(AppColor.bgElevated)
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.m, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: AppRadius.m, style: .continuous)
+                .strokeBorder(AppColor.divider, lineWidth: 1)
+        }
+    }
+
+    private var replacementCue: String? {
+        guard let cue = replacementHabit.cue?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !cue.isEmpty else {
+            return nil
+        }
+        return cue
     }
 }
 

@@ -23,6 +23,9 @@ struct CreateHabitView: View {
     @Query(sort: \Plan.createdAt, order: .reverse)
     private var allPlans: [Plan]
 
+    @Query(sort: \Habit.createdAt, order: .reverse)
+    private var allHabits: [Habit]
+
     @State private var habitName: String = ""
     @State private var note: String = ""
     @State private var cue: String = ""
@@ -42,6 +45,10 @@ struct CreateHabitView: View {
     @State private var reminderTime: Date = Self.defaultReminderTime()
     @State private var notificationAuthorizationStatus: UNAuthorizationStatus = .notDetermined
     @State private var selectedPlans: Set<UUID> = []
+    @State private var replacementMode: HabitReplacementMode = .skip
+    @State private var selectedReplacementHabitID: UUID?
+    @State private var newReplacementHabitName: String = ""
+    @State private var newReplacementHabitCue: String = ""
 
     private let habitToEdit: Habit?
 
@@ -53,6 +60,15 @@ struct CreateHabitView: View {
         if trackingKind == .quantity {
             guard parsedTargetValue > 0 else { return true }
             if measurementUnit == .none { return true }
+        }
+
+        if direction == .`break` && replacementMode == .create {
+            let trimmed = newReplacementHabitName.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmed.isEmpty { return true }
+        }
+
+        if direction == .`break` && replacementMode == .existing {
+            if selectedReplacementHabitID == nil { return true }
         }
 
         switch scheduleKind {
@@ -67,6 +83,12 @@ struct CreateHabitView: View {
 
     private var isEditing: Bool {
         habitToEdit != nil
+    }
+
+    private var replacementCandidates: [Habit] {
+        allHabits.filter { candidate in
+            candidate.direction == .build && candidate.id != habitToEdit?.id
+        }
     }
 
     private var parsedTargetValue: Double {
@@ -108,6 +130,8 @@ struct CreateHabitView: View {
         _isReminderEnabled = State(initialValue: habitToEdit?.isReminderEnabled ?? false)
         _reminderTime = State(initialValue: habitToEdit?.reminderTime ?? Self.defaultReminderTime())
         _selectedPlans = State(initialValue: Set(habitToEdit?.plans.map(\.id) ?? []))
+        _replacementMode = State(initialValue: habitToEdit?.replacementHabit == nil ? .skip : .existing)
+        _selectedReplacementHabitID = State(initialValue: habitToEdit?.replacementHabit?.id)
     }
 
     var body: some View {
@@ -138,6 +162,16 @@ struct CreateHabitView: View {
 
                     // 2. Señal
                     HabitCueSection(cue: $cue)
+
+                    if direction == .`break` {
+                        HabitReplacementSection(
+                            availableHabits: replacementCandidates,
+                            mode: $replacementMode,
+                            selectedHabitID: $selectedReplacementHabitID,
+                            newHabitName: $newReplacementHabitName,
+                            newHabitCue: $newReplacementHabitCue
+                        )
+                    }
 
                     // 3. Medición (siempre visible — el selector check/quantity es parte)
                     HabitMeasurementSection(
@@ -179,6 +213,19 @@ struct CreateHabitView: View {
                     if newValue == .`break` && scheduleKind == .timesPerWeek {
                         scheduleKind = .daily
                     }
+                    if newValue == .build {
+                        replacementMode = .skip
+                        selectedReplacementHabitID = nil
+                    }
+                }
+                .onChange(of: replacementCandidates.map(\.id)) { _, candidateIDs in
+                    guard replacementMode == .existing else { return }
+                    if selectedReplacementHabitID == nil || !candidateIDs.contains(selectedReplacementHabitID!) {
+                        selectedReplacementHabitID = candidateIDs.first
+                    }
+                    if candidateIDs.isEmpty {
+                        replacementMode = .skip
+                    }
                 }
                 .onChange(of: trackingKind) { _, newValue in
                     if newValue == .check {
@@ -213,6 +260,7 @@ struct CreateHabitView: View {
         let normalizedEndsAt = hasEndDate ? AppCalendar.startOfDay(for: endsAt) : nil
         let normalizedPlan = normalizedSchedulePlan()
         let normalizedReminderEnabled = isReminderEnabled && notificationAuthorizationStatus.allowsReminderScheduling
+        let replacementHabit = resolvedReplacementHabit()
 
         let linkedPlans = allPlans.filter { selectedPlans.contains($0.id) }
         let savedHabit: Habit
@@ -228,6 +276,7 @@ struct CreateHabitView: View {
             habitToEdit.iconName = selectedIconName
             habitToEdit.colorHex = selectedColorHex
             habitToEdit.direction = direction
+            habitToEdit.replacementHabit = direction == .`break` ? replacementHabit : nil
             habitToEdit.trackingKind = trackingKind
             habitToEdit.measurementUnit = normalizedMeasurementUnit
             habitToEdit.customUnitName = nil
@@ -257,6 +306,7 @@ struct CreateHabitView: View {
                 scheduleKind: scheduleKind,
                 endsAt: normalizedEndsAt,
                 direction: direction,
+                replacementHabit: direction == .`break` ? replacementHabit : nil,
                 allowsWeeklyFreeze: allowsWeeklyFreeze,
                 isReminderEnabled: normalizedReminderEnabled,
                 reminderTime: normalizedReminderEnabled ? reminderTime : nil
@@ -271,6 +321,35 @@ struct CreateHabitView: View {
         }
 
         dismiss()
+    }
+
+    private func resolvedReplacementHabit() -> Habit? {
+        guard direction == .`break` else { return nil }
+
+        switch replacementMode {
+        case .skip:
+            return nil
+        case .existing:
+            guard let selectedReplacementHabitID else { return nil }
+            return allHabits.first { $0.id == selectedReplacementHabitID }
+        case .create:
+            let trimmedName = newReplacementHabitName.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmedName.isEmpty else { return nil }
+
+            let trimmedCue = newReplacementHabitCue.trimmingCharacters(in: .whitespacesAndNewlines)
+            let habit = Habit(
+                title: trimmedName,
+                cue: trimmedCue.isEmpty ? nil : trimmedCue,
+                iconName: "figure.mind.and.body",
+                colorHex: selectedColorHex,
+                targetDaysPerWeek: 7,
+                activeDaysOfWeek: Set(Weekday.ordered),
+                scheduleKind: .daily,
+                direction: .build
+            )
+            modelContext.insert(habit)
+            return habit
+        }
     }
 
     private func normalizedSchedulePlan() -> (targetDaysPerWeek: Int, activeDays: Set<Weekday>) {
