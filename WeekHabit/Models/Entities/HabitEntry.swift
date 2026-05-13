@@ -28,6 +28,7 @@ enum EntryKind: String, Codable, CaseIterable {
     case skipped
     case missed
     case slip
+    case urge
 }
 
 enum SlipTrigger: String, Codable, CaseIterable, Identifiable {
@@ -161,6 +162,11 @@ final class HabitEntry {
         set {
             slipTriggerRaw = newValue?.rawValue
         }
+    }
+
+    var urgeTrigger: SlipTrigger? {
+        get { slipTrigger }
+        set { slipTrigger = newValue }
     }
 
     init(

@@ -34,7 +34,7 @@ struct ReplacementPromptView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: AppSpacing.s) {
-            Text("Tengo el impulso")
+            Text("Reemplazo disponible")
                 .font(AppFont.headline)
                 .foregroundStyle(AppColor.textPrimary)
 

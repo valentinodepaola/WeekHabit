@@ -107,6 +107,8 @@ struct LastWeeksHeatmapCard: View {
             return habit.habitColor.opacity(0.08)
         case .slip:
             return AppColor.warning.opacity(0.28)
+        case .urge:
+            return habit.habitColor.opacity(0.18)
         case .inactive, .future:
             return AppColor.bgSunken
         }

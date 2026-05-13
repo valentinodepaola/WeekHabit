@@ -292,6 +292,62 @@ extension Sequence where Element == Habit {
         )
     }
 
+    func urgeHourBuckets(reference: Date = .now) -> [UrgeHourBucket] {
+        let range = insightDateRange(days: 30, reference: reference)
+        var counts: [Int: Int] = [:]
+
+        for habit in self where habit.isBreakHabit {
+            for entry in habit.entries where range.contains(entry.date) && entry.kind == .urge {
+                guard let loggedAt = entry.completedAt else { continue }
+                let hour = AppCalendar.current.component(.hour, from: loggedAt)
+                counts[hour, default: 0] += 1
+            }
+        }
+
+        return (0..<24).map { hour in
+            UrgeHourBucket(hour: hour, count: counts[hour, default: 0])
+        }
+    }
+
+    func urgePeakHourInsight(reference: Date = .now, minimumCount: Int = 3) -> UrgePeakHourInsight? {
+        let buckets = urgeHourBuckets(reference: reference)
+        let total = buckets.reduce(0) { $0 + $1.count }
+
+        guard total >= minimumCount,
+              let best = buckets.max(by: { lhs, rhs in
+                  if lhs.count == rhs.count { return lhs.hour > rhs.hour }
+                  return lhs.count < rhs.count
+              }),
+              best.count > 0 else {
+            return nil
+        }
+
+        let range = insightDateRange(days: 30, reference: reference)
+        var contexts: [HabitInsightContext] = []
+
+        for habit in self where habit.isBreakHabit {
+            let count = habit.entries.filter { entry in
+                guard range.contains(entry.date),
+                      entry.kind == .urge,
+                      let loggedAt = entry.completedAt else {
+                    return false
+                }
+
+                return AppCalendar.current.component(.hour, from: loggedAt) == best.hour
+            }.count
+
+            if count > 0 {
+                contexts.append(HabitInsightContext(habit: habit, count: count))
+            }
+        }
+
+        return UrgePeakHourInsight(
+            window: HourWindow(startHour: best.hour, count: best.count),
+            totalCount: total,
+            habits: contexts.sorted { $0.count > $1.count }
+        )
+    }
+
     func rhythmExperimentSuggestion(
         reference: Date = .now,
         excludingHabitIDs: Set<UUID> = []

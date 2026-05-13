@@ -15,6 +15,7 @@ enum CellState: Equatable {
     case frozen
     case missed
     case slip
+    case urge
     case inactive
     case future
 }
@@ -157,6 +158,12 @@ extension Habit {
         }
     }
 
+    func hasUrge(on date: Date) -> Bool {
+        entries.contains {
+            AppCalendar.isSameDay($0.date, date) && $0.kind == .urge
+        }
+    }
+
     func slipEntry(on date: Date) -> HabitEntry? {
         entries
             .filter { AppCalendar.isSameDay($0.date, date) && $0.kind == .slip }
@@ -174,9 +181,17 @@ extension Habit {
             }
     }
 
+    var urgeEntries: [HabitEntry] {
+        entries
+            .filter { $0.kind == .urge }
+            .sorted { lhs, rhs in
+                (lhs.completedAt ?? lhs.date) > (rhs.completedAt ?? rhs.date)
+            }
+    }
+
     func hasAnyEntry(on date: Date) -> Bool {
         entries.contains {
-            AppCalendar.isSameDay($0.date, date)
+            AppCalendar.isSameDay($0.date, date) && $0.kind != .urge
         }
     }
 
@@ -388,6 +403,10 @@ extension Habit {
 
                 if isMissed(on: day) {
                     return .missed
+                }
+
+                if hasUrge(on: day) {
+                    return .urge
                 }
 
                 if isFlexibleSchedule && !isCompleted(on: day) {

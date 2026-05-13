@@ -188,6 +188,41 @@ struct HourWindow: Identifiable, Equatable {
     }
 }
 
+struct UrgeHourBucket: Identifiable {
+    let hour: Int
+    let count: Int
+
+    var id: Int {
+        hour
+    }
+}
+
+struct UrgePeakHourInsight: Identifiable {
+    let window: HourWindow
+    let totalCount: Int
+    let habits: [HabitInsightContext]
+
+    var id: Int {
+        window.id
+    }
+
+    var contextText: String {
+        let base = "\(totalCount) impulsos registrados en 30 días"
+        let names = habits.map { $0.habit.title }
+
+        switch names.count {
+        case 0:
+            return base
+        case 1:
+            return "\(base) · sobre todo \(names[0])"
+        case 2:
+            return "\(base) · sobre todo \(names.joined(separator: " y "))"
+        default:
+            return "\(base) · sobre todo \(names.prefix(2).joined(separator: " y "))"
+        }
+    }
+}
+
 struct RhythmExperimentSuggestion: Identifiable {
     let habit: Habit
     let title: String

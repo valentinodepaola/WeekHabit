@@ -126,6 +126,33 @@ extension Habit {
         return HourWindow(startHour: best.key, count: best.value)
     }
 
+    func urgeHourBuckets(lastDays: Int = 30, reference: Date = .now) -> [UrgeHourBucket] {
+        let range = insightDateRange(days: lastDays, reference: reference)
+        var counts: [Int: Int] = [:]
+
+        for entry in entries where range.contains(entry.date) && entry.kind == .urge {
+            guard let loggedAt = entry.completedAt else { continue }
+            let hour = AppCalendar.current.component(.hour, from: loggedAt)
+            counts[hour, default: 0] += 1
+        }
+
+        return (0..<24).map { hour in
+            UrgeHourBucket(hour: hour, count: counts[hour, default: 0])
+        }
+    }
+
+    func peakUrgeHour(lastDays: Int = 30, reference: Date = .now) -> HourWindow? {
+        let buckets = urgeHourBuckets(lastDays: lastDays, reference: reference)
+        guard let best = buckets.max(by: { lhs, rhs in
+            if lhs.count == rhs.count { return lhs.hour > rhs.hour }
+            return lhs.count < rhs.count
+        }), best.count > 0 else {
+            return nil
+        }
+
+        return HourWindow(startHour: best.hour, count: best.count)
+    }
+
     func daysSinceLastCompletion(reference: Date = .now) -> Int? {
         let referenceDay = AppCalendar.startOfDay(for: reference)
         let lastDate = entries

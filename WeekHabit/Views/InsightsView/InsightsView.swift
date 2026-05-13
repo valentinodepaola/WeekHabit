@@ -40,6 +40,14 @@ struct InsightsView: View {
         habits.filter { !$0.isBreakHabit }
     }
 
+    private var breakHabits: [Habit] {
+        habits.filter { $0.isBreakHabit }
+    }
+
+    private var urgePeakInsight: UrgePeakHourInsight? {
+        breakHabits.urgePeakHourInsight(reference: referenceDate)
+    }
+
     private var suggestions: [RankedRhythmSuggestion] {
         buildHabits.rhythmExperimentSuggestions(
             reference: referenceDate,
@@ -92,6 +100,13 @@ struct InsightsView: View {
                                         experiment: experiment,
                                         habit: habit(for: experiment),
                                         referenceDate: referenceDate
+                                    )
+                                }
+
+                                if let urgePeakInsight {
+                                    UrgePeakHoursCard(
+                                        insight: urgePeakInsight,
+                                        buckets: breakHabits.urgeHourBuckets(reference: referenceDate)
                                     )
                                 }
 

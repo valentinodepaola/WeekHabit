@@ -258,9 +258,9 @@ struct TodayView: View {
                     reference: referenceDate
                 ),
                 referenceDate: referenceDate,
-                onUrge: habit.replacementHabit == nil ? nil : {
-                    presentReplacementPrompt(for: habit)
-                },
+                onUrge: habit.isBreakHabit ? {
+                    sheetRoute = .urgeLog(habit: habit)
+                } : nil,
                 onSlip: habit.isBreakHabit ? {
                     sheetRoute = .slipLog(habit: habit)
                 } : nil
@@ -579,6 +579,13 @@ struct TodayView: View {
             .presentationDetents([.height(560), .medium])
             .presentationDragIndicator(.visible)
             .presentationBackground(AppColor.bgCanvas)
+        case .urgeLog(let habit):
+            UrgeLogSheet(habit: habit) { trigger in
+                persistUrge(for: habit, trigger: trigger)
+            }
+            .presentationDetents([.height(420), .medium])
+            .presentationDragIndicator(.visible)
+            .presentationBackground(AppColor.bgCanvas)
         case .recoveryPrompt(let candidate):
             RecoveryPromptView(
                 candidate: candidate,
@@ -639,14 +646,15 @@ struct TodayView: View {
         }
 
         let entriesForToday = habit.entries.filter {
-            AppCalendar.isSameDay($0.date, referenceDate)
+            AppCalendar.isSameDay($0.date, referenceDate) && $0.kind == .completed
         }
+        let stateEntriesForToday = entriesForToday.filter { $0.kind != .urge }
 
         let willComplete = !habit.isCompleted(on: referenceDate)
 
         transitionHabitBetweenSections {
             if willComplete {
-                entriesForToday.forEach { modelContext.delete($0) }
+                stateEntriesForToday.forEach { modelContext.delete($0) }
                 let entry = HabitEntry(
                     date: referenceDate,
                     completedAt: .now,
@@ -656,7 +664,9 @@ struct TodayView: View {
                 )
                 modelContext.insert(entry)
             } else {
-                entriesForToday.forEach { modelContext.delete($0) }
+                entriesForToday
+                    .filter { $0.kind == .completed }
+                    .forEach { modelContext.delete($0) }
             }
         }
 
@@ -772,20 +782,23 @@ struct TodayView: View {
         let entriesForDay = habit.entries.filter {
             AppCalendar.isSameDay($0.date, date)
         }
+        let stateEntriesForDay = entriesForDay.filter { $0.kind != .urge }
 
         transitionHabitBetweenSections {
             if value <= 0 {
-                entriesForDay.forEach { modelContext.delete($0) }
+                entriesForDay
+                    .filter { $0.kind == .completed }
+                    .forEach { modelContext.delete($0) }
                 return
             }
 
-            if let entry = entriesForDay.first {
+            if let entry = stateEntriesForDay.first {
                 entry.kind = .completed
                 entry.value = value
                 entry.completedCount = Int(value.rounded())
                 entry.completedAt = .now
                 entry.source = source
-                entriesForDay.dropFirst().forEach { modelContext.delete($0) }
+                stateEntriesForDay.dropFirst().forEach { modelContext.delete($0) }
             } else {
                 modelContext.insert(
                     HabitEntry(
@@ -805,10 +818,11 @@ struct TodayView: View {
         let entriesForToday = habit.entries.filter {
             AppCalendar.isSameDay($0.date, referenceDate)
         }
+        let stateEntriesForToday = entriesForToday.filter { $0.kind != .urge }
         let willSkip = !habit.isSkipped(on: referenceDate)
 
         transitionHabitBetweenSections {
-            entriesForToday.forEach { modelContext.delete($0) }
+            stateEntriesForToday.forEach { modelContext.delete($0) }
 
             if willSkip {
                 modelContext.insert(
@@ -833,20 +847,21 @@ struct TodayView: View {
         let entriesForToday = habit.entries.filter {
             AppCalendar.isSameDay($0.date, referenceDate)
         }
+        let stateEntriesForToday = entriesForToday.filter { $0.kind != .urge }
 
         transitionHabitBetweenSections {
-            if let existingSlip = entriesForToday.first(where: { $0.kind == .slip }) {
+            if let existingSlip = stateEntriesForToday.first(where: { $0.kind == .slip }) {
                 existingSlip.completedAt = existingSlip.completedAt ?? .now
                 existingSlip.source = .today
                 existingSlip.completedCount = 0
                 existingSlip.value = 0
                 existingSlip.slipTrigger = trigger
                 existingSlip.slipContext = context
-                entriesForToday
+                stateEntriesForToday
                     .filter { $0.id != existingSlip.id }
                     .forEach { modelContext.delete($0) }
             } else {
-                entriesForToday.forEach { modelContext.delete($0) }
+                stateEntriesForToday.forEach { modelContext.delete($0) }
                 modelContext.insert(
                     HabitEntry(
                         date: referenceDate,
@@ -870,6 +885,25 @@ struct TodayView: View {
         }
     }
 
+    private func persistUrge(for habit: Habit, trigger: SlipTrigger?) {
+        guard habit.isBreakHabit else { return }
+
+        modelContext.insert(
+            HabitEntry(
+                date: referenceDate,
+                completedAt: .now,
+                source: .today,
+                kind: .urge,
+                completedCount: 0,
+                value: 0,
+                slipTrigger: trigger,
+                habit: habit
+            )
+        )
+
+        presentReplacementPromptAfterCurrentSheet(for: habit)
+    }
+
     private func undoSlip(for habit: Habit) {
         let entriesForToday = habit.entries.filter {
             AppCalendar.isSameDay($0.date, referenceDate) && $0.kind == .slip
@@ -878,11 +912,6 @@ struct TodayView: View {
         transitionHabitBetweenSections {
             entriesForToday.forEach { modelContext.delete($0) }
         }
-    }
-
-    private func presentReplacementPrompt(for habit: Habit) {
-        guard let replacementHabit = habit.replacementHabit else { return }
-        sheetRoute = .replacementPrompt(breakHabit: habit, replacementHabit: replacementHabit)
     }
 
     private func presentReplacementPromptAfterCurrentSheet(for habit: Habit) {
@@ -904,17 +933,18 @@ struct TodayView: View {
         let entriesForDay = candidate.habit.entries.filter {
             AppCalendar.isSameDay($0.date, candidate.date)
         }
+        let stateEntriesForDay = entriesForDay.filter { $0.kind != .urge }
 
-        if let existingMiss = entriesForDay.first(where: { $0.kind == .missed }) {
+        if let existingMiss = stateEntriesForDay.first(where: { $0.kind == .missed }) {
             existingMiss.failureReasonKind = reason
-            entriesForDay
+            stateEntriesForDay
                 .filter { $0.kind == .missed && $0.id != existingMiss.id }
                 .forEach { modelContext.delete($0) }
             sheetRoute = nil
             return
         }
 
-        guard entriesForDay.isEmpty else {
+        guard stateEntriesForDay.isEmpty else {
             sheetRoute = nil
             return
         }
@@ -999,6 +1029,7 @@ private enum TodaySheetRoute: Identifiable {
     case createMenu
     case quantityLog(habit: Habit, date: Date)
     case slipLog(habit: Habit)
+    case urgeLog(habit: Habit)
     case recoveryPrompt(RecoveryPromptCandidate)
     case replacementPrompt(breakHabit: Habit, replacementHabit: Habit)
 
@@ -1007,6 +1038,7 @@ private enum TodaySheetRoute: Identifiable {
         case .createMenu: return "createMenu"
         case .quantityLog(let habit, _): return "quantityLog-\(habit.id)"
         case .slipLog(let habit): return "slipLog-\(habit.id)"
+        case .urgeLog(let habit): return "urgeLog-\(habit.id)"
         case .recoveryPrompt(let candidate): return "recoveryPrompt-\(candidate.id)"
         case .replacementPrompt(let breakHabit, let replacementHabit):
             return "replacementPrompt-\(breakHabit.id)-\(replacementHabit.id)"

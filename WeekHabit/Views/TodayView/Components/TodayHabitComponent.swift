@@ -164,30 +164,41 @@ struct TodayHabitComponent: View {
     }
 
     private var breakActions: some View {
-        HStack(spacing: AppSpacing.s) {
-            if let onUrge {
-                Button(action: onUrge) {
-                    actionPill(
-                        title: "Tengo el impulso",
-                        icon: "waveform.path.ecg",
-                        color: habit.habitColor
-                    )
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Tengo el impulso de \(habit.title)")
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: AppSpacing.s) {
+                breakActionButtons
             }
 
-            if let onSlip {
-                Button(action: onSlip) {
-                    actionPill(
-                        title: "Registrar slip",
-                        icon: "arrow.counterclockwise",
-                        color: AppColor.warning
-                    )
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Registrar slip para \(habit.title)")
+            VStack(alignment: .leading, spacing: AppSpacing.s) {
+                breakActionButtons
             }
+        }
+    }
+
+    @ViewBuilder
+    private var breakActionButtons: some View {
+        if let onUrge {
+            Button(action: onUrge) {
+                actionPill(
+                    title: "Tuve el impulso",
+                    icon: "waveform.path.ecg",
+                    color: habit.habitColor
+                )
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Registrar impulso de \(habit.title)")
+        }
+
+        if let onSlip {
+            Button(action: onSlip) {
+                actionPill(
+                    title: "Registrar slip",
+                    icon: "arrow.counterclockwise",
+                    color: AppColor.warning
+                )
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Registrar slip para \(habit.title)")
         }
     }
 
