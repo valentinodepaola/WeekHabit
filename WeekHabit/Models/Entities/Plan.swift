@@ -17,12 +17,18 @@ final class Plan {
     var createdAt: Date
     var reviewedAt: Date?
 
+    var measurableOutcome: String?
+
     @Relationship(deleteRule: .nullify, inverse: \Habit.plans)
     var habits: [Habit] = []
+
+    @Relationship(deleteRule: .cascade, inverse: \PlanMilestone.plan)
+    var milestones: [PlanMilestone] = []
 
     init(
         title: String,
         motivation: String? = nil,
+        measurableOutcome: String? = nil,
         startedAt: Date = .now,
         endsAt: Date,
         targetCompletionRate: Double = 0.8,
@@ -31,6 +37,7 @@ final class Plan {
         self.id = UUID()
         self.title = title
         self.motivation = motivation
+        self.measurableOutcome = measurableOutcome
         self.startedAt = startedAt
         self.endsAt = endsAt
         self.targetCompletionRate = targetCompletionRate

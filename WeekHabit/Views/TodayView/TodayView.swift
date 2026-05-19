@@ -30,6 +30,7 @@ struct TodayView: View {
     @State private var planToDelete: Plan?
     @State private var showDeletePlanAlert = false
     @State private var expandedPlans: Set<UUID> = []
+    @State private var detailPlan: Plan?
     @State private var didShowRecoveryPromptThisSession = false
     @Namespace private var habitSectionNamespace
 
@@ -153,6 +154,11 @@ struct TodayView: View {
             }
             .sheet(item: $sheetRoute) { route in
                 routeSheet(route)
+            }
+            .sheet(item: $detailPlan) { plan in
+                PlanDetailView(plan: plan)
+                    .presentationDragIndicator(.visible)
+                    .presentationBackground(AppColor.bgCanvas)
             }
             .alert("¿Borrar hábito?", isPresented: $showDeleteHabitAlert) {
                 Button("Cancelar", role: .cancel) { habitToDelete = nil }
@@ -502,6 +508,9 @@ struct TodayView: View {
             },
             onHabitTap: { habit in
                 selectedHabit = habit
+            },
+            onOpenDetail: {
+                detailPlan = plan
             }
         )
         .todayListRow()
