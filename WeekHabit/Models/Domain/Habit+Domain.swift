@@ -14,6 +14,8 @@ enum CellState: Equatable {
     case skipped
     case frozen
     case missed
+    case slip
+    case urge
     case inactive
     case future
 }
@@ -67,6 +69,20 @@ extension Habit {
         return unit.isEmpty ? "\(value) por sesión" : "\(value) \(unit) por sesión"
     }
 
+    var isBreakHabit: Bool { direction == .`break` }
+
+    var completionCTA: String {
+        isBreakHabit ? "Lo evité hoy" : "Completado"
+    }
+
+    var streakLabel: String {
+        isBreakHabit ? "días sin hacerlo" : "días de racha"
+    }
+
+    var breakdownCompletedLabel: String {
+        isBreakHabit ? "evitado" : "hecho"
+    }
+
     var scheduleSummaryText: String {
         switch scheduleKind {
         case .daily:
@@ -78,7 +94,7 @@ extension Habit {
                 .joined(separator: ", ")
             return days.isEmpty ? "Sin días" : days
         case .timesPerWeek:
-            return "\(targetDaysPerWeek) veces/sem"
+            return isBreakHabit ? "Diario" : "\(targetDaysPerWeek) veces/sem"
         }
     }
 
@@ -136,9 +152,46 @@ extension Habit {
         }
     }
 
+    func isSlip(on date: Date) -> Bool {
+        entries.contains {
+            AppCalendar.isSameDay($0.date, date) && $0.kind == .slip
+        }
+    }
+
+    func hasUrge(on date: Date) -> Bool {
+        entries.contains {
+            AppCalendar.isSameDay($0.date, date) && $0.kind == .urge
+        }
+    }
+
+    func slipEntry(on date: Date) -> HabitEntry? {
+        entries
+            .filter { AppCalendar.isSameDay($0.date, date) && $0.kind == .slip }
+            .sorted { lhs, rhs in
+                (lhs.completedAt ?? lhs.date) > (rhs.completedAt ?? rhs.date)
+            }
+            .first
+    }
+
+    var slipEntries: [HabitEntry] {
+        entries
+            .filter { $0.kind == .slip }
+            .sorted { lhs, rhs in
+                (lhs.completedAt ?? lhs.date) > (rhs.completedAt ?? rhs.date)
+            }
+    }
+
+    var urgeEntries: [HabitEntry] {
+        entries
+            .filter { $0.kind == .urge }
+            .sorted { lhs, rhs in
+                (lhs.completedAt ?? lhs.date) > (rhs.completedAt ?? rhs.date)
+            }
+    }
+
     func hasAnyEntry(on date: Date) -> Bool {
         entries.contains {
-            AppCalendar.isSameDay($0.date, date)
+            AppCalendar.isSameDay($0.date, date) && $0.kind != .urge
         }
     }
 
@@ -257,6 +310,10 @@ extension Habit {
     }
     
     func displayStreak(reference: Date = .now) -> Int {
+        if isSlip(on: reference) {
+            return 0
+        }
+
         if isLoggable(on: reference), !isCompleted(on: reference) {
             let yesterday = AppCalendar.current.date(
                 byAdding: .day,
@@ -340,8 +397,16 @@ extension Habit {
                     return .frozen
                 }
 
+                if isSlip(on: day) {
+                    return .slip
+                }
+
                 if isMissed(on: day) {
                     return .missed
+                }
+
+                if hasUrge(on: day) {
+                    return .urge
                 }
 
                 if isFlexibleSchedule && !isCompleted(on: day) {

@@ -27,6 +27,53 @@ enum EntryKind: String, Codable, CaseIterable {
     case completed
     case skipped
     case missed
+    case slip
+    case urge
+}
+
+enum SlipTrigger: String, Codable, CaseIterable, Identifiable {
+    case stress
+    case boredom
+    case social
+    case fatigue
+    case craving
+    case other
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .stress:
+            return "Estrés"
+        case .boredom:
+            return "Aburrimiento"
+        case .social:
+            return "Social"
+        case .fatigue:
+            return "Cansancio"
+        case .craving:
+            return "Antojo"
+        case .other:
+            return "Otro"
+        }
+    }
+
+    var iconName: String {
+        switch self {
+        case .stress:
+            return "bolt.heart"
+        case .boredom:
+            return "clock"
+        case .social:
+            return "person.2"
+        case .fatigue:
+            return "moon"
+        case .craving:
+            return "waveform.path.ecg"
+        case .other:
+            return "ellipsis"
+        }
+    }
 }
 
 enum HabitFailureReason: String, Codable, CaseIterable, Identifiable {
@@ -67,6 +114,8 @@ final class HabitEntry {
     var completedCount: Int
     var value: Double?
     var failureReason: String?
+    var slipTriggerRaw: String?
+    var slipContext: String?
     var habit: Habit?
 
     var source: HabitEntrySource {
@@ -105,6 +154,21 @@ final class HabitEntry {
         }
     }
 
+    var slipTrigger: SlipTrigger? {
+        get {
+            guard let slipTriggerRaw else { return nil }
+            return SlipTrigger(rawValue: slipTriggerRaw)
+        }
+        set {
+            slipTriggerRaw = newValue?.rawValue
+        }
+    }
+
+    var urgeTrigger: SlipTrigger? {
+        get { slipTrigger }
+        set { slipTrigger = newValue }
+    }
+
     init(
         date: Date,
         completedAt: Date? = nil,
@@ -114,6 +178,8 @@ final class HabitEntry {
         completedCount: Int = 1,
         value: Double? = nil,
         failureReason: HabitFailureReason? = nil,
+        slipTrigger: SlipTrigger? = nil,
+        slipContext: String? = nil,
         habit: Habit
     ) {
         self.id = UUID()
@@ -125,6 +191,8 @@ final class HabitEntry {
         self.completedCount = completedCount
         self.value = value ?? Double(completedCount)
         self.failureReason = failureReason?.rawValue
+        self.slipTriggerRaw = slipTrigger?.rawValue
+        self.slipContext = slipContext
         self.habit = habit
     }
 }

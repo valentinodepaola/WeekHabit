@@ -113,14 +113,15 @@ struct WeekGridRow: View {
         }
 
         let entriesForDay = habit.entries.filter { AppCalendar.isSameDay($0.date, date) }
+        let stateEntriesForDay = entriesForDay.filter { $0.kind != .urge }
         let isCompleted = habit.isCompleted(on: date)
         let isSkipped = habit.isSkipped(on: date)
         let totalValue = habit.totalValue(on: date)
         let isPartial = habit.trackingKind == .quantity && totalValue > 0 && !isCompleted
 
         // Confianza: si TODAS las marcas son `.manual`, es retroactiva.
-        let onlyManualEntries = !entriesForDay.isEmpty
-            && entriesForDay.allSatisfy { $0.source == .manual }
+        let onlyManualEntries = !stateEntriesForDay.isEmpty
+            && stateEntriesForDay.allSatisfy { $0.source == .manual }
 
         if isCompleted {
             return onlyManualEntries ? .completedRetro : .completed
@@ -131,8 +132,14 @@ struct WeekGridRow: View {
         if habit.isFreezeProtected(on: date) {
             return .frozen
         }
+        if habit.isSlip(on: date) {
+            return .slip
+        }
         if habit.isMissed(on: date) {
             return .missed
+        }
+        if habit.hasUrge(on: date) {
+            return .urge
         }
         if isPartial {
             return onlyManualEntries ? .partialRetro : .partial

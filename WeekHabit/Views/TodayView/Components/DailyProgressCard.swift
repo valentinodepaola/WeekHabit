@@ -10,15 +10,17 @@ struct DailyProgressCard: View {
     let completedCount: Int
     let totalCount: Int
     let remainingCount: Int
+    var slipCount: Int = 0
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var completionBlend: Double {
-        totalCount > 0 && remainingCount == 0 ? 1 : 0
+        totalCount > 0 && remainingCount == 0 && slipCount == 0 ? 1 : 0
     }
 
     private var headlineText: String {
         if totalCount == 0 { return "Sin hábitos hoy" }
+        if remainingCount == 0 && slipCount > 0 { return "Día registrado" }
         if remainingCount == 0 { return "Día cerrado" }
         if remainingCount == 1 { return "Te falta uno" }
         return "Te faltan \(remainingCount)"
@@ -27,6 +29,11 @@ struct DailyProgressCard: View {
     private var supportText: String {
         if totalCount == 0 {
             return "El descanso también construye semana."
+        }
+        if remainingCount == 0 && slipCount > 0 {
+            return slipCount == 1
+                ? "Hubo un slip. Registrarlo también cuenta."
+                : "Hubo slips. Registrarlos también cuenta."
         }
         if remainingCount == 0 {
             return "Llegaste a tu meta de hoy."

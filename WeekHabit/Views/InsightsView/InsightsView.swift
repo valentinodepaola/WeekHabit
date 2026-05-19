@@ -36,8 +36,20 @@ struct InsightsView: View {
         experiments.activeHabitIDs(reference: referenceDate)
     }
 
+    private var buildHabits: [Habit] {
+        habits.filter { !$0.isBreakHabit }
+    }
+
+    private var breakHabits: [Habit] {
+        habits.filter { $0.isBreakHabit }
+    }
+
+    private var urgePeakInsight: UrgePeakHourInsight? {
+        breakHabits.urgePeakHourInsight(reference: referenceDate)
+    }
+
     private var suggestions: [RankedRhythmSuggestion] {
-        habits.rhythmExperimentSuggestions(
+        buildHabits.rhythmExperimentSuggestions(
             reference: referenceDate,
             excludingHabitIDs: activeExperimentIDs
         )
@@ -88,6 +100,13 @@ struct InsightsView: View {
                                         experiment: experiment,
                                         habit: habit(for: experiment),
                                         referenceDate: referenceDate
+                                    )
+                                }
+
+                                if let urgePeakInsight {
+                                    UrgePeakHoursCard(
+                                        insight: urgePeakInsight,
+                                        buckets: breakHabits.urgeHourBuckets(reference: referenceDate)
                                     )
                                 }
 
@@ -239,7 +258,7 @@ struct InsightsView: View {
                 )
             }
 
-            if let peakHour = habits.contextualPeakHour(reference: referenceDate) {
+            if let peakHour = buildHabits.contextualPeakHour(reference: referenceDate) {
                 InsightSummaryCard(
                     icon: "clock",
                     iconColor: AppColor.info,

@@ -81,6 +81,30 @@ enum SchemaV9: VersionedSchema {
     }
 }
 
+enum SchemaV10: VersionedSchema {
+    static var versionIdentifier: Schema.Version { .init(10, 0, 0) }
+
+    static var models: [any PersistentModel.Type] {
+        [Habit.self, HabitEntry.self, HabitExperiment.self, FocusSession.self, Plan.self, StreakFreeze.self]
+    }
+}
+
+enum SchemaV11: VersionedSchema {
+    static var versionIdentifier: Schema.Version { .init(11, 0, 0) }
+
+    static var models: [any PersistentModel.Type] {
+        [Habit.self, HabitEntry.self, HabitExperiment.self, FocusSession.self, Plan.self, StreakFreeze.self]
+    }
+}
+
+enum SchemaV12: VersionedSchema {
+    static var versionIdentifier: Schema.Version { .init(12, 0, 0) }
+
+    static var models: [any PersistentModel.Type] {
+        [Habit.self, HabitEntry.self, HabitExperiment.self, FocusSession.self, Plan.self, StreakFreeze.self]
+    }
+}
+
 enum HabitMigrationPlan: SchemaMigrationPlan {
     static var schemas: [any VersionedSchema.Type] {
         [
@@ -92,7 +116,10 @@ enum HabitMigrationPlan: SchemaMigrationPlan {
             SchemaV6.self,
             SchemaV7.self,
             SchemaV8.self,
-            SchemaV9.self
+            SchemaV9.self,
+            SchemaV10.self,
+            SchemaV11.self,
+            SchemaV12.self
         ]
     }
 
@@ -105,7 +132,10 @@ enum HabitMigrationPlan: SchemaMigrationPlan {
             .lightweight(fromVersion: SchemaV5.self, toVersion: SchemaV6.self),
             .lightweight(fromVersion: SchemaV6.self, toVersion: SchemaV7.self),
             .lightweight(fromVersion: SchemaV7.self, toVersion: SchemaV8.self),
-            .lightweight(fromVersion: SchemaV8.self, toVersion: SchemaV9.self)
+            .lightweight(fromVersion: SchemaV8.self, toVersion: SchemaV9.self),
+            .lightweight(fromVersion: SchemaV9.self, toVersion: SchemaV10.self),
+            .lightweight(fromVersion: SchemaV10.self, toVersion: SchemaV11.self),
+            .lightweight(fromVersion: SchemaV11.self, toVersion: SchemaV12.self)
         ]
     }
 }

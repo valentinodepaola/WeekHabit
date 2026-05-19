@@ -11,19 +11,28 @@ struct TodayHabitComponent: View {
     var isSkipped: Bool = false
     var activeExperiment: HabitExperiment?
     var referenceDate: Date = .now
+    var onUrge: (() -> Void)? = nil
+    var onSlip: (() -> Void)? = nil
     let onToggle: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        HStack(alignment: .center, spacing: AppSpacing.m) {
-            completeToggle
+        VStack(alignment: .leading, spacing: AppSpacing.m) {
+            HStack(alignment: .center, spacing: AppSpacing.m) {
+                completeToggle
 
-            textContent
+                textContent
 
-            Spacer(minLength: AppSpacing.s)
+                Spacer(minLength: AppSpacing.s)
 
-            iconColumn
+                iconColumn
+            }
+
+            if shouldShowBreakActions {
+                breakActions
+                    .padding(.leading, 34 + AppSpacing.m)
+            }
         }
         .padding(.horizontal, AppSpacing.l)
         .padding(.vertical, AppSpacing.l)
@@ -136,7 +145,7 @@ struct TodayHabitComponent: View {
                             )
                     }
                 if isCompleted {
-                    Image(systemName: "checkmark")
+                    Image(systemName: habit.isBreakHabit ? "xmark" : "checkmark")
                         .font(.system(size: 14, weight: .bold))
                         .foregroundStyle(.white)
                         .symbolEffect(.bounce, value: isCompleted)
@@ -152,6 +161,65 @@ struct TodayHabitComponent: View {
         .buttonStyle(.plain)
         .animation(AppMotion.respectful(AppMotion.celebration, reduceMotion), value: isCompleted || isSkipped)
         .accessibilityLabel(toggleAccessibilityLabel)
+    }
+
+    private var breakActions: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: AppSpacing.s) {
+                breakActionButtons
+            }
+
+            VStack(alignment: .leading, spacing: AppSpacing.s) {
+                breakActionButtons
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var breakActionButtons: some View {
+        if let onUrge {
+            Button(action: onUrge) {
+                actionPill(
+                    title: "Tuve el impulso",
+                    icon: "waveform.path.ecg",
+                    color: habit.habitColor
+                )
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Registrar impulso de \(habit.title)")
+        }
+
+        if let onSlip {
+            Button(action: onSlip) {
+                actionPill(
+                    title: "Registrar slip",
+                    icon: "arrow.counterclockwise",
+                    color: AppColor.warning
+                )
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Registrar slip para \(habit.title)")
+        }
+    }
+
+    private func actionPill(title: String, icon: String, color: Color) -> some View {
+        HStack(spacing: AppSpacing.xs) {
+            Image(systemName: icon)
+                .font(.system(size: 12, weight: .semibold))
+
+            Text(title)
+                .font(AppFont.label)
+                .lineLimit(1)
+        }
+        .foregroundStyle(color)
+        .padding(.horizontal, AppSpacing.m)
+        .padding(.vertical, AppSpacing.s)
+        .background(color.opacity(0.10))
+        .clipShape(Capsule())
+        .overlay {
+            Capsule()
+                .strokeBorder(color.opacity(0.24), lineWidth: 1)
+        }
     }
 
     private func handleToggle() {
@@ -175,9 +243,16 @@ struct TodayHabitComponent: View {
         trimmedCue == nil
     }
 
+    private var shouldShowBreakActions: Bool {
+        habit.isBreakHabit && !isCompleted && !isSkipped && (onSlip != nil || onUrge != nil)
+    }
+
     private var scheduleFallbackText: String {
         if isSkipped {
             return "Descanso intencional"
+        }
+        if habit.isBreakHabit && !isCompleted {
+            return "Lo evité hoy"
         }
         if habit.trackingKind == .quantity {
             return habit.targetPerSessionText

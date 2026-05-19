@@ -33,6 +33,7 @@ struct WeekDotsCard: View {
                             isCompleted: habit.isCompleted(on: dayDate),
                             isSkipped: habit.isSkipped(on: dayDate),
                             isFrozen: habit.isFreezeProtected(on: dayDate),
+                            isSlip: habit.isSlip(on: dayDate),
                             isActive: habit.isLoggable(on: dayDate),
                             isRetroactive: isRetroactive(on: dayDate),
                             color: habit.habitColor
@@ -64,6 +65,7 @@ private struct WeekDot: View {
     let isCompleted: Bool
     let isSkipped: Bool
     let isFrozen: Bool
+    let isSlip: Bool
     let isActive: Bool
     let isRetroactive: Bool
     let color: Color
@@ -91,6 +93,10 @@ private struct WeekDot: View {
                 Image(systemName: "shield.fill")
                     .font(.system(size: 10, weight: .bold))
                     .foregroundStyle(AppColor.info)
+            } else if isSlip && isActive {
+                Image(systemName: "arrow.counterclockwise")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(AppColor.warning)
             }
         }
         .frame(width: size, height: size)
@@ -106,6 +112,9 @@ private struct WeekDot: View {
         if isFrozen && isActive {
             return AppColor.info.opacity(0.12)
         }
+        if isSlip && isActive {
+            return AppColor.warning.opacity(0.14)
+        }
         if isActive {
             return AppColor.bgSunken
         }
@@ -116,6 +125,7 @@ private struct WeekDot: View {
         if isCompleted && isActive { return color }
         if isSkipped && isActive { return color.opacity(0.45) }
         if isFrozen && isActive { return AppColor.info.opacity(0.5) }
+        if isSlip && isActive { return AppColor.warning.opacity(0.48) }
         if isActive { return color.opacity(0.45) }
         return AppColor.divider
     }

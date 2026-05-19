@@ -77,6 +77,14 @@ struct WeekView: View {
         return "\(Int(percentage))%"
     }
 
+    private var completedLabel: String {
+        let hasBreak = visibleHabits.contains { $0.isBreakHabit }
+        let hasBuild = visibleHabits.contains { !$0.isBreakHabit }
+        if hasBreak && !hasBuild { return "Evitados" }
+        if hasBreak { return "Marcados" }
+        return "Completados"
+    }
+
     var body: some View {
         NavigationStack {
             AppBackground {
@@ -164,7 +172,7 @@ struct WeekView: View {
                 .tracking(0.6)
 
             HStack(spacing: AppSpacing.s) {
-                StatTile(label: "Completados", value: completedDisplay, icon: "checkmark.circle.fill")
+                StatTile(label: completedLabel, value: completedDisplay, icon: "checkmark.circle.fill")
                 StatTile(label: "Meta total", value: "\(totalGoal)", icon: "target")
                 StatTile(label: "Consistencia", value: consistencyDisplay, icon: "chart.bar.fill")
             }
