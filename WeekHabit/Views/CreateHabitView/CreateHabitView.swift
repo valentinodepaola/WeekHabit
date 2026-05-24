@@ -29,6 +29,7 @@ struct CreateHabitView: View {
     @State private var habitName: String = ""
     @State private var note: String = ""
     @State private var cue: String = ""
+    @State private var minimumViableTitle: String = ""
     @State private var selectedIconName: String = HabitAppearance.defaultIconName
     @State private var selectedColorHex: String = HabitAppearance.defaultColorHex
     @State private var direction: HabitDirection = .build
@@ -115,6 +116,7 @@ struct CreateHabitView: View {
         _habitName = State(initialValue: habitToEdit?.title ?? "")
         _note = State(initialValue: habitToEdit?.note ?? "")
         _cue = State(initialValue: habitToEdit?.cue ?? "")
+        _minimumViableTitle = State(initialValue: habitToEdit?.minimumViableTitle ?? "")
         _selectedIconName = State(initialValue: habitToEdit?.iconName ?? HabitAppearance.defaultIconName)
         _selectedColorHex = State(initialValue: habitToEdit?.colorHex ?? HabitAppearance.defaultColorHex)
         _direction = State(initialValue: habitToEdit?.direction ?? .build)
@@ -159,6 +161,8 @@ struct CreateHabitView: View {
                         selectedIconName: $selectedIconName,
                         selectedColorHex: $selectedColorHex
                     )
+
+                    HabitMinimalVersionSection(minimumViableTitle: $minimumViableTitle)
 
                     // 2. Señal
                     HabitCueSection(cue: $cue)
@@ -255,6 +259,7 @@ struct CreateHabitView: View {
         let trimmedName = habitName.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedNote = note.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedCue = cue.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedMinimumViableTitle = minimumViableTitle.trimmingCharacters(in: .whitespacesAndNewlines)
         let normalizedTargetValue = trackingKind == .check ? 1 : parsedTargetValue
         let normalizedMeasurementUnit: HabitMeasurementUnit = trackingKind == .check ? .none : measurementUnit
         let normalizedEndsAt = hasEndDate ? AppCalendar.startOfDay(for: endsAt) : nil
@@ -273,6 +278,7 @@ struct CreateHabitView: View {
             habitToEdit.title = trimmedName
             habitToEdit.note = trimmedNote.isEmpty ? nil : trimmedNote
             habitToEdit.cue = trimmedCue.isEmpty ? nil : trimmedCue
+            habitToEdit.minimumViableTitle = trimmedMinimumViableTitle.isEmpty ? nil : trimmedMinimumViableTitle
             habitToEdit.iconName = selectedIconName
             habitToEdit.colorHex = selectedColorHex
             habitToEdit.direction = direction
@@ -295,6 +301,7 @@ struct CreateHabitView: View {
                 title: trimmedName,
                 note: trimmedNote.isEmpty ? nil : trimmedNote,
                 cue: trimmedCue.isEmpty ? nil : trimmedCue,
+                minimumViableTitle: trimmedMinimumViableTitle.isEmpty ? nil : trimmedMinimumViableTitle,
                 iconName: selectedIconName,
                 colorHex: selectedColorHex,
                 targetDaysPerWeek: normalizedPlan.targetDaysPerWeek,
@@ -393,6 +400,24 @@ struct CreateHabitView: View {
             second: 0,
             of: .now
         ) ?? .now
+    }
+}
+
+private struct HabitMinimalVersionSection: View {
+    @Binding var minimumViableTitle: String
+
+    var body: some View {
+        CreateHabitFormSection(
+            title: "Versión mínima viable",
+            helper: "Una versión chica para días difíciles. Cuenta para tu racha aunque no para el conteo de días completos."
+        ) {
+            TextFieldComponent(
+                titleSection: "Mínima",
+                placeholder: "Ej: Caminar 5 min",
+                habitName: $minimumViableTitle,
+                normalTextField: false
+            )
+        }
     }
 }
 

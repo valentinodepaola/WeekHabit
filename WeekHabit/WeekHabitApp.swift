@@ -11,7 +11,7 @@ import SwiftData
 @main
 struct WeekHabitApp: App {
     let container: ModelContainer = {
-        let schema = Schema(versionedSchema: SchemaV13.self)
+        let schema = Schema(versionedSchema: SchemaV14.self)
         let config = ModelConfiguration(schema: schema)
         do {
             return try ModelContainer(

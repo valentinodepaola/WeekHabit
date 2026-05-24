@@ -99,6 +99,8 @@ struct LastWeeksHeatmapCard: View {
         switch state {
         case .completed:
             return habit.habitColor.opacity(max(0.35, intensity))
+        case .minimum:
+            return habit.habitColor.opacity(0.42)
         case .skipped:
             return habit.habitColor.opacity(0.18)
         case .frozen:

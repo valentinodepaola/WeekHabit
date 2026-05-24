@@ -10,6 +10,7 @@ struct WeekGridCell: View {
         case completed
         /// Marca registrada retroactivamente (todos los entries del día son `.manual`).
         case completedRetro
+        case minimum
         case skipped
         case frozen
         case missed
@@ -42,6 +43,10 @@ struct WeekGridCell: View {
                         .foregroundStyle(.white)
                         .symbolEffect(.bounce, value: state)
                 case .completedRetro:
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(.white)
+                case .minimum:
                     Image(systemName: "checkmark")
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(.white)
@@ -113,6 +118,13 @@ struct WeekGridCell: View {
                     RoundedRectangle(cornerRadius: AppRadius.s - 3)
                         .strokeBorder(Color.white.opacity(0.85), style: StrokeStyle(lineWidth: 1, dash: [2, 2]))
                         .padding(3)
+                }
+        case .minimum:
+            RoundedRectangle(cornerRadius: AppRadius.s)
+                .fill(habitColor.opacity(0.55))
+                .overlay {
+                    RoundedRectangle(cornerRadius: AppRadius.s)
+                        .strokeBorder(habitColor, lineWidth: 1.2)
                 }
         case .skipped:
             RoundedRectangle(cornerRadius: AppRadius.s)
@@ -187,6 +199,7 @@ struct WeekGridCell: View {
         switch state {
         case .completed: return "Completado"
         case .completedRetro: return "Completado, registrado más tarde"
+        case .minimum: return "Versión mínima"
         case .skipped: return "Descanso intencional"
         case .frozen: return "Comodín de racha usado"
         case .missed: return "Fallo registrado"

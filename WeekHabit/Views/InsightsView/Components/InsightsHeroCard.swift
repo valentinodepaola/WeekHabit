@@ -104,6 +104,10 @@ struct InsightsHeroCard: View {
             InsightsTrendBars(values: snapshot.trend)
                 .padding(.top, AppSpacing.xs)
 
+            if snapshot.minimumDays > 0 {
+                minimumVersionNote
+            }
+
             Text("Cada barra resume una parte de los últimos 30 días; más alta significa más cumplimiento.")
                 .font(AppFont.label)
                 .foregroundStyle(AppColor.textTertiary)
@@ -115,6 +119,42 @@ struct InsightsHeroCard: View {
         .clipShape(RoundedRectangle(cornerRadius: AppRadius.xl, style: .continuous))
         .appElevation(.low)
     }
+
+    private var minimumVersionNote: some View {
+        HStack(alignment: .top, spacing: AppSpacing.s) {
+            Image(systemName: "checkmark.circle")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(AppColor.info)
+                .frame(width: 22, height: 22)
+                .background(AppColor.info.opacity(0.12))
+                .clipShape(Circle())
+
+            VStack(alignment: .leading, spacing: AppSpacing.xxs) {
+                Text(minimumDaysText)
+                    .font(AppFont.label)
+                    .foregroundStyle(AppColor.textSecondary)
+
+                Text("Cuentan para tu racha pero no para la tasa")
+                    .font(AppFont.label)
+                    .foregroundStyle(AppColor.textTertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(.horizontal, AppSpacing.m)
+        .padding(.vertical, AppSpacing.s)
+        .background(AppColor.info.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.m, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: AppRadius.m, style: .continuous)
+                .strokeBorder(AppColor.info.opacity(0.20), lineWidth: 1)
+        }
+    }
+
+    private var minimumDaysText: String {
+        snapshot.minimumDays == 1
+            ? "1 día con versión mínima"
+            : "\(snapshot.minimumDays) días con versión mínima"
+    }
 }
 
 #Preview {
@@ -122,7 +162,8 @@ struct InsightsHeroCard: View {
         snapshot: GlobalInsightSnapshot(
             current: HabitCompletionStats(completed: 12, scheduled: 17),
             previous: HabitCompletionStats(completed: 10, scheduled: 17),
-            trend: [0.2, 0.3, 0.15, 0.35, 0.28, 0.5, 0.62, 0.4, 0.55, 0.82, 0.75, 0.88]
+            trend: [0.2, 0.3, 0.15, 0.35, 0.28, 0.5, 0.62, 0.4, 0.55, 0.82, 0.75, 0.88],
+            minimumDays: 3
         )
     )
     .padding()

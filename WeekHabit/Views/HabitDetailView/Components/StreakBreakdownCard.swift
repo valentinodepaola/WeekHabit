@@ -24,13 +24,17 @@ struct StreakBreakdownCard: View {
                 : "Aún no hay una racha activa para desglosar."
         }
 
-        if breakdown.protectedDays == 0 {
+        if breakdown.protectedDays == 0 && breakdown.minimumDays == 0 {
             return isBreakHabit
                 ? "Tu racha viene solo de días evitados."
                 : "Tu racha viene solo de días completados."
         }
 
-        return "Los descansos y comodines mantuvieron la racha sin contarlos como días hechos."
+        if breakdown.minimumDays > 0 && breakdown.protectedDays == 0 {
+            return "Las versiones mínimas sumaron a la racha sin contarlas como días completos."
+        }
+
+        return "Versiones mínimas, descansos y comodines sostuvieron la racha sin inflar los días completos."
     }
 
     var body: some View {
@@ -58,6 +62,14 @@ struct StreakBreakdownCard: View {
                         : (isBreakHabit ? "evitados" : "hechos"),
                     tint: color,
                     fill: color.opacity(0.16)
+                )
+
+                StreakBreakdownMetric(
+                    icon: "checkmark.circle",
+                    value: breakdown.minimumDays,
+                    label: breakdown.minimumDays == 1 ? "mínimo" : "mínimos",
+                    tint: color,
+                    fill: color.opacity(0.10)
                 )
 
                 StreakBreakdownMetric(
@@ -131,12 +143,12 @@ private struct StreakBreakdownMetric: View {
 #Preview {
     VStack(spacing: AppSpacing.m) {
         StreakBreakdownCard(
-            breakdown: StreakBreakdown(completedDays: 18, skippedDays: 4, frozenDays: 1),
+            breakdown: StreakBreakdown(completedDays: 18, minimumDays: 2, skippedDays: 4, frozenDays: 1),
             color: AppColor.accent
         )
 
         StreakBreakdownCard(
-            breakdown: StreakBreakdown(completedDays: 5, skippedDays: 0, frozenDays: 0),
+            breakdown: StreakBreakdown(completedDays: 5, minimumDays: 0, skippedDays: 0, frozenDays: 0),
             color: AppColor.success
         )
     }

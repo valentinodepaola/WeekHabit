@@ -23,6 +23,7 @@ struct GlobalInsightSnapshot {
     let current: HabitCompletionStats
     let previous: HabitCompletionStats
     let trend: [Double]
+    let minimumDays: Int
 
     var deltaPercentagePoints: Int {
         Int(((current.ratio - previous.ratio) * 100).rounded())

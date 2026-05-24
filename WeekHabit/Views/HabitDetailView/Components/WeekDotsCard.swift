@@ -31,6 +31,7 @@ struct WeekDotsCard: View {
 
                         WeekDot(
                             isCompleted: habit.isCompleted(on: dayDate),
+                            isMinimumCompleted: habit.isMinimumCompleted(on: dayDate),
                             isSkipped: habit.isSkipped(on: dayDate),
                             isFrozen: habit.isFreezeProtected(on: dayDate),
                             isSlip: habit.isSlip(on: dayDate),
@@ -63,6 +64,7 @@ struct WeekDotsCard: View {
 
 private struct WeekDot: View {
     let isCompleted: Bool
+    let isMinimumCompleted: Bool
     let isSkipped: Bool
     let isFrozen: Bool
     let isSlip: Bool
@@ -82,6 +84,10 @@ private struct WeekDot: View {
                 }
 
             if isCompleted && isActive {
+                Image(systemName: "checkmark")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(.white)
+            } else if isMinimumCompleted && isActive {
                 Image(systemName: "checkmark")
                     .font(.system(size: 11, weight: .bold))
                     .foregroundStyle(.white)
@@ -106,6 +112,9 @@ private struct WeekDot: View {
         if isCompleted && isActive {
             return isRetroactive ? color.opacity(0.7) : color
         }
+        if isMinimumCompleted && isActive {
+            return color.opacity(0.55)
+        }
         if isSkipped && isActive {
             return color.opacity(0.12)
         }
@@ -123,6 +132,7 @@ private struct WeekDot: View {
 
     private var borderColor: Color {
         if isCompleted && isActive { return color }
+        if isMinimumCompleted && isActive { return color }
         if isSkipped && isActive { return color.opacity(0.45) }
         if isFrozen && isActive { return AppColor.info.opacity(0.5) }
         if isSlip && isActive { return AppColor.warning.opacity(0.48) }

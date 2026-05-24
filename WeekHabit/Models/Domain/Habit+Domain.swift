@@ -11,6 +11,7 @@ import Foundation
 
 enum CellState: Equatable {
     case completed
+    case minimum
     case skipped
     case frozen
     case missed
@@ -32,6 +33,7 @@ struct RecoveryPromptCandidate: Identifiable {
 
 struct StreakBreakdown {
     let completedDays: Int
+    let minimumDays: Int
     let skippedDays: Int
     let frozenDays: Int
 
@@ -40,7 +42,7 @@ struct StreakBreakdown {
     }
 
     var totalDays: Int {
-        completedDays + protectedDays
+        completedDays + minimumDays + protectedDays
     }
 
     var hasHistory: Bool {
@@ -143,6 +145,12 @@ extension Habit {
     func isSkipped(on date: Date) -> Bool {
         entries.contains {
             AppCalendar.isSameDay($0.date, date) && $0.kind == .skipped
+        }
+    }
+
+    func isMinimumCompleted(on date: Date) -> Bool {
+        entries.contains {
+            AppCalendar.isSameDay($0.date, date) && $0.kind == .minimum
         }
     }
 
@@ -259,6 +267,8 @@ extension Habit {
             if isLoggable(on: cursor) {
                 if isCompleted(on: cursor) {
                     streak += 1
+                } else if isMinimumCompleted(on: cursor) {
+                    streak += 1
                 } else if !preservesStreakWithoutCompletion(on: cursor) {
                     break
                 }
@@ -276,6 +286,7 @@ extension Habit {
     /// Completed days add evidence; skips and freezes keep the span intact without adding completion.
     func currentStreakBreakdown(reference: Date = .now) -> StreakBreakdown {
         var completedDays = 0
+        var minimumDays = 0
         var skippedDays = 0
         var frozenDays = 0
         var cursor = AppCalendar.startOfDay(for: reference)
@@ -286,6 +297,8 @@ extension Habit {
             if isLoggable(on: cursor) {
                 if isCompleted(on: cursor) {
                     completedDays += 1
+                } else if isMinimumCompleted(on: cursor) {
+                    minimumDays += 1
                 } else if isSkipped(on: cursor) {
                     skippedDays += 1
                 } else if isFreezeProtected(on: cursor) {
@@ -304,6 +317,7 @@ extension Habit {
 
         return StreakBreakdown(
             completedDays: completedDays,
+            minimumDays: minimumDays,
             skippedDays: skippedDays,
             frozenDays: frozenDays
         )
@@ -343,6 +357,9 @@ extension Habit {
         while cursor <= end && scannedDays < 365 * 5 {
             if isLoggable(on: cursor) {
                 if isCompleted(on: cursor) {
+                    running += 1
+                    best = max(best, running)
+                } else if isMinimumCompleted(on: cursor) {
                     running += 1
                     best = max(best, running)
                 } else if preservesStreakWithoutCompletion(on: cursor) {
@@ -389,6 +406,14 @@ extension Habit {
                     return .inactive
                 }
 
+                if isCompleted(on: day) {
+                    return .completed
+                }
+
+                if isMinimumCompleted(on: day) {
+                    return .minimum
+                }
+
                 if isSkipped(on: day) {
                     return .skipped
                 }
@@ -413,7 +438,7 @@ extension Habit {
                     return .inactive
                 }
 
-                return isCompleted(on: day) ? .completed : .missed
+                return .missed
             }
         }
     }
@@ -460,6 +485,7 @@ extension Habit {
     private func isMissedFreezeCandidate(on date: Date) -> Bool {
         isLoggable(on: date)
             && !isCompleted(on: date)
+            && !isMinimumCompleted(on: date)
             && !isSkipped(on: date)
             && !isMissed(on: date)
             && !isFreezeProtected(on: date)

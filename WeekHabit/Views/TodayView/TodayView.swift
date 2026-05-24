@@ -259,6 +259,7 @@ struct TodayView: View {
             TodayHabitComponent(
                 habit: habit,
                 isCompleted: false,
+                isMinimumCompleted: habit.isMinimumCompleted(on: referenceDate),
                 activeExperiment: experiments.activeExperiment(
                     for: habit.id,
                     reference: referenceDate
@@ -269,7 +270,10 @@ struct TodayView: View {
                 } : nil,
                 onSlip: habit.isBreakHabit ? {
                     sheetRoute = .slipLog(habit: habit)
-                } : nil
+                } : nil,
+                onMinimum: {
+                    markMinimumCompleted(for: habit, on: referenceDate)
+                }
             ) {
                 toggleCompletion(for: habit)
             }
@@ -318,7 +322,8 @@ struct TodayView: View {
             ForEach(completedHabits) { habit in
                 TodayCompletedHabitRow(
                     habit: habit,
-                    metadata: completionMetadata(for: habit)
+                    metadata: completionMetadata(for: habit),
+                    isMinimumCompleted: habit.isMinimumCompleted(on: referenceDate) && !habit.isCompleted(on: referenceDate)
                 ) {
                     toggleCompletion(for: habit)
                 }
@@ -655,15 +660,17 @@ struct TodayView: View {
         }
 
         let entriesForToday = habit.entries.filter {
-            AppCalendar.isSameDay($0.date, referenceDate) && $0.kind == .completed
+            AppCalendar.isSameDay($0.date, referenceDate)
         }
         let stateEntriesForToday = entriesForToday.filter { $0.kind != .urge }
+        let completedEntriesForToday = entriesForToday.filter { $0.kind == .completed }
 
         let willComplete = !habit.isCompleted(on: referenceDate)
 
         transitionHabitBetweenSections {
             if willComplete {
                 stateEntriesForToday.forEach { modelContext.delete($0) }
+                deleteFreeze(for: habit, on: referenceDate)
                 let entry = HabitEntry(
                     date: referenceDate,
                     completedAt: .now,
@@ -673,9 +680,7 @@ struct TodayView: View {
                 )
                 modelContext.insert(entry)
             } else {
-                entriesForToday
-                    .filter { $0.kind == .completed }
-                    .forEach { modelContext.delete($0) }
+                completedEntriesForToday.forEach { modelContext.delete($0) }
             }
         }
 
@@ -684,6 +689,31 @@ struct TodayView: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
                 AppHaptics.play(.dayClosed)
             }
+        }
+    }
+
+    private func markMinimumCompleted(for habit: Habit, on date: Date) {
+        guard !habit.isCompleted(on: date) else { return }
+
+        let entriesForDay = habit.entries.filter {
+            AppCalendar.isSameDay($0.date, date)
+        }
+        let stateEntriesForDay = entriesForDay.filter { $0.kind != .urge }
+
+        transitionHabitBetweenSections {
+            stateEntriesForDay.forEach { modelContext.delete($0) }
+            deleteFreeze(for: habit, on: date)
+            modelContext.insert(
+                HabitEntry(
+                    date: date,
+                    completedAt: .now,
+                    source: .today,
+                    kind: .minimum,
+                    completedCount: 0,
+                    value: 0,
+                    habit: habit
+                )
+            )
         }
     }
 
@@ -720,7 +750,7 @@ struct TodayView: View {
         if habit.isFlexibleSchedule && habit.completedDaysThisWeek(reference: referenceDate) >= habit.targetDaysPerWeek {
             return true
         }
-        return habit.isCompleted(on: referenceDate)
+        return habit.isCompleted(on: referenceDate) || habit.isMinimumCompleted(on: referenceDate)
     }
 
     private func completionMetadata(for habit: Habit) -> String {
@@ -728,10 +758,26 @@ struct TodayView: View {
             AppCalendar.isSameDay($0.date, referenceDate)
         }
 
-        guard let entry = entriesForToday.sorted(by: { lhs, rhs in
-            (lhs.completedAt ?? lhs.date) > (rhs.completedAt ?? rhs.date)
-        }).first else {
+        let completedEntry = entriesForToday
+            .filter { $0.kind == .completed }
+            .sorted { lhs, rhs in
+                (lhs.completedAt ?? lhs.date) > (rhs.completedAt ?? rhs.date)
+            }
+            .first
+        let minimumEntry = entriesForToday
+            .filter { $0.kind == .minimum }
+            .sorted { lhs, rhs in
+                (lhs.completedAt ?? lhs.date) > (rhs.completedAt ?? rhs.date)
+            }
+            .first
+
+        guard let entry = completedEntry ?? minimumEntry else {
             return "Meta semanal alcanzada"
+        }
+
+        if entry.kind == .minimum {
+            let title = habit.minimumViableTitle?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            return title.isEmpty ? "Versión mínima" : "Versión mínima · \(title)"
         }
 
         let sourceText: String
@@ -796,7 +842,7 @@ struct TodayView: View {
         transitionHabitBetweenSections {
             if value <= 0 {
                 entriesForDay
-                    .filter { $0.kind == .completed }
+                    .filter { $0.kind == .completed || $0.kind == .minimum }
                     .forEach { modelContext.delete($0) }
                 return
             }
@@ -1098,6 +1144,7 @@ private extension View {
 private struct TodayCompletedHabitRow: View {
     let habit: Habit
     let metadata: String
+    var isMinimumCompleted: Bool = false
     let onToggle: () -> Void
 
     var body: some View {
@@ -1107,17 +1154,21 @@ private struct TodayCompletedHabitRow: View {
                     .font(.system(size: 14, weight: .bold))
                     .foregroundStyle(.white)
                     .frame(width: 32, height: 32)
-                    .background(habit.habitColor)
+                    .background(isMinimumCompleted ? habit.habitColor.opacity(0.55) : habit.habitColor)
                     .clipShape(RoundedRectangle(cornerRadius: AppRadius.s, style: .continuous))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: AppRadius.s, style: .continuous)
+                            .strokeBorder(isMinimumCompleted ? habit.habitColor : Color.clear, lineWidth: 1)
+                    }
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Desmarcar \(habit.title)")
+            .accessibilityLabel(isMinimumCompleted ? "Marcar completo \(habit.title)" : "Desmarcar \(habit.title)")
 
             VStack(alignment: .leading, spacing: AppSpacing.xxs) {
                 Text(habit.title)
                     .font(AppFont.bodyEmphasis)
-                    .foregroundStyle(AppColor.textSecondary)
-                    .strikethrough(true, color: AppColor.textSecondary)
+                    .foregroundStyle(isMinimumCompleted ? AppColor.textPrimary.opacity(0.72) : AppColor.textSecondary)
+                    .strikethrough(!isMinimumCompleted, color: AppColor.textSecondary)
                     .lineLimit(1)
 
                 Text(metadata)
@@ -1133,11 +1184,14 @@ private struct TodayCompletedHabitRow: View {
         .padding(.horizontal, AppSpacing.l)
         .padding(.vertical, AppSpacing.m)
         .frame(maxWidth: .infinity, minHeight: 68, alignment: .leading)
-        .background(AppColor.bgElevated.opacity(0.72))
+        .background(isMinimumCompleted ? AppColor.bgElevated.opacity(0.88) : AppColor.bgElevated.opacity(0.72))
         .clipShape(RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous)
-                .strokeBorder(AppColor.divider.opacity(0.7), lineWidth: 1)
+                .strokeBorder(
+                    isMinimumCompleted ? habit.habitColor.opacity(0.28) : AppColor.divider.opacity(0.7),
+                    lineWidth: 1
+                )
         }
     }
 

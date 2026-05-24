@@ -86,6 +86,7 @@ final class Habit {
     var title: String
     var note: String?
     var cue: String?
+    var minimumViableTitle: String?
     @Attribute(originalName: "category")
     var legacyArea: LegacyHabitArea?
     var iconNameRaw: String?
@@ -165,6 +166,7 @@ final class Habit {
         title: String,
         note: String? = nil,
         cue: String? = nil,
+        minimumViableTitle: String? = nil,
         iconName: String = HabitAppearance.defaultIconName,
         colorHex: String = HabitAppearance.defaultColorHex,
         targetDaysPerWeek: Int,
@@ -186,6 +188,7 @@ final class Habit {
         self.title = title
         self.note = note
         self.cue = cue
+        self.minimumViableTitle = minimumViableTitle
         self.legacyArea = nil
         self.iconNameRaw = iconName
         self.colorHexRaw = colorHex

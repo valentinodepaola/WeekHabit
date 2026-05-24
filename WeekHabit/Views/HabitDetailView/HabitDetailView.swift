@@ -32,6 +32,14 @@ struct HabitDetailView: View {
         return cue
     }
 
+    private var trimmedMinimumTitle: String? {
+        guard let title = habit.minimumViableTitle?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !title.isEmpty else {
+            return nil
+        }
+        return title
+    }
+
     private var currentStreak: Int { habit.currentStreak() }
     private var bestStreak: Int { habit.bestStreak() }
     private var streakBreakdown: StreakBreakdown { habit.currentStreakBreakdown() }
@@ -150,6 +158,14 @@ struct HabitDetailView: View {
                 .foregroundStyle(AppColor.textTertiary)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
+            if let trimmedMinimumTitle {
+                MinimumViableHabitCard(
+                    title: trimmedMinimumTitle,
+                    color: habit.habitColor
+                )
+                .padding(.top, AppSpacing.xs)
+            }
+
             if let activeExperiment {
                 HabitExperimentStatusCard(
                     experiment: activeExperiment,
@@ -244,6 +260,43 @@ private struct ReplacementHabitCard: View {
             return nil
         }
         return cue
+    }
+}
+
+private struct MinimumViableHabitCard: View {
+    let title: String
+    let color: Color
+
+    var body: some View {
+        HStack(alignment: .top, spacing: AppSpacing.m) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(color.opacity(0.7))
+                .frame(width: 36, height: 36)
+                .background(color.opacity(0.12))
+                .clipShape(Circle())
+
+            VStack(alignment: .leading, spacing: AppSpacing.xs) {
+                Text("VERSIÓN MÍNIMA")
+                    .font(AppFont.label)
+                    .foregroundStyle(AppColor.textTertiary)
+                    .tracking(0.4)
+
+                Text(title)
+                    .font(AppFont.bodyEmphasis)
+                    .foregroundStyle(AppColor.textPrimary)
+                    .lineLimit(2)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(AppSpacing.m)
+        .background(AppColor.bgElevated)
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.m, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: AppRadius.m, style: .continuous)
+                .strokeBorder(AppColor.divider, lineWidth: 1)
+        }
     }
 }
 

@@ -33,7 +33,8 @@ extension Sequence where Element == Habit {
         return GlobalInsightSnapshot(
             current: globalCompletionStats(from: currentStart, to: currentEnd),
             previous: globalCompletionStats(from: previousStart, to: previousEnd),
-            trend: globalTrendBuckets(count: 12, days: 30, reference: reference)
+            trend: globalTrendBuckets(count: 12, days: 30, reference: reference),
+            minimumDays: globalTrustedMinimumDays(from: currentStart, to: currentEnd)
         )
     }
 
@@ -500,6 +501,12 @@ extension Sequence where Element == Habit {
                 completed: partial.completed + stats.completed,
                 scheduled: partial.scheduled + stats.scheduled
             )
+        }
+    }
+
+    private func globalTrustedMinimumDays(from start: Date, to end: Date) -> Int {
+        reduce(0) { partial, habit in
+            partial + habit.trustedMinimumDays(from: start, to: end)
         }
     }
 
