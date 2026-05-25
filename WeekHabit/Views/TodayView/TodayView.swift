@@ -659,6 +659,8 @@ struct TodayView: View {
             WeeklyReviewView(weekStart: weekStart)
                 .presentationDragIndicator(.visible)
                 .presentationBackground(AppColor.bgCanvas)
+        case .noteEntry(let entry):
+            EntryNoteSheet(entry: entry)
         }
     }
 
@@ -694,6 +696,7 @@ struct TodayView: View {
         let completedEntriesForToday = entriesForToday.filter { $0.kind == .completed }
 
         let willComplete = !habit.isCompleted(on: referenceDate)
+        var insertedEntry: HabitEntry?
 
         transitionHabitBetweenSections {
             if willComplete {
@@ -707,6 +710,7 @@ struct TodayView: View {
                     habit: habit
                 )
                 modelContext.insert(entry)
+                insertedEntry = entry
             } else {
                 completedEntriesForToday.forEach { modelContext.delete($0) }
             }
@@ -717,6 +721,10 @@ struct TodayView: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
                 AppHaptics.play(.dayClosed)
             }
+        }
+
+        if willComplete, let insertedEntry {
+            sheetRoute = .noteEntry(entry: insertedEntry)
         }
     }
 
@@ -1125,6 +1133,7 @@ private enum TodaySheetRoute: Identifiable {
     case recoveryPrompt(RecoveryPromptCandidate)
     case replacementPrompt(breakHabit: Habit, replacementHabit: Habit)
     case weeklyReview(weekStart: Date)
+    case noteEntry(entry: HabitEntry)
 
     var id: String {
         switch self {
@@ -1137,6 +1146,7 @@ private enum TodaySheetRoute: Identifiable {
             return "replacementPrompt-\(breakHabit.id)-\(replacementHabit.id)"
         case .weeklyReview(let weekStart):
             return "weeklyReview-\(weekStart.timeIntervalSinceReferenceDate)"
+        case .noteEntry(let entry): return "noteEntry-\(entry.id)"
         }
     }
 }

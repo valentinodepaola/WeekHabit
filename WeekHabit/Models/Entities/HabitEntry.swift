@@ -117,6 +117,7 @@ final class HabitEntry {
     var failureReason: String?
     var slipTriggerRaw: String?
     var slipContext: String?
+    var note: String?
     var habit: Habit?
 
     var source: HabitEntrySource {
@@ -181,6 +182,7 @@ final class HabitEntry {
         failureReason: HabitFailureReason? = nil,
         slipTrigger: SlipTrigger? = nil,
         slipContext: String? = nil,
+        note: String? = nil,
         habit: Habit
     ) {
         self.id = UUID()
@@ -194,6 +196,7 @@ final class HabitEntry {
         self.failureReason = failureReason?.rawValue
         self.slipTriggerRaw = slipTrigger?.rawValue
         self.slipContext = slipContext
+        self.note = note
         self.habit = habit
     }
 }
