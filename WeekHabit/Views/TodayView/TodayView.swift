@@ -22,6 +22,11 @@ struct TodayView: View {
     @Query(sort: \StreakFreeze.usedAt, order: .reverse)
     private var streakFreezes: [StreakFreeze]
 
+    @Query(sort: \WeeklyReview.reviewedAt, order: .reverse)
+    private var weeklyReviews: [WeeklyReview]
+
+    @AppStorage("weeklyReviewWeekdayRaw") private var weeklyReviewWeekdayRaw: Int = Weekday.sunday.rawValue
+
     @State private var coverRoute: TodayCoverRoute?
     @State private var sheetRoute: TodaySheetRoute?
     @State private var selectedHabit: Habit?
@@ -121,6 +126,15 @@ struct TodayView: View {
         return Double(completedTodayCount) / Double(activeTodayCount)
     }
 
+    private var weeklyReviewWeekStart: Date? {
+        WeeklyReviewService.needsReview(
+            reference: referenceDate,
+            preferredWeekday: Weekday(rawValue: weeklyReviewWeekdayRaw) ?? .sunday,
+            existingReviews: weeklyReviews,
+            habits: habits
+        )
+    }
+
     var body: some View {
         NavigationStack {
             AppBackground {
@@ -129,6 +143,16 @@ struct TodayView: View {
                         .todayListRow(
                             EdgeInsets(top: AppSpacing.l, leading: AppSpacing.l, bottom: 0, trailing: AppSpacing.l)
                         )
+
+                    if let weeklyReviewWeekStart {
+                        WeeklyReviewBanner(
+                            weekRangeText: weekRangeText(for: weeklyReviewWeekStart),
+                            onTap: { sheetRoute = .weeklyReview(weekStart: weeklyReviewWeekStart) }
+                        )
+                        .todayListRow(
+                            EdgeInsets(top: AppSpacing.s, leading: AppSpacing.l, bottom: AppSpacing.s, trailing: AppSpacing.l)
+                        )
+                    }
 
                     if todayHabits.isEmpty {
                         emptyTodayContent
@@ -631,6 +655,10 @@ struct TodayView: View {
             .presentationDetents([.height(360), .medium])
             .presentationDragIndicator(.visible)
             .presentationBackground(AppColor.bgCanvas)
+        case .weeklyReview(let weekStart):
+            WeeklyReviewView(weekStart: weekStart)
+                .presentationDragIndicator(.visible)
+                .presentationBackground(AppColor.bgCanvas)
         }
     }
 
@@ -751,6 +779,15 @@ struct TodayView: View {
             return true
         }
         return habit.isCompleted(on: referenceDate) || habit.isMinimumCompleted(on: referenceDate)
+    }
+
+    private func weekRangeText(for weekStart: Date) -> String {
+        let weekEnd = AppCalendar.current.date(byAdding: .day, value: 6, to: weekStart) ?? weekStart
+        let formatter = DateFormatter()
+        formatter.calendar = AppCalendar.current
+        formatter.locale = Locale(identifier: "es_MX")
+        formatter.dateFormat = "d MMM"
+        return "\(formatter.string(from: weekStart)) - \(formatter.string(from: weekEnd))"
     }
 
     private func completionMetadata(for habit: Habit) -> String {
@@ -1087,6 +1124,7 @@ private enum TodaySheetRoute: Identifiable {
     case urgeLog(habit: Habit)
     case recoveryPrompt(RecoveryPromptCandidate)
     case replacementPrompt(breakHabit: Habit, replacementHabit: Habit)
+    case weeklyReview(weekStart: Date)
 
     var id: String {
         switch self {
@@ -1097,6 +1135,8 @@ private enum TodaySheetRoute: Identifiable {
         case .recoveryPrompt(let candidate): return "recoveryPrompt-\(candidate.id)"
         case .replacementPrompt(let breakHabit, let replacementHabit):
             return "replacementPrompt-\(breakHabit.id)-\(replacementHabit.id)"
+        case .weeklyReview(let weekStart):
+            return "weeklyReview-\(weekStart.timeIntervalSinceReferenceDate)"
         }
     }
 }

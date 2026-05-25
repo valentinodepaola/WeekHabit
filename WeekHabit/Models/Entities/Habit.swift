@@ -100,6 +100,7 @@ final class Habit {
     var scheduleKindRaw: String?
     var directionRaw: String?
     var endsAt: Date?
+    var pausedUntil: Date? = nil
     var allowsWeeklyFreeze: Bool = true
     var isReminderEnabled: Bool = false
     var reminderTime: Date? = nil
@@ -177,6 +178,7 @@ final class Habit {
         targetValuePerSession: Double = 1,
         scheduleKind: HabitScheduleKind = .specificDays,
         endsAt: Date? = nil,
+        pausedUntil: Date? = nil,
         direction: HabitDirection = .build,
         replacementHabit: Habit? = nil,
         allowsWeeklyFreeze: Bool = true,
@@ -202,6 +204,7 @@ final class Habit {
         self.directionRaw = direction.rawValue
         self.replacementHabit = replacementHabit
         self.endsAt = endsAt
+        self.pausedUntil = pausedUntil
         self.allowsWeeklyFreeze = allowsWeeklyFreeze
         self.isReminderEnabled = isReminderEnabled
         self.reminderTime = reminderTime

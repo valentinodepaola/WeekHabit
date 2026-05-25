@@ -110,10 +110,19 @@ extension Habit {
         return AppCalendar.startOfDay(for: reference) > AppCalendar.startOfDay(for: endsAt)
     }
 
+    func isPaused(reference: Date = .now) -> Bool {
+        guard let pausedUntil else { return false }
+        let day = AppCalendar.startOfDay(for: reference)
+        let today = AppCalendar.startOfDay(for: .now)
+        return day >= today && day < AppCalendar.startOfDay(for: pausedUntil)
+    }
+
     /// True if the habit can receive a mark on `date`.
     func isLoggable(on date: Date) -> Bool {
         let day = AppCalendar.startOfDay(for: date)
-        guard day >= AppCalendar.startOfDay(for: createdAt), !isFinished(reference: day) else {
+        guard day >= AppCalendar.startOfDay(for: createdAt),
+              !isFinished(reference: day),
+              !isPaused(reference: day) else {
             return false
         }
 

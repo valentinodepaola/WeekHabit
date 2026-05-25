@@ -11,7 +11,7 @@ import SwiftData
 @main
 struct WeekHabitApp: App {
     let container: ModelContainer = {
-        let schema = Schema(versionedSchema: SchemaV14.self)
+        let schema = Schema(versionedSchema: SchemaV15.self)
         let config = ModelConfiguration(schema: schema)
         do {
             return try ModelContainer(
@@ -36,6 +36,9 @@ struct WeekHabitApp: App {
 
 private struct RootView: View {
     @AppStorage("hasCompletedAppOnboarding") private var hasCompletedAppOnboarding = false
+    @AppStorage("weeklyReviewWeekdayRaw") private var weeklyReviewWeekdayRaw: Int = Weekday.sunday.rawValue
+    @AppStorage("weeklyReviewHour") private var weeklyReviewHour: Int = 19
+    @AppStorage("weeklyReviewMinute") private var weeklyReviewMinute: Int = 0
     @Environment(\.scenePhase) private var scenePhase
 
     @Query(sort: \Habit.createdAt, order: .reverse)
@@ -66,5 +69,10 @@ private struct RootView: View {
     private func refreshHabitRemindersIfNeeded() async {
         guard hasCompletedAppOnboarding else { return }
         await HabitReminderService.refreshAllReminders(for: habits)
+        await WeeklyReviewService.refreshReviewReminder(
+            weekday: Weekday(rawValue: weeklyReviewWeekdayRaw) ?? .sunday,
+            hour: weeklyReviewHour,
+            minute: weeklyReviewMinute
+        )
     }
 }

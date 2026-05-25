@@ -129,6 +129,18 @@ struct HabitInsightSummary: Identifiable {
     }
 }
 
+struct WeeklyHabitSummary {
+    let completionRatio: Double
+    let scheduled: Int
+    let completed: Int
+    let dominantFailureReason: DominantFailureReason?
+    let hasActiveExperiment: Bool
+
+    var percentage: Int {
+        Int((completionRatio * 100).rounded())
+    }
+}
+
 enum AttentionFailureType {
     case notDone
     case manualOnly

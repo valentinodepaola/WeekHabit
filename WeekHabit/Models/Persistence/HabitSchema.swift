@@ -121,6 +121,24 @@ enum SchemaV14: VersionedSchema {
     }
 }
 
+enum SchemaV15: VersionedSchema {
+    static var versionIdentifier: Schema.Version { .init(15, 0, 0) }
+
+    static var models: [any PersistentModel.Type] {
+        [
+            Habit.self,
+            HabitEntry.self,
+            HabitExperiment.self,
+            FocusSession.self,
+            Plan.self,
+            StreakFreeze.self,
+            PlanMilestone.self,
+            WeeklyReview.self,
+            WeeklyReviewDecision.self
+        ]
+    }
+}
+
 enum HabitMigrationPlan: SchemaMigrationPlan {
     static var schemas: [any VersionedSchema.Type] {
         [
@@ -137,7 +155,8 @@ enum HabitMigrationPlan: SchemaMigrationPlan {
             SchemaV11.self,
             SchemaV12.self,
             SchemaV13.self,
-            SchemaV14.self
+            SchemaV14.self,
+            SchemaV15.self
         ]
     }
 
@@ -155,7 +174,8 @@ enum HabitMigrationPlan: SchemaMigrationPlan {
             .lightweight(fromVersion: SchemaV10.self, toVersion: SchemaV11.self),
             .lightweight(fromVersion: SchemaV11.self, toVersion: SchemaV12.self),
             .lightweight(fromVersion: SchemaV12.self, toVersion: SchemaV13.self),
-            .lightweight(fromVersion: SchemaV13.self, toVersion: SchemaV14.self)
+            .lightweight(fromVersion: SchemaV13.self, toVersion: SchemaV14.self),
+            .lightweight(fromVersion: SchemaV14.self, toVersion: SchemaV15.self)
         ]
     }
 }

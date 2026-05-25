@@ -38,6 +38,21 @@ extension Sequence where Element == Habit {
         )
     }
 
+    func weeklySnapshot(weekStart: Date, reference: Date = .now) -> GlobalInsightSnapshot {
+        let currentStart = AppCalendar.startOfDay(for: weekStart)
+        let currentEnd = AppCalendar.current.date(byAdding: .day, value: 6, to: currentStart) ?? currentStart
+        let previousStart = AppCalendar.current.date(byAdding: .day, value: -7, to: currentStart) ?? currentStart
+        let previousEnd = AppCalendar.current.date(byAdding: .day, value: 6, to: previousStart) ?? previousStart
+        let visibleEnd = Swift.min(currentEnd, AppCalendar.startOfDay(for: reference))
+
+        return GlobalInsightSnapshot(
+            current: globalCompletionStats(from: currentStart, to: visibleEnd),
+            previous: globalCompletionStats(from: previousStart, to: previousEnd),
+            trend: weeklyTrendBuckets(weekStart: currentStart, reference: reference),
+            minimumDays: globalTrustedMinimumDays(from: currentStart, to: visibleEnd)
+        )
+    }
+
     func topConsistentHabit(reference: Date = .now) -> HabitInsightSummary? {
         filter { $0.insightReadiness(reference: reference).isReady }
         .map { habit in
@@ -57,8 +72,8 @@ extension Sequence where Element == Habit {
         }
     }
 
-    func rhythmConfidence(reference: Date = .now) -> RhythmConfidence {
-        let range = insightDateRange(days: 30, reference: reference)
+    func rhythmConfidence(lastDays: Int = 30, reference: Date = .now) -> RhythmConfidence {
+        let range = insightDateRange(days: lastDays, reference: reference)
         var totalMarks = 0
         var trustedMarks = 0
         var focusSessionMarks = 0
@@ -522,6 +537,16 @@ extension Sequence where Element == Habit {
             let bucketStart = AppCalendar.current.date(byAdding: .day, value: bucketStartOffset, to: start) ?? start
             let bucketEnd = AppCalendar.current.date(byAdding: .day, value: bucketEndOffset, to: start) ?? bucketStart
             return globalCompletionStats(from: bucketStart, to: bucketEnd).ratio
+        }
+    }
+
+    private func weeklyTrendBuckets(weekStart: Date, reference: Date) -> [Double] {
+        let referenceDay = AppCalendar.startOfDay(for: reference)
+
+        return (0..<7).map { dayOffset in
+            let day = AppCalendar.current.date(byAdding: .day, value: dayOffset, to: weekStart) ?? weekStart
+            guard day <= referenceDay else { return 0 }
+            return globalCompletionStats(from: day, to: day).ratio
         }
     }
 }

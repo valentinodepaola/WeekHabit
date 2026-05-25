@@ -78,6 +78,23 @@ extension Habit {
         return HabitCompletionStats(completed: completed, scheduled: scheduled)
     }
 
+    func weeklyDecisionSummary(
+        weekStart: Date,
+        activeExperiment: HabitExperiment? = nil
+    ) -> WeeklyHabitSummary {
+        let start = AppCalendar.startOfDay(for: weekStart)
+        let end = AppCalendar.current.date(byAdding: .day, value: 6, to: start) ?? start
+        let stats = completionStats(from: start, to: end)
+
+        return WeeklyHabitSummary(
+            completionRatio: stats.ratio,
+            scheduled: stats.scheduled,
+            completed: stats.completed,
+            dominantFailureReason: dominantFailureReason(lastDays: 7, reference: end),
+            hasActiveExperiment: activeExperiment != nil
+        )
+    }
+
     func weekdayPerformance(lastDays: Int = 30, reference: Date = .now) -> [WeekdayPerformance] {
         let end = AppCalendar.startOfDay(for: reference)
         let start = AppCalendar.current.date(

@@ -16,6 +16,11 @@ struct WeekView: View {
     @Query(sort: \StreakFreeze.usedAt, order: .reverse)
     private var streakFreezes: [StreakFreeze]
 
+    @Query(sort: \WeeklyReview.reviewedAt, order: .reverse)
+    private var weeklyReviews: [WeeklyReview]
+
+    @AppStorage("weeklyReviewWeekdayRaw") private var weeklyReviewWeekdayRaw: Int = Weekday.sunday.rawValue
+
     @State private var weekOffset: Int = 0
     @State private var selectedHabit: Habit?
     @State private var coverRoute: WeekCoverRoute?
@@ -85,6 +90,15 @@ struct WeekView: View {
         return "Completados"
     }
 
+    private var weeklyReviewWeekStart: Date? {
+        WeeklyReviewService.needsReview(
+            reference: .now,
+            preferredWeekday: Weekday(rawValue: weeklyReviewWeekdayRaw) ?? .sunday,
+            existingReviews: weeklyReviews,
+            habits: habits
+        )
+    }
+
     var body: some View {
         NavigationStack {
             AppBackground {
@@ -130,11 +144,30 @@ struct WeekView: View {
     @ViewBuilder
     private var contentArea: some View {
         if visibleHabits.isEmpty {
-            WeekEmptyStateCard(onCreate: { sheetRoute = .createMenu })
-                .padding(.horizontal, AppSpacing.l)
+            VStack(spacing: AppSpacing.m) {
+                if let weeklyReviewWeekStart {
+                    WeeklyReviewBanner(
+                        weekRangeText: weekRangeText(for: weeklyReviewWeekStart),
+                        onTap: { sheetRoute = .weeklyReview(weekStart: weeklyReviewWeekStart) }
+                    )
+                }
+
+                WeekEmptyStateCard(onCreate: { sheetRoute = .createMenu })
+            }
+            .padding(.horizontal, AppSpacing.l)
             Spacer()
         } else {
             List {
+                if let weeklyReviewWeekStart {
+                    WeeklyReviewBanner(
+                        weekRangeText: weekRangeText(for: weeklyReviewWeekStart),
+                        onTap: { sheetRoute = .weeklyReview(weekStart: weeklyReviewWeekStart) }
+                    )
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                    .listRowInsets(EdgeInsets(top: 0, leading: AppSpacing.l, bottom: AppSpacing.m, trailing: AppSpacing.l))
+                }
+
                 ForEach(visibleHabits) { habit in
                     WeekGridRow(
                         habit: habit,
@@ -225,6 +258,10 @@ struct WeekView: View {
                 upsertQuantityEntry(for: habit, on: date, value: value)
             }
             .presentationDetents([.height(310)])
+        case .weeklyReview(let weekStart):
+            WeeklyReviewView(weekStart: weekStart)
+                .presentationDragIndicator(.visible)
+                .presentationBackground(AppColor.bgCanvas)
         }
     }
 
@@ -342,6 +379,15 @@ struct WeekView: View {
         applyWeeklyFreezes(reference: .now)
     }
 
+    private func weekRangeText(for weekStart: Date) -> String {
+        let weekEnd = AppCalendar.current.date(byAdding: .day, value: 6, to: weekStart) ?? weekStart
+        let formatter = DateFormatter()
+        formatter.calendar = AppCalendar.current
+        formatter.locale = Locale(identifier: "es_MX")
+        formatter.dateFormat = "d MMM"
+        return "\(formatter.string(from: weekStart)) - \(formatter.string(from: weekEnd))"
+    }
+
     private func deleteFreeze(for habit: Habit, on date: Date) {
         streakFreezes
             .filter { $0.habitID == habit.id && AppCalendar.isSameDay($0.protectedDate, date) }
@@ -379,11 +425,13 @@ private enum WeekCoverRoute: Identifiable {
 private enum WeekSheetRoute: Identifiable {
     case createMenu
     case quantityLog(habit: Habit, date: Date)
+    case weeklyReview(weekStart: Date)
 
     var id: String {
         switch self {
         case .createMenu: return "createMenu"
         case .quantityLog(let habit, let date): return "quantityLog-\(habit.id)-\(date.timeIntervalSinceReferenceDate)"
+        case .weeklyReview(let weekStart): return "weeklyReview-\(weekStart.timeIntervalSinceReferenceDate)"
         }
     }
 }

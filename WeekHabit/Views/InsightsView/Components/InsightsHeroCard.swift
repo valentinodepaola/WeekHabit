@@ -8,6 +8,8 @@ import SwiftUI
 struct InsightsHeroCard: View {
     let snapshot: GlobalInsightSnapshot
     var readiness: InsightReadiness? = nil
+    var title: String = "CONSISTENCIA GLOBAL"
+    var trendCaption: String = "Cada barra resume una parte de los últimos 30 días; más alta significa más cumplimiento."
 
     private var consistencyText: String {
         snapshot.current.scheduled == 0 ? "—" : "\(snapshot.current.percentage)%"
@@ -60,7 +62,7 @@ struct InsightsHeroCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: AppSpacing.l) {
             HStack(spacing: AppSpacing.s) {
-                Text("CONSISTENCIA GLOBAL")
+                Text(title)
                     .font(AppFont.label)
                     .foregroundStyle(AppColor.textTertiary)
                     .tracking(1.2)
@@ -108,7 +110,7 @@ struct InsightsHeroCard: View {
                 minimumVersionNote
             }
 
-            Text("Cada barra resume una parte de los últimos 30 días; más alta significa más cumplimiento.")
+            Text(trendCaption)
                 .font(AppFont.label)
                 .foregroundStyle(AppColor.textTertiary)
                 .fixedSize(horizontal: false, vertical: true)

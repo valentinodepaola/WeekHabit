@@ -147,10 +147,10 @@ struct TodayHabitComponent: View {
                 } label: {
                     Label("Hice la mínima", systemImage: "checkmark.circle")
                 }
-            } primaryAction: {
-                handleToggle()
             } label: {
                 toggleVisual
+            } primaryAction: {
+                handleToggle()
             }
             .buttonStyle(.plain)
             .animation(AppMotion.respectful(AppMotion.celebration, reduceMotion), value: isCompleted || isMinimumCompleted || isSkipped)
