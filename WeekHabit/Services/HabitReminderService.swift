@@ -87,6 +87,7 @@ enum HabitReminderService {
         habit.isReminderEnabled
             && habit.reminderTime != nil
             && !habit.isFinished()
+            && !habit.isPaused()
             && !habit.activeDaysOfWeekRaw.isEmpty
     }
 

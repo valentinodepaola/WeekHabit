@@ -8,11 +8,13 @@ import SwiftUI
 struct TodayHabitComponent: View {
     let habit: Habit
     let isCompleted: Bool
+    var isMinimumCompleted: Bool = false
     var isSkipped: Bool = false
     var activeExperiment: HabitExperiment?
     var referenceDate: Date = .now
     var onUrge: (() -> Void)? = nil
     var onSlip: (() -> Void)? = nil
+    var onMinimum: (() -> Void)? = nil
     let onToggle: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -54,7 +56,12 @@ struct TodayHabitComponent: View {
                 .lineLimit(1)
 
             VStack(alignment: .leading, spacing: AppSpacing.xxs) {
-                if isSkipped {
+                if isMinimumCompleted, let trimmedMinimumTitle {
+                    Text("Versión mínima · \(trimmedMinimumTitle)")
+                        .font(AppFont.label)
+                        .foregroundStyle(AppColor.textSecondary)
+                        .lineLimit(1)
+                } else if isSkipped {
                     Text("Descanso intencional")
                         .font(AppFont.label)
                         .foregroundStyle(habit.habitColor)
@@ -131,36 +138,60 @@ struct TodayHabitComponent: View {
         .opacity(streakCount == 0 ? 0.5 : 1)
     }
 
+    @ViewBuilder
     private var completeToggle: some View {
-        Button(action: handleToggle) {
-            ZStack {
-                RoundedRectangle(cornerRadius: AppRadius.s, style: .continuous)
-                    .fill(toggleFill)
-                    .frame(width: 34, height: 34)
-                    .overlay {
-                        RoundedRectangle(cornerRadius: AppRadius.s, style: .continuous)
-                            .strokeBorder(
-                                isCompleted || isSkipped ? habit.habitColor : AppColor.divider,
-                                lineWidth: 1
-                            )
-                    }
-                if isCompleted {
-                    Image(systemName: habit.isBreakHabit ? "xmark" : "checkmark")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundStyle(.white)
-                        .symbolEffect(.bounce, value: isCompleted)
-                } else if isSkipped {
-                    Image(systemName: "pause.circle.fill")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(habit.habitColor)
-                        .symbolEffect(.pulse, value: isSkipped)
+        if hasMinimumAction {
+            Menu {
+                Button {
+                    handleMinimum()
+                } label: {
+                    Label("Hice la mínima", systemImage: "checkmark.circle")
                 }
+            } label: {
+                toggleVisual
+            } primaryAction: {
+                handleToggle()
             }
-            .scaleEffect(isCompleted ? 1.04 : 1.0)
+            .buttonStyle(.plain)
+            .animation(AppMotion.respectful(AppMotion.celebration, reduceMotion), value: isCompleted || isMinimumCompleted || isSkipped)
+            .accessibilityLabel(toggleAccessibilityLabel)
+        } else {
+            Button(action: handleToggle) {
+                toggleVisual
+            }
+            .buttonStyle(.plain)
+            .animation(AppMotion.respectful(AppMotion.celebration, reduceMotion), value: isCompleted || isMinimumCompleted || isSkipped)
+            .accessibilityLabel(toggleAccessibilityLabel)
         }
-        .buttonStyle(.plain)
-        .animation(AppMotion.respectful(AppMotion.celebration, reduceMotion), value: isCompleted || isSkipped)
-        .accessibilityLabel(toggleAccessibilityLabel)
+    }
+
+    private var toggleVisual: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: AppRadius.s, style: .continuous)
+                .fill(toggleFill)
+                .frame(width: 34, height: 34)
+                .overlay {
+                    RoundedRectangle(cornerRadius: AppRadius.s, style: .continuous)
+                        .strokeBorder(toggleBorderColor, lineWidth: 1)
+                }
+            if isCompleted {
+                Image(systemName: habit.isBreakHabit ? "xmark" : "checkmark")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(.white)
+                    .symbolEffect(.bounce, value: isCompleted)
+            } else if isMinimumCompleted {
+                Image(systemName: "checkmark")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(.white)
+                    .symbolEffect(.bounce, value: isMinimumCompleted)
+            } else if isSkipped {
+                Image(systemName: "pause.circle.fill")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(habit.habitColor)
+                    .symbolEffect(.pulse, value: isSkipped)
+            }
+        }
+        .scaleEffect(isCompleted || isMinimumCompleted ? 1.04 : 1.0)
     }
 
     private var breakActions: some View {
@@ -223,10 +254,15 @@ struct TodayHabitComponent: View {
     }
 
     private func handleToggle() {
-        if !isCompleted && !isSkipped {
+        if !isCompleted && !isMinimumCompleted && !isSkipped {
             AppHaptics.play(.habitCompleted)
         }
         onToggle()
+    }
+
+    private func handleMinimum() {
+        AppHaptics.play(.habitCompleted)
+        onMinimum?()
     }
 
     // MARK: - Computed
@@ -239,8 +275,20 @@ struct TodayHabitComponent: View {
         return cue
     }
 
+    private var trimmedMinimumTitle: String? {
+        guard let title = habit.minimumViableTitle?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !title.isEmpty else {
+            return nil
+        }
+        return title
+    }
+
+    private var hasMinimumAction: Bool {
+        trimmedMinimumTitle != nil && !isCompleted && !isMinimumCompleted && !isSkipped && onMinimum != nil
+    }
+
     private var shouldShowScheduleFallback: Bool {
-        trimmedCue == nil
+        trimmedCue == nil && !isMinimumCompleted
     }
 
     private var shouldShowBreakActions: Bool {
@@ -264,15 +312,28 @@ struct TodayHabitComponent: View {
         if isCompleted {
             return habit.habitColor
         }
+        if isMinimumCompleted {
+            return habit.habitColor.opacity(0.55)
+        }
         if isSkipped {
             return habit.habitColor.opacity(0.10)
         }
         return AppColor.bgElevated
     }
 
+    private var toggleBorderColor: Color {
+        if isCompleted || isMinimumCompleted || isSkipped {
+            return habit.habitColor
+        }
+        return AppColor.divider
+    }
+
     private var toggleAccessibilityLabel: String {
         if isCompleted {
             return "Desmarcar hábito"
+        }
+        if isMinimumCompleted {
+            return "Marcar hábito completo"
         }
         if isSkipped {
             return "Marcar hábito"

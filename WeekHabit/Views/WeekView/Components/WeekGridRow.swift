@@ -126,6 +126,9 @@ struct WeekGridRow: View {
         if isCompleted {
             return onlyManualEntries ? .completedRetro : .completed
         }
+        if habit.isMinimumCompleted(on: date) {
+            return .minimum
+        }
         if isSkipped {
             return .skipped
         }

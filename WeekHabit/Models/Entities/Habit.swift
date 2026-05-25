@@ -86,6 +86,7 @@ final class Habit {
     var title: String
     var note: String?
     var cue: String?
+    var minimumViableTitle: String?
     @Attribute(originalName: "category")
     var legacyArea: LegacyHabitArea?
     var iconNameRaw: String?
@@ -99,6 +100,7 @@ final class Habit {
     var scheduleKindRaw: String?
     var directionRaw: String?
     var endsAt: Date?
+    var pausedUntil: Date? = nil
     var allowsWeeklyFreeze: Bool = true
     var isReminderEnabled: Bool = false
     var reminderTime: Date? = nil
@@ -165,6 +167,7 @@ final class Habit {
         title: String,
         note: String? = nil,
         cue: String? = nil,
+        minimumViableTitle: String? = nil,
         iconName: String = HabitAppearance.defaultIconName,
         colorHex: String = HabitAppearance.defaultColorHex,
         targetDaysPerWeek: Int,
@@ -175,6 +178,7 @@ final class Habit {
         targetValuePerSession: Double = 1,
         scheduleKind: HabitScheduleKind = .specificDays,
         endsAt: Date? = nil,
+        pausedUntil: Date? = nil,
         direction: HabitDirection = .build,
         replacementHabit: Habit? = nil,
         allowsWeeklyFreeze: Bool = true,
@@ -186,6 +190,7 @@ final class Habit {
         self.title = title
         self.note = note
         self.cue = cue
+        self.minimumViableTitle = minimumViableTitle
         self.legacyArea = nil
         self.iconNameRaw = iconName
         self.colorHexRaw = colorHex
@@ -199,6 +204,7 @@ final class Habit {
         self.directionRaw = direction.rawValue
         self.replacementHabit = replacementHabit
         self.endsAt = endsAt
+        self.pausedUntil = pausedUntil
         self.allowsWeeklyFreeze = allowsWeeklyFreeze
         self.isReminderEnabled = isReminderEnabled
         self.reminderTime = reminderTime

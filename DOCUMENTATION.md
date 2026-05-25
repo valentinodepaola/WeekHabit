@@ -14,7 +14,7 @@ El enfoque principal no es solo “marcar tareas”, sino ayudar a entender el r
 - Sin dependencias externas: no SPM, CocoaPods ni paquetes de terceros
 - Sin test target actualmente
 - UI y comentarios en español
-- Persistencia local con SwiftData y schema versionado hasta `SchemaV7`
+- Persistencia local con SwiftData y schema versionado hasta `SchemaV12`
 
 ## Features actuales
 
@@ -166,6 +166,8 @@ Tipos de entrada:
 | `.completed` | El hábito se completó o avanzó en un día |
 | `.skipped` | Descanso intencional; preserva racha y no cuenta como fallo |
 | `.missed` | Fallo reconocido desde el prompt de recuperación; puede tener `failureReason` |
+| `.slip` | Desliz registrado para malos hábitos; no destruye identidad, es información |
+| `.urge` | Impulso resistido para malos hábitos; evidencia de progreso de abstinencia |
 
 Razones de fallo (`HabitFailureReason`): `.tooDifficult`, `.forgot`, `.badTiming`, `.lowEnergy`, `.other`.
 
@@ -184,6 +186,17 @@ Agrupa hábitos alrededor de un objetivo temporal.
 | `habits` | Hábitos asociados |
 
 `Plan+Domain` calcula si el plan está activo, terminado, pendiente de revisión, días restantes, progreso agregado y si alcanzó la meta.
+
+### `StreakFreeze`
+
+Comodín semanal que protege la racha de un hábito ante un día perdido.
+
+| Campo | Descripción |
+|---|---|
+| `weekStart` | Inicio de la semana a la que corresponde el comodín |
+| `habit` | Relación inversa al hábito dueño |
+
+La lógica de ciclo de vida (verificar comodín activo, aplicar a la racha, detectar semana vigente) vive en `Domain/StreakFreeze+Domain.swift`.
 
 ### `HabitExperiment`
 
@@ -226,18 +239,21 @@ Usar `Weekday.ordered` para mostrar L-D.
 `HabitSchema.swift` declara:
 
 ```text
-SchemaV1: Habit, HabitEntry
-SchemaV2: + HabitExperiment
-SchemaV3: + FocusSession
-SchemaV4: cambios aditivos en modelos existentes
-SchemaV5: + Plan
-SchemaV6: cambios aditivos
-SchemaV7: cambios aditivos
-SchemaV8: + StreakFreeze
-SchemaV9: + HabitEntry.failureReason y EntryKind.missed
+SchemaV1:  Habit, HabitEntry
+SchemaV2:  + HabitExperiment
+SchemaV3:  + FocusSession
+SchemaV4:  cambios aditivos en modelos existentes
+SchemaV5:  + Plan
+SchemaV6:  cambios aditivos
+SchemaV7:  cambios aditivos
+SchemaV8:  + StreakFreeze
+SchemaV9:  + HabitEntry.failureReason y EntryKind.missed
+SchemaV10: cambios aditivos
+SchemaV11: cambios aditivos
+SchemaV12: cambios aditivos (versión actual)
 ```
 
-`HabitMigrationPlan` registra migraciones lightweight de V1 a V9.
+`HabitMigrationPlan` registra migraciones lightweight de V1 a V12.
 
 Regla importante: no editar schemas antiguos para cambios de forma persistida. Crear el siguiente `SchemaV*`, incluir los modelos vigentes y agregar el `MigrationStage` correspondiente.
 
@@ -569,4 +585,4 @@ Reglas prácticas:
 
 ## Estado de documentación
 
-Esta documentación describe la versión actual del repo con `SchemaV9`, navegación de 3 tabs, onboarding conectado, planes, recordatorios, hábitos cuantificables y recuperación post-fallo.
+Esta documentación describe la versión actual del repo con `SchemaV12`, navegación de 3 tabs, onboarding conectado, planes, recordatorios, hábitos cuantificables, recuperación post-fallo, comodines de racha (`StreakFreeze`) y soporte de malos hábitos (`EntryKind.slip`, `EntryKind.urge`).

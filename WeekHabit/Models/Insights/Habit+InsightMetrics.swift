@@ -78,6 +78,23 @@ extension Habit {
         return HabitCompletionStats(completed: completed, scheduled: scheduled)
     }
 
+    func weeklyDecisionSummary(
+        weekStart: Date,
+        activeExperiment: HabitExperiment? = nil
+    ) -> WeeklyHabitSummary {
+        let start = AppCalendar.startOfDay(for: weekStart)
+        let end = AppCalendar.current.date(byAdding: .day, value: 6, to: start) ?? start
+        let stats = completionStats(from: start, to: end)
+
+        return WeeklyHabitSummary(
+            completionRatio: stats.ratio,
+            scheduled: stats.scheduled,
+            completed: stats.completed,
+            dominantFailureReason: dominantFailureReason(lastDays: 7, reference: end),
+            hasActiveExperiment: activeExperiment != nil
+        )
+    }
+
     func weekdayPerformance(lastDays: Int = 30, reference: Date = .now) -> [WeekdayPerformance] {
         let end = AppCalendar.startOfDay(for: reference)
         let start = AppCalendar.current.date(
@@ -173,6 +190,27 @@ extension Habit {
             }
 
         return trustedValue >= sessionTargetValue
+    }
+
+    func trustedMinimumDays(from startDate: Date, to endDate: Date) -> Int {
+        let start = AppCalendar.startOfDay(for: startDate)
+        let end = AppCalendar.startOfDay(for: endDate)
+        guard start <= end else { return 0 }
+
+        var count = 0
+        for day in insightDays(from: start, to: end)
+        where day >= AppCalendar.startOfDay(for: createdAt)
+            && isLoggable(on: day)
+            && !isTrustedCompleted(on: day)
+            && entries.contains(where: {
+                AppCalendar.isSameDay($0.date, day)
+                    && $0.kind == .minimum
+                    && $0.source.isTrustedForInsights
+            }) {
+            count += 1
+        }
+
+        return count
     }
 
     func isManualCompleted(on date: Date) -> Bool {

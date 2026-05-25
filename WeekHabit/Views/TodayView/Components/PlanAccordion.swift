@@ -10,6 +10,7 @@ struct PlanAccordion: View {
     let isExpanded: Bool
     let onToggle: () -> Void
     let onHabitTap: (Habit) -> Void
+    var onOpenDetail: (() -> Void)? = nil
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -55,7 +56,7 @@ struct PlanAccordion: View {
     private var planHeader: some View {
         VStack(alignment: .leading, spacing: AppSpacing.m) {
             HStack(spacing: AppSpacing.m) {
-                Button(action: onToggle) {
+                Button(action: { onOpenDetail?() ?? onToggle() }) {
                     HStack(spacing: AppSpacing.m) {
                         ZStack {
                             Circle()
@@ -67,10 +68,17 @@ struct PlanAccordion: View {
                         }
 
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(plan.title)
-                                .font(AppFont.bodyEmphasis)
-                                .foregroundStyle(AppColor.textPrimary)
-                                .lineLimit(1)
+                            HStack(spacing: AppSpacing.xs) {
+                                Text(plan.title)
+                                    .font(AppFont.bodyEmphasis)
+                                    .foregroundStyle(AppColor.textPrimary)
+                                    .lineLimit(1)
+                                if onOpenDetail != nil {
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 10, weight: .semibold))
+                                        .foregroundStyle(AppColor.textTertiary)
+                                }
+                            }
                             Text(plan.daysRemainingText)
                                 .font(AppFont.label)
                                 .foregroundStyle(AppColor.textTertiary)

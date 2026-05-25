@@ -26,6 +26,7 @@ enum HabitEntrySource: String, Codable, CaseIterable {
 enum EntryKind: String, Codable, CaseIterable {
     case completed
     case skipped
+    case minimum
     case missed
     case slip
     case urge

@@ -2,8 +2,8 @@
 //  OnboardingView.swift
 //  WeekHabit
 //
-//  Reducido a 3 pasos: intro → primer hábito → recordatorios.
-//  La filosofía vive en el lenguaje de toda la app, no en pantallas didácticas.
+//  Flujo goal-first: meta → motivación → tamaño mínimo → hábitos → notificaciones.
+//  Crea un Plan (si hay meta) con los hábitos al salir del paso de hábitos.
 //
 
 import SwiftData
@@ -15,7 +15,10 @@ struct OnboardingView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var step: OnboardingStep = .intro
-    @State private var selectedTemplate: StarterHabitTemplate.ID = StarterHabitTemplate.defaultID
+    @State private var goalText: String = ""
+    @State private var motivationText: String = ""
+    @State private var sizeText: String = ""
+    @State private var habitDrafts: [OnboardingHabitDraft] = []
 
     let onFinish: () -> Void
 
@@ -57,12 +60,28 @@ struct OnboardingView: View {
                 onStart: goForward,
                 onSkip: onFinish
             )
-        case .starterHabit:
-            OnboardingStarterHabitScreen(
-                selectedTemplateID: $selectedTemplate,
-                templates: StarterHabitTemplate.all,
-                onContinue: createSelectedHabitAndContinue,
-                onCreateFromScratch: onFinish
+        case .goal:
+            OnboardingGoalScreen(
+                goalText: $goalText,
+                onContinue: goForward,
+                onSkip: goForward
+            )
+        case .motivation:
+            OnboardingMotivationScreen(
+                motivationText: $motivationText,
+                onContinue: goForward,
+                onSkip: goForward
+            )
+        case .size:
+            OnboardingSizeScreen(
+                sizeText: $sizeText,
+                onContinue: goForwardFromSize,
+                onSkip: goForward
+            )
+        case .habits:
+            OnboardingHabitsScreen(
+                habitDrafts: $habitDrafts,
+                onContinue: createPlanAndHabits
             )
         case .notifications:
             OnboardingNotificationsScreen(
@@ -85,6 +104,41 @@ struct OnboardingView: View {
         step = nextStep
     }
 
+    private func goForwardFromSize() {
+        let trimmed = sizeText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty && habitDrafts.isEmpty {
+            habitDrafts.append(OnboardingHabitDraft(title: trimmed))
+        }
+        goForward()
+    }
+
+    private func createPlanAndHabits() {
+        let trimmedGoal = goalText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedMotivation = motivationText.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        let habits = habitDrafts.map { draft -> Habit in
+            let h = draft.makeHabit()
+            modelContext.insert(h)
+            return h
+        }
+
+        if !trimmedGoal.isEmpty {
+            let endsAt = AppCalendar.startOfDay(
+                for: AppCalendar.current.date(byAdding: .day, value: 30, to: .now) ?? .now
+            )
+            let plan = Plan(
+                title: trimmedGoal,
+                motivation: trimmedMotivation.isEmpty ? nil : trimmedMotivation,
+                endsAt: endsAt
+            )
+            modelContext.insert(plan)
+            plan.habits = habits
+        }
+
+        try? modelContext.save()
+        goForward()
+    }
+
     private func requestNotifications() {
         Task {
             await HabitReminderService.requestAuthorization()
@@ -92,17 +146,6 @@ struct OnboardingView: View {
                 onFinish()
             }
         }
-    }
-
-    private func createSelectedHabitAndContinue() {
-        guard let template = StarterHabitTemplate.all.first(where: { $0.id == selectedTemplate }) else {
-            goForward()
-            return
-        }
-
-        modelContext.insert(template.makeHabit())
-        try? modelContext.save()
-        goForward()
     }
 }
 

@@ -23,6 +23,7 @@ struct GlobalInsightSnapshot {
     let current: HabitCompletionStats
     let previous: HabitCompletionStats
     let trend: [Double]
+    let minimumDays: Int
 
     var deltaPercentagePoints: Int {
         Int(((current.ratio - previous.ratio) * 100).rounded())
@@ -125,6 +126,18 @@ struct HabitInsightSummary: Identifiable {
 
     var id: UUID {
         habit.id
+    }
+}
+
+struct WeeklyHabitSummary {
+    let completionRatio: Double
+    let scheduled: Int
+    let completed: Int
+    let dominantFailureReason: DominantFailureReason?
+    let hasActiveExperiment: Bool
+
+    var percentage: Int {
+        Int((completionRatio * 100).rounded())
     }
 }
 
