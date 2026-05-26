@@ -93,6 +93,7 @@ struct UrgeLogSheet: View {
                 variant: .primary
             ) {
                 onSave(selectedTrigger)
+                AppHaptics.play(.urgeLogged)
                 dismiss()
             }
 

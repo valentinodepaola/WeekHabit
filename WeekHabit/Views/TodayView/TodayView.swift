@@ -879,6 +879,7 @@ struct TodayView: View {
         value: Double,
         source: HabitEntrySource
     ) {
+        let wasCompleted = habit.totalValue(on: date) >= habit.sessionTargetValue
         let entriesForDay = habit.entries.filter {
             AppCalendar.isSameDay($0.date, date)
         }
@@ -912,6 +913,15 @@ struct TodayView: View {
                 )
             }
         }
+
+        guard value > 0 else { return }
+
+        let isCompleted = habit.totalValue(on: date) >= habit.sessionTargetValue
+        if !wasCompleted && isCompleted {
+            AppHaptics.play(.quantityCompleted)
+        } else if !isCompleted {
+            AppHaptics.play(.quantityLogged)
+        }
     }
 
     private func toggleRest(for habit: Habit) {
@@ -938,6 +948,8 @@ struct TodayView: View {
                 )
             }
         }
+
+        AppHaptics.play(.skipToggled)
     }
 
     private func persistSlip(for habit: Habit, trigger: SlipTrigger?, context: String?) {

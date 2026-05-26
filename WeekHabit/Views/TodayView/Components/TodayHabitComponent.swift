@@ -18,6 +18,7 @@ struct TodayHabitComponent: View {
     let onToggle: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var isPressing: Bool = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: AppSpacing.m) {
@@ -153,6 +154,7 @@ struct TodayHabitComponent: View {
                 handleToggle()
             }
             .buttonStyle(.plain)
+            .simultaneousGesture(pressGesture)
             .animation(AppMotion.respectful(AppMotion.celebration, reduceMotion), value: isCompleted || isMinimumCompleted || isSkipped)
             .accessibilityLabel(toggleAccessibilityLabel)
         } else {
@@ -160,6 +162,7 @@ struct TodayHabitComponent: View {
                 toggleVisual
             }
             .buttonStyle(.plain)
+            .simultaneousGesture(pressGesture)
             .animation(AppMotion.respectful(AppMotion.celebration, reduceMotion), value: isCompleted || isMinimumCompleted || isSkipped)
             .accessibilityLabel(toggleAccessibilityLabel)
         }
@@ -191,7 +194,26 @@ struct TodayHabitComponent: View {
                     .symbolEffect(.pulse, value: isSkipped)
             }
         }
-        .scaleEffect(isCompleted || isMinimumCompleted ? 1.04 : 1.0)
+        .scaleEffect(toggleScale)
+    }
+
+    private var pressGesture: some Gesture {
+        DragGesture(minimumDistance: 0)
+            .onChanged { _ in
+                guard !reduceMotion, !isPressing else { return }
+                withAnimation(AppMotion.respectful(AppMotion.snap, reduceMotion)) {
+                    isPressing = true
+                }
+            }
+            .onEnded { _ in
+                guard !reduceMotion else {
+                    isPressing = false
+                    return
+                }
+                withAnimation(AppMotion.respectful(AppMotion.snap, reduceMotion)) {
+                    isPressing = false
+                }
+            }
     }
 
     private var breakActions: some View {
@@ -254,8 +276,12 @@ struct TodayHabitComponent: View {
     }
 
     private func handleToggle() {
-        if !isCompleted && !isMinimumCompleted && !isSkipped {
-            AppHaptics.play(.habitCompleted)
+        // Para hábitos de cantidad, el toggle solo abre el sheet; la háptica
+        // de cierre se dispara cuando se guarda la cantidad en upsertQuantityEntry.
+        let opensQuantitySheet = habit.trackingKind == .quantity
+        let willCloseLoop = !isCompleted && !isMinimumCompleted && !opensQuantitySheet
+        if willCloseLoop {
+            AppHaptics.play(habit.isBreakHabit ? .urgeAvoided : .habitCompleted)
         }
         onToggle()
     }
@@ -326,6 +352,14 @@ struct TodayHabitComponent: View {
             return habit.habitColor
         }
         return AppColor.divider
+    }
+
+    private var toggleScale: CGFloat {
+        guard !reduceMotion else { return 1.0 }
+        if isPressing {
+            return 0.92
+        }
+        return isCompleted || isMinimumCompleted ? 1.04 : 1.0
     }
 
     private var toggleAccessibilityLabel: String {
