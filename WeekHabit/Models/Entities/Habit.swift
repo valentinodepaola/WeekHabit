@@ -104,6 +104,7 @@ final class Habit {
     var allowsWeeklyFreeze: Bool = true
     var isReminderEnabled: Bool = false
     var reminderTime: Date? = nil
+    var celebratedMilestonesRaw: [Int] = []
     var createdAt: Date
 
     @Relationship(deleteRule: .cascade)
@@ -184,6 +185,7 @@ final class Habit {
         allowsWeeklyFreeze: Bool = true,
         isReminderEnabled: Bool = false,
         reminderTime: Date? = nil,
+        celebratedMilestonesRaw: [Int] = [],
         createdAt: Date = .now
     ) {
         self.id = UUID()
@@ -208,6 +210,7 @@ final class Habit {
         self.allowsWeeklyFreeze = allowsWeeklyFreeze
         self.isReminderEnabled = isReminderEnabled
         self.reminderTime = reminderTime
+        self.celebratedMilestonesRaw = celebratedMilestonesRaw
         self.createdAt = createdAt
     }
 }

@@ -28,7 +28,9 @@ struct TodayView: View {
     @AppStorage("weeklyReviewWeekdayRaw") private var weeklyReviewWeekdayRaw: Int = Weekday.sunday.rawValue
 
     @State private var coverRoute: TodayCoverRoute?
+    @State private var milestoneCover: MilestoneCelebrationPayload?
     @State private var sheetRoute: TodaySheetRoute?
+    @State private var deferredNoteEntry: HabitEntry?
     @State private var selectedHabit: Habit?
     @State private var habitToDelete: Habit?
     @State private var showDeleteHabitAlert = false
@@ -175,6 +177,9 @@ struct TodayView: View {
             }
             .fullScreenCover(item: $coverRoute) { route in
                 routeCover(route)
+            }
+            .fullScreenCover(item: $milestoneCover, onDismiss: presentDeferredNoteIfNeeded) { payload in
+                MilestoneCelebrationView(habit: payload.habit, milestone: payload.milestone)
             }
             .sheet(item: $sheetRoute) { route in
                 routeSheet(route)
@@ -696,6 +701,7 @@ struct TodayView: View {
         let completedEntriesForToday = entriesForToday.filter { $0.kind == .completed }
 
         let willComplete = !habit.isCompleted(on: referenceDate)
+        let closesDay = willComplete && remainingTodayCount == 1
         var insertedEntry: HabitEntry?
 
         transitionHabitBetweenSections {
@@ -716,7 +722,7 @@ struct TodayView: View {
             }
         }
 
-        if willComplete && remainingTodayCount == 1 {
+        if closesDay {
             // Era el último; cierre del día.
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
                 AppHaptics.play(.dayClosed)
@@ -724,7 +730,12 @@ struct TodayView: View {
         }
 
         if willComplete, let insertedEntry {
-            sheetRoute = .noteEntry(entry: insertedEntry)
+            presentLiveMilestoneIfNeeded(
+                for: habit,
+                on: referenceDate,
+                noteEntry: insertedEntry,
+                afterDayClosed: closesDay
+            )
         }
     }
 
@@ -735,6 +746,7 @@ struct TodayView: View {
             AppCalendar.isSameDay($0.date, date)
         }
         let stateEntriesForDay = entriesForDay.filter { $0.kind != .urge }
+        let closesDay = AppCalendar.isSameDay(date, referenceDate) && remainingTodayCount == 1
 
         transitionHabitBetweenSections {
             stateEntriesForDay.forEach { modelContext.delete($0) }
@@ -750,6 +762,65 @@ struct TodayView: View {
                     habit: habit
                 )
             )
+        }
+
+        if closesDay {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
+                AppHaptics.play(.dayClosed)
+            }
+        }
+
+        presentLiveMilestoneIfNeeded(
+            for: habit,
+            on: date,
+            afterDayClosed: closesDay
+        )
+    }
+
+    @discardableResult
+    private func presentLiveMilestoneIfNeeded(
+        for habit: Habit,
+        on date: Date,
+        noteEntry: HabitEntry? = nil,
+        afterDayClosed: Bool = false
+    ) -> Bool {
+        guard let milestone = habit.crossedMilestone(on: date) else {
+            if let noteEntry {
+                sheetRoute = .noteEntry(entry: noteEntry)
+            }
+            return false
+        }
+
+        habit.markMilestoneCelebrated(milestone)
+        if let noteEntry {
+            deferredNoteEntry = noteEntry
+        }
+
+        let delay: TimeInterval = afterDayClosed ? 1.75 : 0.6
+        let payload = MilestoneCelebrationPayload(habit: habit, milestone: milestone)
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+            milestoneCover = payload
+        }
+        return true
+    }
+
+    private func presentDeferredNoteIfNeeded() {
+        guard let entry = deferredNoteEntry else { return }
+        deferredNoteEntry = nil
+        scheduleDeferredNotePresentation(entry: entry, attempt: 0)
+    }
+
+    private func scheduleDeferredNotePresentation(entry: HabitEntry, attempt: Int) {
+        let maxAttempts = 6
+        let delay: TimeInterval = attempt == 0 ? 0.25 : 0.4
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+            if sheetRoute == nil {
+                sheetRoute = .noteEntry(entry: entry)
+                return
+            }
+            guard attempt < maxAttempts else { return }
+            scheduleDeferredNotePresentation(entry: entry, attempt: attempt + 1)
         }
     }
 
@@ -880,6 +951,10 @@ struct TodayView: View {
         source: HabitEntrySource
     ) {
         let wasCompleted = habit.totalValue(on: date) >= habit.sessionTargetValue
+        let closesDay = source == .today
+            && AppCalendar.isSameDay(date, referenceDate)
+            && !wasCompleted
+            && remainingTodayCount == 1
         let entriesForDay = habit.entries.filter {
             AppCalendar.isSameDay($0.date, date)
         }
@@ -919,6 +994,18 @@ struct TodayView: View {
         let isCompleted = habit.totalValue(on: date) >= habit.sessionTargetValue
         if !wasCompleted && isCompleted {
             AppHaptics.play(.quantityCompleted)
+            if closesDay {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
+                    AppHaptics.play(.dayClosed)
+                }
+            }
+            if source == .today {
+                presentLiveMilestoneIfNeeded(
+                    for: habit,
+                    on: date,
+                    afterDayClosed: closesDay
+                )
+            }
         } else if !isCompleted {
             AppHaptics.play(.quantityLogged)
         }

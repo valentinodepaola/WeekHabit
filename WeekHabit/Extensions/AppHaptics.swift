@@ -31,6 +31,8 @@ enum AppHaptics {
         case skipToggled
         /// Último hábito del día completado.
         case dayClosed
+        /// Cruce de un hito de racha.
+        case milestoneReached
         /// Cierre de sesión de foco.
         case focusClosed
         /// Mantener / aplicar experimento.
@@ -51,6 +53,13 @@ enum AppHaptics {
             let impact = UIImpactFeedbackGenerator(style: .medium)
             impact.impactOccurred()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
+                let success = UINotificationFeedbackGenerator()
+                success.notificationOccurred(.success)
+            }
+        case .milestoneReached:
+            let impact = UIImpactFeedbackGenerator(style: .heavy)
+            impact.impactOccurred()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
                 let success = UINotificationFeedbackGenerator()
                 success.notificationOccurred(.success)
             }

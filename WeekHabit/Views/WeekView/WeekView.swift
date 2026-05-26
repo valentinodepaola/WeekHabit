@@ -311,6 +311,10 @@ struct WeekView: View {
             }
         }
 
+        if willMark {
+            habit.markCurrentMilestoneSilently(on: date)
+        }
+
         AppHaptics.play(willMark ? .selection : .selection)
         applyWeeklyFreezes(reference: .now)
     }
@@ -344,6 +348,10 @@ struct WeekView: View {
                     )
                 )
             }
+        }
+
+        if value > 0, habit.totalValue(on: date) >= habit.sessionTargetValue {
+            habit.markCurrentMilestoneSilently(on: date)
         }
 
         AppHaptics.play(.selection)
