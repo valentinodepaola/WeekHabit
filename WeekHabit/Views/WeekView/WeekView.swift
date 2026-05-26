@@ -193,7 +193,7 @@ struct WeekView: View {
             .listStyle(.plain)
             .listRowSpacing(AppSpacing.xs)
             .scrollContentBackground(.hidden)
-            .contentMargins(.bottom, 120, for: .scrollContent)
+            .contentMargins(.bottom, AppSpacing.xl, for: .scrollContent)
         }
     }
 

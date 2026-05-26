@@ -170,7 +170,7 @@ struct TodayView: View {
                 .listStyle(.plain)
                 .listRowSpacing(AppSpacing.m)
                 .scrollContentBackground(.hidden)
-                .contentMargins(.bottom, 120, for: .scrollContent)
+                .contentMargins(.bottom, AppSpacing.xl, for: .scrollContent)
             }
             .navigationDestination(item: $selectedHabit) { habit in
                 HabitDetailView(habit: habit)
