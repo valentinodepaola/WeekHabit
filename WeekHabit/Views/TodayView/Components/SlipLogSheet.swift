@@ -142,6 +142,7 @@ struct SlipLogSheet: View {
             ) {
                 let trimmed = contextText.trimmingCharacters(in: .whitespacesAndNewlines)
                 onSave(selectedTrigger, trimmed.isEmpty ? nil : trimmed)
+                AppHaptics.play(.slipLogged)
                 dismiss()
             }
 

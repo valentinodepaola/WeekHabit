@@ -20,6 +20,9 @@ struct FocusSessionView: View {
     @State private var completedHabitIDs: Set<UUID> = []
     @State private var session: FocusSession?
     @State private var now: Date = .now
+    @State private var milestoneCover: MilestoneCelebrationPayload?
+    @State private var milestoneQueue: [MilestoneCelebrationPayload] = []
+    @State private var shouldDismissAfterMilestones = false
 
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
@@ -60,6 +63,9 @@ struct FocusSessionView: View {
             if let remaining = session.remainingSeconds(reference: date), remaining == 0 {
                 finishSession(reference: date)
             }
+        }
+        .fullScreenCover(item: $milestoneCover, onDismiss: presentNextMilestoneOrDismiss) { payload in
+            MilestoneCelebrationView(habit: payload.habit, milestone: payload.milestone)
         }
     }
 
@@ -197,19 +203,47 @@ struct FocusSessionView: View {
         }
 
         let completedAt = session.endedAt ?? .now
+        var reachedMilestones: [MilestoneCelebrationPayload] = []
 
         for habit in selectedHabits where completedHabitIDs.contains(habit.id) {
-            markCompleted(habit, completedAt: completedAt, sessionID: session.id)
+            if let payload = markCompleted(habit, completedAt: completedAt, sessionID: session.id) {
+                reachedMilestones.append(payload)
+            }
         }
 
         session.complete(completedHabitIDs: completedHabitIDs, reference: completedAt)
         if !completedHabitIDs.isEmpty {
             AppHaptics.play(.habitCompleted)
         }
-        dismiss()
+
+        guard let firstMilestone = reachedMilestones.first else {
+            dismiss()
+            return
+        }
+
+        milestoneQueue = Array(reachedMilestones.dropFirst())
+        shouldDismissAfterMilestones = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+            milestoneCover = firstMilestone
+        }
     }
 
-    private func markCompleted(_ habit: Habit, completedAt: Date, sessionID: UUID) {
+    private func presentNextMilestoneOrDismiss() {
+        guard !milestoneQueue.isEmpty else {
+            if shouldDismissAfterMilestones {
+                shouldDismissAfterMilestones = false
+                dismiss()
+            }
+            return
+        }
+
+        let next = milestoneQueue.removeFirst()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            milestoneCover = next
+        }
+    }
+
+    private func markCompleted(_ habit: Habit, completedAt: Date, sessionID: UUID) -> MilestoneCelebrationPayload? {
         let entriesForDay = habit.entries.filter {
             AppCalendar.isSameDay($0.date, completedAt)
         }
@@ -238,6 +272,10 @@ struct FocusSessionView: View {
                 )
             )
         }
+
+        guard let milestone = habit.crossedMilestone(on: completedAt) else { return nil }
+        habit.markMilestoneCelebrated(milestone)
+        return MilestoneCelebrationPayload(habit: habit, milestone: milestone)
     }
 
     private func cancelAndDismiss() {

@@ -10,7 +10,21 @@ struct CurrentStreakHeroCard: View {
     let currentStreak: Int
     let bestStreak: Int
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     private var isActive: Bool { currentStreak > 0 }
+
+    private var caption: String {
+        IdentityReinforcementCopy.streakHeroCaption(for: habit, currentStreak: currentStreak)
+    }
+
+    private var identityFlavor: String {
+        IdentityReinforcementCopy.streakHeroFlavor(
+            for: habit,
+            currentStreak: currentStreak,
+            bestStreak: bestStreak
+        )
+    }
 
     private var gradient: LinearGradient {
         if isActive {
@@ -53,7 +67,7 @@ struct CurrentStreakHeroCard: View {
                 .offset(x: 22, y: 10)
 
             VStack(alignment: .leading, spacing: AppSpacing.m) {
-                Text(habit.isBreakHabit ? "DÍAS SIN HACERLO" : "CONSTANCIA ACTUAL")
+                Text(caption.uppercased(with: Locale(identifier: "es")))
                     .font(AppFont.label)
                     .tracking(0.8)
                     .foregroundStyle(captionColor)
@@ -69,11 +83,14 @@ struct CurrentStreakHeroCard: View {
                         .foregroundStyle(foregroundColor)
                 }
 
-                Text(flavorText)
+                Text(identityFlavor)
                     .font(AppFont.callout)
                     .foregroundStyle(foregroundColor)
                     .opacity(isActive ? 1 : 0.7)
+                    .lineLimit(3)
+                    .multilineTextAlignment(.leading)
                     .fixedSize(horizontal: false, vertical: true)
+                    .animation(AppMotion.respectful(AppMotion.smooth, reduceMotion), value: identityFlavor)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(AppSpacing.l)
@@ -82,32 +99,13 @@ struct CurrentStreakHeroCard: View {
         .clipShape(RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous))
         .appElevation(isActive ? .medium : .low)
     }
-
-    private var flavorText: String {
-        if habit.isBreakHabit {
-            if currentStreak == 0 {
-                return "Hoy podés empezar a evitarlo. Un día a la vez."
-            }
-            if currentStreak == bestStreak {
-                return "Estás construyendo tu mejor marca de abstinencia, día a día."
-            }
-            return "Llevas \(currentStreak) \(currentStreak == 1 ? "día" : "días") evitándolo. Tu récord: \(bestStreak) \(bestStreak == 1 ? "día" : "días")."
-        }
-        if currentStreak == 0 {
-            return "Hoy también cuenta. Vuelve con una marca pequeña."
-        }
-        if currentStreak == bestStreak {
-            return "Estás construyendo una referencia nueva, día a día."
-        }
-        return "Cada día que vuelves cuenta. Tu referencia: \(bestStreak) \(bestStreak == 1 ? "día" : "días")."
-    }
 }
 
 #Preview {
     VStack(spacing: AppSpacing.m) {
         CurrentStreakHeroCard(
             habit: Habit(
-                title: "Tomar agua",
+                title: "Leer antes de dormir",
                 iconName: "drop.fill",
                 colorHex: "#7fa774",
                 targetDaysPerWeek: 5,
@@ -119,11 +117,12 @@ struct CurrentStreakHeroCard: View {
 
         CurrentStreakHeroCard(
             habit: Habit(
-                title: "Tomar agua",
+                title: "Comprar cosas por impulso",
                 iconName: "drop.fill",
                 colorHex: "#7fa774",
                 targetDaysPerWeek: 5,
-                activeDaysOfWeek: Set(Weekday.ordered)
+                activeDaysOfWeek: Set(Weekday.ordered),
+                direction: .break
             ),
             currentStreak: 0,
             bestStreak: 7

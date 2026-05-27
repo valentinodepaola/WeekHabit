@@ -6,44 +6,31 @@
 import SwiftUI
 
 struct StreakBreakdownCard: View {
+    let habit: Habit
     let breakdown: StreakBreakdown
     let color: Color
-    var isBreakHabit: Bool = false
 
     private var totalLabel: String {
-        if isBreakHabit {
-            return "\(breakdown.totalDays) \(breakdown.totalDays == 1 ? "día sin hacerlo" : "días sin hacerlo")"
-        }
-        return "\(breakdown.totalDays) \(breakdown.totalDays == 1 ? "día sostenido" : "días sostenidos")"
+        IdentityReinforcementCopy.streakBreakdownTotal(
+            for: habit,
+            totalDays: breakdown.totalDays
+        )
     }
 
     private var statusText: String {
-        if !breakdown.hasHistory {
-            return isBreakHabit
-                ? "Aún no hay días evitados para mostrar."
-                : "Aún no hay una racha activa para desglosar."
-        }
-
-        if breakdown.protectedDays == 0 && breakdown.minimumDays == 0 {
-            return isBreakHabit
-                ? "Tu racha viene solo de días evitados."
-                : "Tu racha viene solo de días completados."
-        }
-
-        if breakdown.minimumDays > 0 && breakdown.protectedDays == 0 {
-            return "Las versiones mínimas sumaron a la racha sin contarlas como días completos."
-        }
-
-        return "Versiones mínimas, descansos y comodines sostuvieron la racha sin inflar los días completos."
+        IdentityReinforcementCopy.streakBreakdownStatus(
+            for: habit,
+            breakdown: breakdown
+        )
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: AppSpacing.m) {
             HStack(alignment: .firstTextBaseline) {
-                Text(isBreakHabit ? "HISTORIAL HONESTO" : "RACHA HONESTA")
+                Text(IdentityReinforcementCopy.streakBreakdownHeader(for: habit).uppercased(with: Locale(identifier: "es")))
                     .font(AppFont.label)
                     .foregroundStyle(AppColor.textTertiary)
-                    .tracking(0.6)
+                    .tracking(0.8)
 
                 Spacer()
 
@@ -55,11 +42,11 @@ struct StreakBreakdownCard: View {
 
             HStack(spacing: AppSpacing.s) {
                 StreakBreakdownMetric(
-                    icon: isBreakHabit ? "xmark" : "checkmark",
+                    icon: habit.isBreakHabit ? "xmark" : "checkmark",
                     value: breakdown.completedDays,
                     label: breakdown.completedDays == 1
-                        ? (isBreakHabit ? "evitado" : "hecho")
-                        : (isBreakHabit ? "evitados" : "hechos"),
+                        ? (habit.isBreakHabit ? "evitado" : "hecho")
+                        : (habit.isBreakHabit ? "evitados" : "hechos"),
                     tint: color,
                     fill: color.opacity(0.16)
                 )
@@ -90,8 +77,9 @@ struct StreakBreakdownCard: View {
             }
 
             Text(statusText)
-                .font(AppFont.label)
-                .foregroundStyle(AppColor.textTertiary)
+                .font(AppFont.callout)
+                .foregroundStyle(AppColor.textSecondary)
+                .lineLimit(3)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -143,11 +131,26 @@ private struct StreakBreakdownMetric: View {
 #Preview {
     VStack(spacing: AppSpacing.m) {
         StreakBreakdownCard(
+            habit: Habit(
+                title: "Leer antes de dormir",
+                iconName: "book.fill",
+                colorHex: "#5c89a8",
+                targetDaysPerWeek: 7,
+                activeDaysOfWeek: Set(Weekday.ordered)
+            ),
             breakdown: StreakBreakdown(completedDays: 18, minimumDays: 2, skippedDays: 4, frozenDays: 1),
             color: AppColor.accent
         )
 
         StreakBreakdownCard(
+            habit: Habit(
+                title: "Comprar cosas por impulso",
+                iconName: "cart.fill",
+                colorHex: "#7fa774",
+                targetDaysPerWeek: 7,
+                activeDaysOfWeek: Set(Weekday.ordered),
+                direction: .break
+            ),
             breakdown: StreakBreakdown(completedDays: 5, minimumDays: 0, skippedDays: 0, frozenDays: 0),
             color: AppColor.success
         )

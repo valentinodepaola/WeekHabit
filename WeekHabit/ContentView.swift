@@ -30,20 +30,26 @@ struct ContentView: View {
     }
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            Group {
-                switch selectedTab {
-                case 0: TodayView()
-                case 1: WeekView()
-                case 2: InsightsView()
-                default: TodayView()
+        TabView(selection: $selectedTab) {
+            TodayView()
+                .tabItem {
+                    Label(TabItems.today.description, systemImage: TabItems.today.icon)
                 }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .tag(0)
 
-            CustomTabBar(selectedTab: $selectedTab)
+            WeekView()
+                .tabItem {
+                    Label(TabItems.week.description, systemImage: TabItems.week.icon)
+                }
+                .tag(1)
+
+            InsightsView()
+                .tabItem {
+                    Label(TabItems.insights.description, systemImage: TabItems.insights.icon)
+                }
+                .tag(2)
         }
-        .ignoresSafeArea(edges: .bottom)
+        .tint(AppColor.accent)
         .sheet(item: planPendingReviewBinding) { wrapper in
             PlanWrapUpView(plan: wrapper.plan)
         }

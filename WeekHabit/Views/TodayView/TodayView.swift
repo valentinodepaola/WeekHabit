@@ -28,7 +28,9 @@ struct TodayView: View {
     @AppStorage("weeklyReviewWeekdayRaw") private var weeklyReviewWeekdayRaw: Int = Weekday.sunday.rawValue
 
     @State private var coverRoute: TodayCoverRoute?
+    @State private var milestoneCover: MilestoneCelebrationPayload?
     @State private var sheetRoute: TodaySheetRoute?
+    @State private var deferredNoteEntry: HabitEntry?
     @State private var selectedHabit: Habit?
     @State private var habitToDelete: Habit?
     @State private var showDeleteHabitAlert = false
@@ -168,13 +170,16 @@ struct TodayView: View {
                 .listStyle(.plain)
                 .listRowSpacing(AppSpacing.m)
                 .scrollContentBackground(.hidden)
-                .contentMargins(.bottom, 120, for: .scrollContent)
+                .contentMargins(.bottom, AppSpacing.xl, for: .scrollContent)
             }
             .navigationDestination(item: $selectedHabit) { habit in
                 HabitDetailView(habit: habit)
             }
             .fullScreenCover(item: $coverRoute) { route in
                 routeCover(route)
+            }
+            .fullScreenCover(item: $milestoneCover, onDismiss: presentDeferredNoteIfNeeded) { payload in
+                MilestoneCelebrationView(habit: payload.habit, milestone: payload.milestone)
             }
             .sheet(item: $sheetRoute) { route in
                 routeSheet(route)
@@ -462,10 +467,11 @@ struct TodayView: View {
         }
 
         if let top = todayHabits.topStreakHabit(reference: referenceDate) {
+            let allSameStreak = todayHabits.allShareSameCurrentStreak(reference: referenceDate)
             LongestStreakBanner(
-                habitTitle: top.habit.title,
+                habit: allSameStreak ? nil : top.habit,
                 streakDays: top.streak,
-                allSameStreak: todayHabits.allShareSameCurrentStreak(reference: referenceDate)
+                allSameStreak: allSameStreak
             )
             .todayListRow()
         }
@@ -659,6 +665,8 @@ struct TodayView: View {
             WeeklyReviewView(weekStart: weekStart)
                 .presentationDragIndicator(.visible)
                 .presentationBackground(AppColor.bgCanvas)
+        case .noteEntry(let entry):
+            EntryNoteSheet(entry: entry)
         }
     }
 
@@ -694,6 +702,8 @@ struct TodayView: View {
         let completedEntriesForToday = entriesForToday.filter { $0.kind == .completed }
 
         let willComplete = !habit.isCompleted(on: referenceDate)
+        let closesDay = willComplete && remainingTodayCount == 1
+        var insertedEntry: HabitEntry?
 
         transitionHabitBetweenSections {
             if willComplete {
@@ -707,16 +717,26 @@ struct TodayView: View {
                     habit: habit
                 )
                 modelContext.insert(entry)
+                insertedEntry = entry
             } else {
                 completedEntriesForToday.forEach { modelContext.delete($0) }
             }
         }
 
-        if willComplete && remainingTodayCount == 1 {
+        if closesDay {
             // Era el último; cierre del día.
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
                 AppHaptics.play(.dayClosed)
             }
+        }
+
+        if willComplete, let insertedEntry {
+            presentLiveMilestoneIfNeeded(
+                for: habit,
+                on: referenceDate,
+                noteEntry: insertedEntry,
+                afterDayClosed: closesDay
+            )
         }
     }
 
@@ -727,6 +747,7 @@ struct TodayView: View {
             AppCalendar.isSameDay($0.date, date)
         }
         let stateEntriesForDay = entriesForDay.filter { $0.kind != .urge }
+        let closesDay = AppCalendar.isSameDay(date, referenceDate) && remainingTodayCount == 1
 
         transitionHabitBetweenSections {
             stateEntriesForDay.forEach { modelContext.delete($0) }
@@ -742,6 +763,65 @@ struct TodayView: View {
                     habit: habit
                 )
             )
+        }
+
+        if closesDay {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
+                AppHaptics.play(.dayClosed)
+            }
+        }
+
+        presentLiveMilestoneIfNeeded(
+            for: habit,
+            on: date,
+            afterDayClosed: closesDay
+        )
+    }
+
+    @discardableResult
+    private func presentLiveMilestoneIfNeeded(
+        for habit: Habit,
+        on date: Date,
+        noteEntry: HabitEntry? = nil,
+        afterDayClosed: Bool = false
+    ) -> Bool {
+        guard let milestone = habit.crossedMilestone(on: date) else {
+            if let noteEntry {
+                sheetRoute = .noteEntry(entry: noteEntry)
+            }
+            return false
+        }
+
+        habit.markMilestoneCelebrated(milestone)
+        if let noteEntry {
+            deferredNoteEntry = noteEntry
+        }
+
+        let delay: TimeInterval = afterDayClosed ? 1.75 : 0.6
+        let payload = MilestoneCelebrationPayload(habit: habit, milestone: milestone)
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+            milestoneCover = payload
+        }
+        return true
+    }
+
+    private func presentDeferredNoteIfNeeded() {
+        guard let entry = deferredNoteEntry else { return }
+        deferredNoteEntry = nil
+        scheduleDeferredNotePresentation(entry: entry, attempt: 0)
+    }
+
+    private func scheduleDeferredNotePresentation(entry: HabitEntry, attempt: Int) {
+        let maxAttempts = 6
+        let delay: TimeInterval = attempt == 0 ? 0.25 : 0.4
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+            if sheetRoute == nil {
+                sheetRoute = .noteEntry(entry: entry)
+                return
+            }
+            guard attempt < maxAttempts else { return }
+            scheduleDeferredNotePresentation(entry: entry, attempt: attempt + 1)
         }
     }
 
@@ -871,6 +951,11 @@ struct TodayView: View {
         value: Double,
         source: HabitEntrySource
     ) {
+        let wasCompleted = habit.totalValue(on: date) >= habit.sessionTargetValue
+        let closesDay = source == .today
+            && AppCalendar.isSameDay(date, referenceDate)
+            && !wasCompleted
+            && remainingTodayCount == 1
         let entriesForDay = habit.entries.filter {
             AppCalendar.isSameDay($0.date, date)
         }
@@ -904,6 +989,27 @@ struct TodayView: View {
                 )
             }
         }
+
+        guard value > 0 else { return }
+
+        let isCompleted = habit.totalValue(on: date) >= habit.sessionTargetValue
+        if !wasCompleted && isCompleted {
+            AppHaptics.play(.quantityCompleted)
+            if closesDay {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
+                    AppHaptics.play(.dayClosed)
+                }
+            }
+            if source == .today {
+                presentLiveMilestoneIfNeeded(
+                    for: habit,
+                    on: date,
+                    afterDayClosed: closesDay
+                )
+            }
+        } else if !isCompleted {
+            AppHaptics.play(.quantityLogged)
+        }
     }
 
     private func toggleRest(for habit: Habit) {
@@ -930,6 +1036,8 @@ struct TodayView: View {
                 )
             }
         }
+
+        AppHaptics.play(.skipToggled)
     }
 
     private func persistSlip(for habit: Habit, trigger: SlipTrigger?, context: String?) {
@@ -1125,6 +1233,7 @@ private enum TodaySheetRoute: Identifiable {
     case recoveryPrompt(RecoveryPromptCandidate)
     case replacementPrompt(breakHabit: Habit, replacementHabit: Habit)
     case weeklyReview(weekStart: Date)
+    case noteEntry(entry: HabitEntry)
 
     var id: String {
         switch self {
@@ -1137,6 +1246,7 @@ private enum TodaySheetRoute: Identifiable {
             return "replacementPrompt-\(breakHabit.id)-\(replacementHabit.id)"
         case .weeklyReview(let weekStart):
             return "weeklyReview-\(weekStart.timeIntervalSinceReferenceDate)"
+        case .noteEntry(let entry): return "noteEntry-\(entry.id)"
         }
     }
 }

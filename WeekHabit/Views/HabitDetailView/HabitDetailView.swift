@@ -64,9 +64,9 @@ struct HabitDetailView: View {
                     )
 
                     StreakBreakdownCard(
+                        habit: habit,
                         breakdown: streakBreakdown,
-                        color: habit.habitColor,
-                        isBreakHabit: habit.isBreakHabit
+                        color: habit.habitColor
                     )
 
                     HStack(spacing: AppSpacing.s) {
@@ -90,7 +90,11 @@ struct HabitDetailView: View {
                         SlipTimelineCard(habit: habit)
                     }
 
+                    EntryHistoryCard(habit: habit)
+
                     LastWeeksHeatmapCard(habit: habit)
+                    
+                    LastWeeksHeatmapCard(habit: habit, weeks: 52)
                 }
                 .padding(.horizontal, AppSpacing.l)
                 .padding(.top, AppSpacing.l)
@@ -182,13 +186,11 @@ struct HabitDetailView: View {
     }
 
     private var bestStreakFooter: String {
-        if bestStreak == 0 {
-            return habit.isBreakHabit ? "lista para evitarlo" : "lista para empezar"
-        }
-        if currentStreak == bestStreak {
-            return habit.isBreakHabit ? "tu mejor racha activa" : "la estás construyendo hoy"
-        }
-        return habit.isBreakHabit ? "tu récord de abstinencia" : "tu marca para volver"
+        IdentityReinforcementCopy.bestStreakFooter(
+            for: habit,
+            currentStreak: currentStreak,
+            bestStreak: bestStreak
+        )
     }
 
     private var detailSummary: String {

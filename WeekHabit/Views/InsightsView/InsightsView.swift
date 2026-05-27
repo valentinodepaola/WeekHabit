@@ -118,7 +118,7 @@ struct InsightsView: View {
                     }
                     .padding(.horizontal, AppSpacing.l)
                     .padding(.top, AppSpacing.l)
-                    .padding(.bottom, 120)
+                    .padding(.bottom, AppSpacing.xl)
                 }
             }
             .fullScreenCover(item: $habitRoute) { route in
