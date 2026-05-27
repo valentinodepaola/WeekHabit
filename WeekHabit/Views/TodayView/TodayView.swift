@@ -467,10 +467,11 @@ struct TodayView: View {
         }
 
         if let top = todayHabits.topStreakHabit(reference: referenceDate) {
+            let allSameStreak = todayHabits.allShareSameCurrentStreak(reference: referenceDate)
             LongestStreakBanner(
-                habitTitle: top.habit.title,
+                habit: allSameStreak ? nil : top.habit,
                 streakDays: top.streak,
-                allSameStreak: todayHabits.allShareSameCurrentStreak(reference: referenceDate)
+                allSameStreak: allSameStreak
             )
             .todayListRow()
         }

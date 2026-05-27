@@ -25,10 +25,11 @@ struct MilestoneCelebrationView: View {
     }
 
     private var unitLabel: String {
-        switch habit.direction {
-        case .build: return "días de racha"
-        case .break: return "días sin caer"
-        }
+        IdentityReinforcementCopy.milestoneUnitLabel(for: habit)
+    }
+
+    private var identityCopy: String {
+        IdentityReinforcementCopy.milestoneIdentity(for: habit, milestone: milestone)
     }
 
     var body: some View {
@@ -86,17 +87,20 @@ struct MilestoneCelebrationView: View {
                 Text("\(milestone.rawValue)")
                     .font(AppFont.display)
                     .foregroundStyle(AppColor.textPrimary)
+                    .monospacedDigit()
 
                 Text(unitLabel.uppercased(with: Locale(identifier: "es")))
                     .font(AppFont.label)
                     .foregroundStyle(AppColor.textTertiary)
                     .tracking(0.8)
 
-                Text(copy.identity)
+                Text(identityCopy)
                     .font(AppFont.headline)
                     .foregroundStyle(AppColor.textPrimary)
                     .multilineTextAlignment(.center)
+                    .lineLimit(3)
                     .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, AppSpacing.l)
 
                 Text(habit.title)
                     .font(AppFont.callout)
@@ -117,7 +121,7 @@ struct MilestoneCelebrationView: View {
         }
         .appElevation(.low)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(milestone.rawValue) \(unitLabel), \(copy.identity), \(habit.title)")
+        .accessibilityLabel("\(milestone.rawValue) \(unitLabel), \(identityCopy), \(habit.title)")
     }
 
     private var actions: some View {
@@ -185,7 +189,7 @@ struct MilestoneCelebrationView: View {
             shareItem = MilestoneShareItem(
                 imageData: data,
                 cachedImage: image,
-                caption: "\(copy.title) · \(habit.title)"
+                caption: "\(copy.title) · \(identityCopy)"
             )
         }
     }

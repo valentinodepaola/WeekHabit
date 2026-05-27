@@ -19,6 +19,10 @@ struct MilestoneShareCard: View {
         milestone.copy(for: habit.direction)
     }
 
+    private var identityCopy: String {
+        IdentityReinforcementCopy.milestoneIdentity(for: habit, milestone: milestone)
+    }
+
     var body: some View {
         AppBackground {
             VStack(spacing: 56) {
@@ -38,6 +42,7 @@ struct MilestoneShareCard: View {
                     Text("\(milestone.rawValue)")
                         .font(.system(size: 210, weight: .regular, design: .serif))
                         .foregroundStyle(AppColor.textPrimary)
+                        .monospacedDigit()
                         .minimumScaleFactor(0.72)
 
                     Text(copy.title.uppercased(with: Locale(identifier: "es")))
@@ -45,7 +50,7 @@ struct MilestoneShareCard: View {
                         .foregroundStyle(AppColor.textTertiary)
                         .tracking(2.2)
 
-                    Text(copy.identity)
+                    Text(identityCopy)
                         .font(.system(size: 58, weight: .medium, design: .serif))
                         .foregroundStyle(AppColor.textPrimary)
                         .multilineTextAlignment(.center)

@@ -380,9 +380,10 @@ struct TodayHabitComponent: View {
     }
 
     private var streakAccessibilityLabel: String {
-        streakCount == 0
-            ? "Listo para volver a empezar"
-            : "\(streakCount) días seguidos"
+        IdentityReinforcementCopy.streakAccessibility(
+            for: habit,
+            streakCount: streakCount
+        )
     }
 
     private var streakColor: Color {
