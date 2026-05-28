@@ -16,6 +16,20 @@ struct LastWeeksHeatmapCard: View {
         habit.completionMatrix(weeks: weeks, reference: referenceDate)
     }
 
+    private var weekStarts: [Date] {
+        guard weeks > 0 else { return [] }
+
+        let calendar = AppCalendar.current
+        let referenceDay = AppCalendar.startOfDay(for: referenceDate)
+        let currentWeekStart = AppCalendar.weekRange(containing: referenceDay).lowerBound
+
+        return (0..<weeks).map { weekIndex in
+            let offset = weekIndex - (weeks - 1)
+            return calendar.date(byAdding: .weekOfYear, value: offset, to: currentWeekStart)
+                ?? currentWeekStart
+        }
+    }
+
     private var heatmapCells: [HeatmapCell] {
         matrix.enumerated().flatMap { weekIndex, week in
             week.enumerated().map { dayIndex, state in
@@ -49,6 +63,7 @@ struct LastWeeksHeatmapCard: View {
                 YearHeatmapBody(
                     weeks: weeks,
                     matrix: matrix,
+                    weekStarts: weekStarts,
                     didScrollToLatestWeek: $didScrollToLatestWeek,
                     color: color
                 )
@@ -102,28 +117,78 @@ private struct HeatmapCell: Identifiable {
 private struct YearHeatmapBody: View {
     let weeks: Int
     let matrix: [[CellState]]
+    let weekStarts: [Date]
     @Binding var didScrollToLatestWeek: Bool
     let color: (CellState) -> Color
     
     private let cellSize: CGFloat = 10
     private let cellSpacing: CGFloat = 3
+    private let monthSpacing: CGFloat = 3
+    private let monthLabelHeight: CGFloat = 12
+    private let monthLabelSpacing: CGFloat = 6
     private let weekdayLabelWidth: CGFloat = 14
+
+    private var monthSegments: [MonthHeatmapSegment] {
+        let calendar = AppCalendar.current
+        var segments: [MonthHeatmapSegment] = []
+
+        for weekIndex in matrix.indices {
+            let weekStart = weekStarts.indices.contains(weekIndex)
+                ? weekStarts[weekIndex]
+                : Date()
+            let monthDate = calendar.date(byAdding: .day, value: 3, to: weekStart) ?? weekStart
+            let monthKey = monthIdentifier(for: monthDate)
+            let week = YearHeatmapWeek(id: weekIndex, states: matrix[weekIndex])
+
+            if let lastIndex = segments.indices.last, segments[lastIndex].id == monthKey {
+                segments[lastIndex].weeks.append(week)
+            } else {
+                segments.append(
+                    MonthHeatmapSegment(
+                        id: monthKey,
+                        label: monthLabel(for: monthDate),
+                        weeks: [week]
+                    )
+                )
+            }
+        }
+
+        return segments
+    }
     
     var body: some View {
         HStack(alignment: .top, spacing: AppSpacing.s) {
-            weekdayLabels
+            VStack(spacing: monthLabelSpacing) {
+                Color.clear
+                    .frame(width: weekdayLabelWidth, height: monthLabelHeight)
+
+                weekdayLabels
+            }
             
             ScrollViewReader { proxy in
                 ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(alignment: .top, spacing: cellSpacing) {
-                        ForEach(matrix.indices, id: \.self) { weekIndex in
-                            YearHeatmapWeekColumn(
-                                weekStates: matrix[weekIndex],
-                                cellSize: cellSize,
-                                cellSpacing: cellSpacing,
-                                color: color
-                            )
-                            .id(weekIndex)
+                    HStack(alignment: .top, spacing: monthSpacing) {
+                        ForEach(monthSegments) { segment in
+                            VStack(alignment: .leading, spacing: monthLabelSpacing) {
+                                Text(segment.label)
+                                    .font(AppFont.micro)
+                                    .foregroundStyle(AppColor.textTertiary)
+                                    .frame(height: monthLabelHeight, alignment: .bottomLeading)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.8)
+
+                                HStack(alignment: .top, spacing: cellSpacing) {
+                                    ForEach(segment.weeks) { week in
+                                        YearHeatmapWeekColumn(
+                                            weekStates: week.states,
+                                            cellSize: cellSize,
+                                            cellSpacing: cellSpacing,
+                                            color: color
+                                        )
+                                        .id(week.id)
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -137,6 +202,20 @@ private struct YearHeatmapBody: View {
                 }
             }
         }
+    }
+
+    private func monthIdentifier(for date: Date) -> String {
+        let components = AppCalendar.current.dateComponents([.year, .month], from: date)
+        return "\(components.year ?? 0)-\(components.month ?? 0)"
+    }
+
+    private func monthLabel(for date: Date) -> String {
+        let locale = Locale(identifier: "es_MX")
+        let formatter = DateFormatter()
+        formatter.calendar = AppCalendar.current
+        formatter.locale = locale
+        formatter.setLocalizedDateFormatFromTemplate("MMM")
+        return formatter.string(from: date).uppercased(with: locale)
     }
     
     private var weekdayLabels: some View {
@@ -152,6 +231,17 @@ private struct YearHeatmapBody: View {
         }
         .accessibilityHidden(true)
     }
+}
+
+private struct MonthHeatmapSegment: Identifiable {
+    let id: String
+    let label: String
+    var weeks: [YearHeatmapWeek]
+}
+
+private struct YearHeatmapWeek: Identifiable {
+    let id: Int
+    let states: [CellState]
 }
 
 private struct YearHeatmapWeekColumn: View {
