@@ -68,9 +68,6 @@ struct EntryNoteSheet: View {
         .presentationDetents([.height(260)])
         .presentationDragIndicator(.visible)
         .presentationBackground(AppColor.bgElevated)
-        .onAppear {
-            isFocused = true
-        }
         .onDisappear {
             commit()
         }

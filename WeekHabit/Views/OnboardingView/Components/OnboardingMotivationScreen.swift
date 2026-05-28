@@ -54,7 +54,6 @@ struct OnboardingMotivationScreen: View {
                 .foregroundStyle(AppColor.textTertiary)
                 .padding(.bottom, AppSpacing.xxl)
         }
-        .onAppear { isFocused = true }
     }
 
     private var headlineText: some View {
