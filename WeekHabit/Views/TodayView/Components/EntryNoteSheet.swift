@@ -65,6 +65,7 @@ struct EntryNoteSheet: View {
                 }
             }
         }
+        .whKeyboardDoneToolbar()
         .presentationDetents([.height(260)])
         .presentationDragIndicator(.visible)
         .presentationBackground(AppColor.bgElevated)
