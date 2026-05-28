@@ -21,7 +21,6 @@ struct LastWeeksHeatmapCard: View {
             week.enumerated().map { dayIndex, state in
                 HeatmapCell(
                     id: weekIndex * rowCount + dayIndex,
-                    weekIndex: weekIndex,
                     state: state
                 )
             }
@@ -50,23 +49,13 @@ struct LastWeeksHeatmapCard: View {
                 YearHeatmapBody(
                     weeks: weeks,
                     matrix: matrix,
-                    weeklyIntensities: matrix.indices.map(intensity),
                     didScrollToLatestWeek: $didScrollToLatestWeek,
                     color: color
                 )
-                
-                heatmapLegend
             }
         } else {
             VStack(alignment: .leading, spacing: AppSpacing.m) {
-                HStack(alignment: .firstTextBaseline) {
-                    headerTitle
-
-                    Spacer()
-
-                    heatmapLegend
-                }
-
+                headerTitle
                 heatmapGrid
             }
         }
@@ -79,22 +68,6 @@ struct LastWeeksHeatmapCard: View {
             .tracking(0.6)
     }
 
-    private var heatmapLegend: some View {
-        HStack(spacing: AppSpacing.xs) {
-            Text("menos")
-                .font(AppFont.micro)
-                .foregroundStyle(AppColor.textTertiary)
-            ForEach([0.0, 0.25, 0.5, 0.75, 1.0], id: \.self) { intensity in
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(intensityFill(intensity))
-                    .frame(width: 9, height: 9)
-            }
-            Text("más")
-                .font(AppFont.micro)
-                .foregroundStyle(AppColor.textTertiary)
-        }
-    }
-
     private var heatmapGrid: some View {
         HeatmapGridLayout(
             columns: matrix.count,
@@ -103,66 +76,34 @@ struct LastWeeksHeatmapCard: View {
         ) {
             ForEach(heatmapCells) { cell in
                 RoundedRectangle(cornerRadius: cellCornerRadius, style: .continuous)
-                    .fill(color(for: cell.state, intensity: intensity(for: cell.weekIndex)))
+                    .fill(color(for: cell.state))
             }
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
     }
 
-    private func intensity(for weekIndex: Int) -> Double {
-        guard matrix.indices.contains(weekIndex) else { return 0 }
-        let ratio = matrix[weekIndex].completionRatio(target: habit.targetDaysPerWeek)
-
-        switch ratio {
-        case 0: return 0
-        case 0...0.25: return 0.25
-        case 0.25...0.5: return 0.5
-        case 0.5...0.75: return 0.75
-        default: return 1
-        }
-    }
-
-    private func color(for state: CellState, intensity: Double) -> Color {
+    private func color(for state: CellState) -> Color {
         switch state {
         case .completed:
-            return habit.habitColor.opacity(max(0.35, intensity))
-        case .minimum:
-            return habit.habitColor.opacity(0.42)
-        case .skipped:
-            return habit.habitColor.opacity(0.18)
+            return habit.habitColor
         case .frozen:
             return AppColor.info.opacity(0.24)
-        case .missed:
-            return habit.habitColor.opacity(0.08)
-        case .slip:
-            return AppColor.warning.opacity(0.28)
-        case .urge:
-            return habit.habitColor.opacity(0.18)
-        case .inactive, .future:
+        case .inactive, .future, .minimum, .skipped, .missed, .slip, .urge:
             return AppColor.bgSunken
         }
-    }
-
-    private func intensityFill(_ intensity: Double) -> Color {
-        if intensity == 0 {
-            return habit.habitColor.opacity(0.12)
-        }
-        return habit.habitColor.opacity(max(0.35, intensity))
     }
 }
 
 private struct HeatmapCell: Identifiable {
     let id: Int
-    let weekIndex: Int
     let state: CellState
 }
 
 private struct YearHeatmapBody: View {
     let weeks: Int
     let matrix: [[CellState]]
-    let weeklyIntensities: [Double]
     @Binding var didScrollToLatestWeek: Bool
-    let color: (CellState, Double) -> Color
+    let color: (CellState) -> Color
     
     private let cellSize: CGFloat = 10
     private let cellSpacing: CGFloat = 3
@@ -178,9 +119,6 @@ private struct YearHeatmapBody: View {
                         ForEach(matrix.indices, id: \.self) { weekIndex in
                             YearHeatmapWeekColumn(
                                 weekStates: matrix[weekIndex],
-                                intensity: weeklyIntensities.indices.contains(weekIndex)
-                                    ? weeklyIntensities[weekIndex]
-                                    : 0,
                                 cellSize: cellSize,
                                 cellSpacing: cellSpacing,
                                 color: color
@@ -218,16 +156,15 @@ private struct YearHeatmapBody: View {
 
 private struct YearHeatmapWeekColumn: View {
     let weekStates: [CellState]
-    let intensity: Double
     let cellSize: CGFloat
     let cellSpacing: CGFloat
-    let color: (CellState, Double) -> Color
+    let color: (CellState) -> Color
     
     var body: some View {
         VStack(spacing: cellSpacing) {
             ForEach(weekStates.indices, id: \.self) { dayIndex in
                 RoundedRectangle(cornerRadius: 2, style: .continuous)
-                    .fill(color(weekStates[dayIndex], intensity))
+                    .fill(color(weekStates[dayIndex]))
                     .frame(width: cellSize, height: cellSize)
             }
         }

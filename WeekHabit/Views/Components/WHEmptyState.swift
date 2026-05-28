@@ -68,3 +68,13 @@ struct WHEmptyState: View {
         .frame(maxWidth: 280)
     }
 }
+
+
+#Preview {
+    WHEmptyState(
+        icon: "leaf",
+        title: "Hoy toca descansar",
+        message: "No tienes hábitos programados para hoy. Mañana te esperan dos.",
+        primaryAction: WHEmptyStateAction(label: "Crear un hábito", perform: {})
+    )
+}
