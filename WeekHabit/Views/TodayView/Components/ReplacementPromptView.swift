@@ -38,7 +38,7 @@ struct ReplacementPromptView: View {
                 .font(AppFont.headline)
                 .foregroundStyle(AppColor.textPrimary)
 
-            Text("¿Querés hacer \(replacementHabit.title) ahora?")
+            Text("¿Quieres hacer \(replacementHabit.title) ahora?")
                 .font(AppFont.callout)
                 .foregroundStyle(AppColor.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)

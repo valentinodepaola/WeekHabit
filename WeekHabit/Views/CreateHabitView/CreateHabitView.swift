@@ -409,7 +409,7 @@ private struct HabitMinimalVersionSection: View {
     var body: some View {
         CreateHabitFormSection(
             title: "Versión mínima viable",
-            helper: "Una versión chica para días difíciles. Cuenta para tu racha aunque no para el conteo de días completos."
+            helper: "Una versión pequeña para días difíciles. Cuenta para tu racha aunque no para el conteo de días completos."
         ) {
             TextFieldComponent(
                 titleSection: "Mínima",

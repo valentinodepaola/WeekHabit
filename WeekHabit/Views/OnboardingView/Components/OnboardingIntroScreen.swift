@@ -35,7 +35,7 @@ struct OnboardingIntroScreen: View {
                 .padding(.horizontal, AppSpacing.xl)
                 .padding(.bottom, AppSpacing.l)
 
-            Button("Saltar introducción", action: onSkip)
+            Button("Omitir introducción", action: onSkip)
                 .font(AppFont.label)
                 .foregroundStyle(AppColor.textTertiary)
                 .padding(.bottom, AppSpacing.xxl)

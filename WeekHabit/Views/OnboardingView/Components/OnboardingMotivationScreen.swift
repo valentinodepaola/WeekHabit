@@ -49,7 +49,7 @@ struct OnboardingMotivationScreen: View {
                 .padding(.horizontal, AppSpacing.xl)
                 .padding(.bottom, AppSpacing.s)
 
-            Button("Saltear", action: onSkip)
+            Button("Omitir", action: onSkip)
                 .font(AppFont.label)
                 .foregroundStyle(AppColor.textTertiary)
                 .padding(.bottom, AppSpacing.xxl)

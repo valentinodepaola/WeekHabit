@@ -27,7 +27,7 @@ struct StreakBreakdownCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: AppSpacing.m) {
             HStack(alignment: .firstTextBaseline) {
-                Text(IdentityReinforcementCopy.streakBreakdownHeader(for: habit).uppercased(with: Locale(identifier: "es")))
+                Text(IdentityReinforcementCopy.streakBreakdownHeader(for: habit).uppercased(with: Locale(identifier: "es_MX")))
                     .font(AppFont.label)
                     .foregroundStyle(AppColor.textTertiary)
                     .tracking(0.8)

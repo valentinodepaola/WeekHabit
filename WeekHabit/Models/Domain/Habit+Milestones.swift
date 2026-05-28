@@ -27,19 +27,19 @@ enum HabitMilestone: Int, CaseIterable {
         case (.week, .break):
             return MilestoneCopy(title: "Una semana", identity: "Empezaste a soltarlo", symbolName: "leaf.fill")
         case (.month, .build):
-            return MilestoneCopy(title: "Un mes", identity: "Ya sos alguien que lo hace", symbolName: "calendar.badge.checkmark")
+            return MilestoneCopy(title: "Un mes", identity: "Ya eres alguien que lo hace", symbolName: "calendar.badge.checkmark")
         case (.month, .break):
             return MilestoneCopy(title: "Un mes", identity: "Ya no te define", symbolName: "shield.lefthalf.filled")
         case (.automaticity, .build):
             return MilestoneCopy(title: "66 días", identity: "Esto ya es identidad", symbolName: "seal.fill")
         case (.automaticity, .break):
-            return MilestoneCopy(title: "66 días", identity: "Ya no sos quien era", symbolName: "checkmark.seal.fill")
+            return MilestoneCopy(title: "66 días", identity: "Ya no eres quien eras", symbolName: "checkmark.seal.fill")
         case (.hundred, .build):
-            return MilestoneCopy(title: "Cien", identity: "Esto es lo que hacés", symbolName: "trophy.fill")
+            return MilestoneCopy(title: "Cien", identity: "Esto es lo que haces", symbolName: "trophy.fill")
         case (.hundred, .break):
-            return MilestoneCopy(title: "Cien", identity: "Sos otra persona", symbolName: "medal.fill")
+            return MilestoneCopy(title: "Cien", identity: "Eres otra persona", symbolName: "medal.fill")
         case (.year, .build):
-            return MilestoneCopy(title: "Un año", identity: "Es parte de quién sos", symbolName: "star.circle.fill")
+            return MilestoneCopy(title: "Un año", identity: "Es parte de quién eres", symbolName: "star.circle.fill")
         case (.year, .break):
             return MilestoneCopy(title: "Un año", identity: "Ya es historia", symbolName: "flag.checkered")
         }

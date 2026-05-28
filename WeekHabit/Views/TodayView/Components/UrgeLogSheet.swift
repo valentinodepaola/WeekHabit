@@ -53,7 +53,7 @@ struct UrgeLogSheet: View {
                 }
             }
 
-            Text("Notarlo sin seguirlo también cuenta. Guardá qué lo detonó para encontrar patrones.")
+            Text("Notarlo sin seguirlo también cuenta. Guarda qué lo detonó para encontrar patrones.")
                 .font(AppFont.callout)
                 .foregroundStyle(AppColor.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)

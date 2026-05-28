@@ -23,7 +23,7 @@ struct HabitReplacementSection: View {
     var body: some View {
         CreateHabitFormSection(
             title: "¿Qué vas a hacer en su lugar?",
-            helper: "Elegí una acción breve para usar cuando aparezca el impulso."
+            helper: "Elige una acción breve para usar cuando aparezca el impulso."
         ) {
             VStack(alignment: .leading, spacing: AppSpacing.m) {
                 VStack(spacing: AppSpacing.s) {
@@ -38,7 +38,7 @@ struct HabitReplacementSection: View {
 
                     HabitOptionButton(
                         title: "Vincular existente",
-                        subtitle: availableHabits.isEmpty ? "No hay hábitos build disponibles" : "Usar un hábito que ya tenés",
+                        subtitle: availableHabits.isEmpty ? "No hay hábitos para construir disponibles" : "Usar un hábito que ya tienes",
                         icon: "link.circle.fill",
                         isSelected: mode == .existing
                     ) {
@@ -49,8 +49,8 @@ struct HabitReplacementSection: View {
                     }
 
                     HabitOptionButton(
-                        title: "Saltar por ahora",
-                        subtitle: "Podés agregarlo más tarde",
+                        title: "Omitir por ahora",
+                        subtitle: "Puedes agregarlo más tarde",
                         icon: "forward.circle.fill",
                         isSelected: mode == .skip
                     ) {

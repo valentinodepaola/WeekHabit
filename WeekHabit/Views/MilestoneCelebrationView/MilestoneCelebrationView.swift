@@ -89,7 +89,7 @@ struct MilestoneCelebrationView: View {
                     .foregroundStyle(AppColor.textPrimary)
                     .monospacedDigit()
 
-                Text(unitLabel.uppercased(with: Locale(identifier: "es")))
+                Text(unitLabel.uppercased(with: Locale(identifier: "es_MX")))
                     .font(AppFont.label)
                     .foregroundStyle(AppColor.textTertiary)
                     .tracking(0.8)

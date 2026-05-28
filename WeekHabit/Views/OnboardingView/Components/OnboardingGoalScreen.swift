@@ -49,7 +49,7 @@ struct OnboardingGoalScreen: View {
                 .padding(.horizontal, AppSpacing.xl)
                 .padding(.bottom, AppSpacing.s)
 
-            Button("Saltear", action: onSkip)
+            Button("Omitir", action: onSkip)
                 .font(AppFont.label)
                 .foregroundStyle(AppColor.textTertiary)
                 .padding(.bottom, AppSpacing.xxl)
@@ -59,7 +59,7 @@ struct OnboardingGoalScreen: View {
 
     private var headlineText: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text("¿Qué querés")
+            Text("¿Qué quieres")
                 .font(AppFont.title)
                 .foregroundStyle(AppColor.textPrimary)
             Text("lograr?")

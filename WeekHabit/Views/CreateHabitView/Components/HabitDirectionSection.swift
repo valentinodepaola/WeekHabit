@@ -11,7 +11,7 @@ struct HabitDirectionSection: View {
     var body: some View {
         CreateHabitFormSection(
             title: "Tipo de hábito",
-            helper: "¿Querés construir algo nuevo o eliminar algo que no te sirve?"
+            helper: "¿Quieres construir algo nuevo o eliminar algo que no te sirve?"
         ) {
             VStack(spacing: 10) {
                 HabitOptionButton(
