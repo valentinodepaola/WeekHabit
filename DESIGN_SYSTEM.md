@@ -25,9 +25,9 @@ Todos los colores son **adaptativos** (cambian según `userInterfaceStyle`). Nun
 | Token | Light | Dark | Uso |
 |---|---|---|---|
 | `AppColor.bgCanvas` | `#f5efe3` | `#1a1410` | Fondo principal de pantalla. Siempre vía `AppBackground { … }`. |
-| `AppColor.bgElevated` | `#fffaf0` | `#221a14` | Cards principales (default `WHCard`), filas, sheets. |
-| `AppColor.bgSunken` | `#ebe3d3` | `#14100c` | Inputs, áreas que reciben contenido, contenedor de la cuadrícula semanal. |
-| `AppColor.divider` | `#e5dccb` | `#2e2620` | Bordes 1pt entre superficies del mismo nivel. |
+| `AppColor.bgElevated` | `#fffaf0` | `#30251d` | Cards principales (default `WHCard`), filas, sheets. |
+| `AppColor.bgSunken` | `#ebe3d3` | `#120e0b` | Inputs, áreas que reciben contenido, contenedor de la cuadrícula semanal. |
+| `AppColor.divider` | `#e5dccb` | `#46382e` | Bordes 1pt entre superficies del mismo nivel. |
 
 ### 2.2 Texto
 
