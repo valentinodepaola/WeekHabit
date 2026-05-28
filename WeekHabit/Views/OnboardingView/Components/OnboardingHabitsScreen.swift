@@ -14,13 +14,16 @@ struct OnboardingHabitsScreen: View {
 
     private var canAddMore: Bool { habitDrafts.count < 3 }
     private var isContinueDisabled: Bool { habitDrafts.isEmpty }
+    private var addButtonTitle: String {
+        habitDrafts.isEmpty ? "Agregar primer hábito" : "Agregar otro hábito"
+    }
 
     var body: some View {
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: AppSpacing.s) {
                 headlineText
 
-                Text("Mínimo 1, máximo 3. Empezar con menos es mejor que empezar con todo.")
+                Text("Agrega uno o varios hábitos pequeños. Estos serán las acciones que sostienen tu meta cada semana.")
                     .font(AppFont.callout)
                     .foregroundStyle(AppColor.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -75,7 +78,7 @@ struct OnboardingHabitsScreen: View {
                 Image(systemName: "plus.circle.fill")
                     .font(.system(size: 18, weight: .medium))
                     .foregroundStyle(AppColor.accent)
-                Text("Agregar hábito")
+                Text(addButtonTitle)
                     .font(AppFont.bodyEmphasis)
                     .foregroundStyle(AppColor.accent)
             }
@@ -95,10 +98,10 @@ struct OnboardingHabitsScreen: View {
 
     private var headlineText: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text("¿Qué hábitos")
+            Text("Agrega hábitos")
                 .font(AppFont.title)
                 .foregroundStyle(AppColor.textPrimary)
-            Text("sostienen la meta?")
+            Text("que sostienen tu meta")
                 .font(AppFont.title.italic())
                 .foregroundStyle(AppColor.accent)
         }
@@ -201,6 +204,9 @@ private struct AddHabitSheet: View {
 
 #Preview {
     AppBackground {
-        OnboardingHabitsScreen(habitDrafts: .constant([]), onContinue: {})
+        OnboardingHabitsScreen(
+            habitDrafts: .constant([]),
+            onContinue: {}
+        )
     }
 }

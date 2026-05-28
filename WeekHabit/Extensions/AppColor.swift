@@ -17,11 +17,11 @@ enum AppColor {
     // MARK: - Backgrounds
 
     /// Fondo principal de pantalla. Grafito neutro en oscuro, papel manila en claro.
-    static let bgCanvas = adaptive(light: "#f5efe3", dark: "#101113")
+    static let bgCanvas = adaptive(light: "#FAF0E4", dark: "#101113")
     /// Superficies elevadas: cards, paneles. Un escalón arriba del canvas.
-    static let bgElevated = adaptive(light: "#fffaf0", dark: "#1a1c20")
+    static let bgElevated = adaptive(light: "#fffaf0", dark: "#242220")
     /// Superficies hundidas: inputs, áreas que reciben contenido.
-    static let bgSunken = adaptive(light: "#ebe3d3", dark: "#0a0b0d")
+    static let bgSunken = adaptive(light: "#ebe3d3", dark: "#191817")
 
     // MARK: - Text
 
@@ -49,7 +49,7 @@ enum AppColor {
 
     // MARK: - Structure
 
-    static let divider = adaptive(light: "#e5dccb", dark: "#2a2d33")
+    static let divider = adaptive(light: "#e5dccb", dark: "#3a3630")
 
     // MARK: - Row actions
 

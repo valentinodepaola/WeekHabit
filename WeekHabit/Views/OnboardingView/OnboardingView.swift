@@ -17,7 +17,6 @@ struct OnboardingView: View {
     @State private var step: OnboardingStep = .intro
     @State private var goalText: String = ""
     @State private var motivationText: String = ""
-    @State private var sizeText: String = ""
     @State private var habitDrafts: [OnboardingHabitDraft] = []
 
     let onFinish: () -> Void
@@ -74,9 +73,7 @@ struct OnboardingView: View {
             )
         case .size:
             OnboardingSizeScreen(
-                sizeText: $sizeText,
-                onContinue: goForwardFromSize,
-                onSkip: goForward
+                onContinue: goForward
             )
         case .habits:
             OnboardingHabitsScreen(
@@ -102,14 +99,6 @@ struct OnboardingView: View {
             return
         }
         step = nextStep
-    }
-
-    private func goForwardFromSize() {
-        let trimmed = sizeText.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !trimmed.isEmpty && habitDrafts.isEmpty {
-            habitDrafts.append(OnboardingHabitDraft(title: trimmed))
-        }
-        goForward()
     }
 
     private func createPlanAndHabits() {
