@@ -110,7 +110,6 @@ struct WeekView: View {
                         onCreate: { sheetRoute = .createMenu }
                     )
 
-                    dayStrip
                     contentArea
                         .padding(.top, AppSpacing.s)
                 }
@@ -128,17 +127,6 @@ struct WeekView: View {
                 }
             }
         }
-    }
-
-    private var dayStrip: some View {
-        HStack(spacing: WeekGridLayout.cellSpacing) {
-            ForEach(daysInWeek, id: \.self) { date in
-                DayColumn(date: date, isToday: AppCalendar.isSameDay(date, .now))
-            }
-        }
-        .padding(.leading, 34)
-        .padding(.trailing, 30)
-        .padding(.bottom, AppSpacing.s)
     }
 
     @ViewBuilder
@@ -168,20 +156,17 @@ struct WeekView: View {
                     .listRowInsets(EdgeInsets(top: 0, leading: AppSpacing.l, bottom: AppSpacing.m, trailing: AppSpacing.l))
                 }
 
-                ForEach(visibleHabits) { habit in
-                    WeekGridRow(
-                        habit: habit,
-                        daysInWeek: daysInWeek,
-                        referenceDate: referenceDate,
-                        today: .now,
-                        onSelectHabit: { selectedHabit = habit },
-                        onToggle: { date in toggleCompletion(for: habit, on: date) },
-                        onSkip: { date in toggleRest(for: habit, on: date) }
-                    )
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-                    .listRowInsets(EdgeInsets(top: 0, leading: AppSpacing.l, bottom: 0, trailing: AppSpacing.l))
-                }
+                WeekRhythmCard(
+                    habits: visibleHabits,
+                    daysInWeek: daysInWeek,
+                    today: .now,
+                    onSelectHabit: { habit in selectedHabit = habit },
+                    onToggle: { habit, date in toggleCompletion(for: habit, on: date) },
+                    onSkip: { habit, date in toggleRest(for: habit, on: date) }
+                )
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+                .listRowInsets(EdgeInsets(top: 0, leading: AppSpacing.l, bottom: 0, trailing: AppSpacing.l))
 
                 Section {
                     summarySection
