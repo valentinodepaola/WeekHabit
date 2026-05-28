@@ -22,22 +22,15 @@ struct TodayHabitComponent: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: AppSpacing.m) {
-            Button(action: handleToggle) {
-                HStack(alignment: .center, spacing: AppSpacing.m) {
-                    toggleVisual
+            HStack(alignment: .center, spacing: AppSpacing.m) {
+                completeToggle
 
-                    textContent
+                textContent
 
-                    Spacer(minLength: AppSpacing.s)
+                Spacer(minLength: AppSpacing.s)
 
-                    iconColumn
-                }
-                .contentShape(Rectangle())
+                iconColumn
             }
-            .buttonStyle(.plain)
-            .simultaneousGesture(pressGesture)
-            .animation(AppMotion.respectful(AppMotion.celebration, reduceMotion), value: isCompleted || isMinimumCompleted || isSkipped)
-            .accessibilityLabel(toggleAccessibilityLabel)
 
             if hasMinimumAction {
                 minimumAction
@@ -149,6 +142,16 @@ struct TodayHabitComponent: View {
         .foregroundStyle(streakColor)
         .accessibilityLabel(streakAccessibilityLabel)
         .opacity(streakCount == 0 ? 0.5 : 1)
+    }
+
+    private var completeToggle: some View {
+        Button(action: handleToggle) {
+            toggleVisual
+        }
+        .buttonStyle(.plain)
+        .simultaneousGesture(pressGesture)
+        .animation(AppMotion.respectful(AppMotion.celebration, reduceMotion), value: isCompleted || isMinimumCompleted || isSkipped)
+        .accessibilityLabel(toggleAccessibilityLabel)
     }
 
     private var toggleVisual: some View {
