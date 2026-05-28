@@ -22,19 +22,31 @@ struct TodayHabitComponent: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: AppSpacing.m) {
-            HStack(alignment: .center, spacing: AppSpacing.m) {
-                completeToggle
+            Button(action: handleToggle) {
+                HStack(alignment: .center, spacing: AppSpacing.m) {
+                    toggleVisual
 
-                textContent
+                    textContent
 
-                Spacer(minLength: AppSpacing.s)
+                    Spacer(minLength: AppSpacing.s)
 
-                iconColumn
+                    iconColumn
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .simultaneousGesture(pressGesture)
+            .animation(AppMotion.respectful(AppMotion.celebration, reduceMotion), value: isCompleted || isMinimumCompleted || isSkipped)
+            .accessibilityLabel(toggleAccessibilityLabel)
+
+            if hasMinimumAction {
+                minimumAction
+                    .padding(.leading, secondaryActionLeadingPadding)
             }
 
             if shouldShowBreakActions {
                 breakActions
-                    .padding(.leading, 34 + AppSpacing.m)
+                    .padding(.leading, secondaryActionLeadingPadding)
             }
         }
         .padding(.horizontal, AppSpacing.l)
@@ -139,35 +151,6 @@ struct TodayHabitComponent: View {
         .opacity(streakCount == 0 ? 0.5 : 1)
     }
 
-    @ViewBuilder
-    private var completeToggle: some View {
-        if hasMinimumAction {
-            Menu {
-                Button {
-                    handleMinimum()
-                } label: {
-                    Label("Hice la mínima", systemImage: "checkmark.circle")
-                }
-            } label: {
-                toggleVisual
-            } primaryAction: {
-                handleToggle()
-            }
-            .buttonStyle(.plain)
-            .simultaneousGesture(pressGesture)
-            .animation(AppMotion.respectful(AppMotion.celebration, reduceMotion), value: isCompleted || isMinimumCompleted || isSkipped)
-            .accessibilityLabel(toggleAccessibilityLabel)
-        } else {
-            Button(action: handleToggle) {
-                toggleVisual
-            }
-            .buttonStyle(.plain)
-            .simultaneousGesture(pressGesture)
-            .animation(AppMotion.respectful(AppMotion.celebration, reduceMotion), value: isCompleted || isMinimumCompleted || isSkipped)
-            .accessibilityLabel(toggleAccessibilityLabel)
-        }
-    }
-
     private var toggleVisual: some View {
         ZStack {
             RoundedRectangle(cornerRadius: AppRadius.s, style: .continuous)
@@ -195,6 +178,18 @@ struct TodayHabitComponent: View {
             }
         }
         .scaleEffect(toggleScale)
+    }
+
+    private var minimumAction: some View {
+        Button(action: handleMinimum) {
+            actionPill(
+                title: "Hice la mínima",
+                icon: "checkmark.circle",
+                color: habit.habitColor
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Marcar versión mínima de \(habit.title)")
     }
 
     private var pressGesture: some Gesture {
@@ -319,6 +314,10 @@ struct TodayHabitComponent: View {
 
     private var shouldShowBreakActions: Bool {
         habit.isBreakHabit && !isCompleted && !isSkipped && (onSlip != nil || onUrge != nil)
+    }
+
+    private var secondaryActionLeadingPadding: CGFloat {
+        34 + AppSpacing.m
     }
 
     private var scheduleFallbackText: String {
