@@ -43,7 +43,9 @@ struct OnboardingMotivationScreen: View {
             )
             .padding(.horizontal, AppSpacing.xl)
 
-            Spacer()
+            Spacer(minLength: AppSpacing.l)
+
+            onboardingArtwork
 
             WHButton(title: "Continuar", variant: .primary, action: onContinue)
                 .padding(.horizontal, AppSpacing.xl)
@@ -65,6 +67,16 @@ struct OnboardingMotivationScreen: View {
                 .font(AppFont.title.italic())
                 .foregroundStyle(AppColor.accent)
         }
+    }
+
+    private var onboardingArtwork: some View {
+        Image("OnboardingWhyMatters")
+            .resizable()
+            .scaledToFit()
+            .frame(maxWidth: .infinity)
+            .frame(height: 300)
+            .padding(.bottom, AppSpacing.s)
+            .accessibilityHidden(true)
     }
 }
 
