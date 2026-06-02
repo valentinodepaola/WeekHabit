@@ -3,6 +3,16 @@
     {
       "filename" : "why-matters.png",
       "idiom" : "universal"
+    },
+    {
+      "appearances" : [
+        {
+          "appearance" : "luminosity",
+          "value" : "dark"
+        }
+      ],
+      "filename" : "why-matters-dark.png",
+      "idiom" : "universal"
     }
   ],
   "info" : {
