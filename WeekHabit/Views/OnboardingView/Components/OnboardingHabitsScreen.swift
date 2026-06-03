@@ -3,20 +3,23 @@
 //  WeekHabit
 //
 
+import SwiftData
 import SwiftUI
 
 struct OnboardingHabitsScreen: View {
-    @Binding var habitDrafts: [OnboardingHabitDraft]
+    @Environment(\.modelContext) private var modelContext
+
+    @Bindable var plan: Plan
 
     let onContinue: () -> Void
 
-    @State private var showingAddSheet = false
+    @State private var isPlanExpanded = true
+    @State private var templateHabitIDs: [String: UUID] = [:]
+    @State private var showingCreateHabit = false
+    @State private var editingHabit: Habit?
 
-    private var canAddMore: Bool { habitDrafts.count < 3 }
-    private var isContinueDisabled: Bool { habitDrafts.isEmpty }
-    private var addButtonTitle: String {
-        habitDrafts.isEmpty ? "Agregar primer hábito" : "Agregar otro hábito"
-    }
+    private var canAddMore: Bool { plan.habits.count < 3 }
+    private var isContinueDisabled: Bool { plan.habits.isEmpty }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -34,15 +37,18 @@ struct OnboardingHabitsScreen: View {
             .padding(.bottom, AppSpacing.xl)
 
             ScrollView {
-                VStack(spacing: AppSpacing.s) {
-                    ForEach($habitDrafts) { $draft in
-                        OnboardingHabitDraftRow(draft: $draft) {
-                            habitDrafts.removeAll { $0.id == draft.id }
-                        }
-                    }
+                VStack(alignment: .leading, spacing: AppSpacing.l) {
+                    PlanAccordion(
+                        plan: plan,
+                        isExpanded: isPlanExpanded,
+                        onToggle: { isPlanExpanded.toggle() },
+                        onHabitTap: { editingHabit = $0 }
+                    )
+
+                    suggestionsSection
 
                     if canAddMore {
-                        addButton
+                        createHabitButton
                     }
                 }
                 .padding(.horizontal, AppSpacing.l)
@@ -59,26 +65,53 @@ struct OnboardingHabitsScreen: View {
             .padding(.horizontal, AppSpacing.xl)
             .padding(.bottom, AppSpacing.xxl)
         }
-        .sheet(isPresented: $showingAddSheet) {
-            AddHabitSheet(
-                templates: StarterHabitTemplate.all,
-                onSelectTemplate: { template in
-                    habitDrafts.append(.from(template))
-                },
-                onCustom: {
-                    habitDrafts.append(OnboardingHabitDraft(title: ""))
-                }
+        .sheet(isPresented: $showingCreateHabit) {
+            CreateHabitView(
+                initialPlanIDs: [plan.id],
+                requiredPlans: [plan],
+                locksPlanSelection: true
+            )
+        }
+        .sheet(item: $editingHabit) { habit in
+            CreateHabitView(
+                habitToEdit: habit,
+                requiredPlans: [plan],
+                locksPlanSelection: true
             )
         }
     }
 
-    private var addButton: some View {
-        Button(action: { showingAddSheet = true }) {
+    private var suggestionsSection: some View {
+        VStack(alignment: .leading, spacing: AppSpacing.s) {
+            Text("Sugerencias")
+                .font(AppFont.label)
+                .foregroundStyle(AppColor.textSecondary)
+                .textCase(.uppercase)
+
+            VStack(spacing: AppSpacing.s) {
+                ForEach(StarterHabitTemplate.all) { template in
+                    let isSelected = templateHabitIDs[template.id] != nil
+                    let isDisabled = !isSelected && !canAddMore
+
+                    StarterHabitRow(
+                        template: template,
+                        isSelected: isSelected,
+                        onTap: { toggleTemplate(template) }
+                    )
+                    .disabled(isDisabled)
+                    .opacity(isDisabled ? 0.45 : 1)
+                }
+            }
+        }
+    }
+
+    private var createHabitButton: some View {
+        Button(action: { showingCreateHabit = true }) {
             HStack(spacing: AppSpacing.s) {
                 Image(systemName: "plus.circle.fill")
                     .font(.system(size: 18, weight: .medium))
                     .foregroundStyle(AppColor.accent)
-                Text(addButtonTitle)
+                Text("Crear hábito nuevo")
                     .font(AppFont.bodyEmphasis)
                     .foregroundStyle(AppColor.accent)
             }
@@ -106,106 +139,36 @@ struct OnboardingHabitsScreen: View {
                 .foregroundStyle(AppColor.accent)
         }
     }
-}
 
-// MARK: - Sheet para agregar hábito
-
-private struct AddHabitSheet: View {
-    @Environment(\.dismiss) private var dismiss
-
-    let templates: [StarterHabitTemplate]
-    let onSelectTemplate: (StarterHabitTemplate) -> Void
-    let onCustom: () -> Void
-
-    var body: some View {
-        AppBackground {
-            VStack(spacing: 0) {
-                HStack {
-                    Text("Elegir hábito")
-                        .font(AppFont.headline)
-                        .foregroundStyle(AppColor.textPrimary)
-                    Spacer()
-                    Button(action: { dismiss() }) {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(AppColor.textTertiary)
-                            .frame(width: 32, height: 32)
-                            .background(Circle().fill(AppColor.bgSunken))
-                    }
-                    .buttonStyle(.plain)
-                }
-                .padding(.horizontal, AppSpacing.xl)
-                .padding(.top, AppSpacing.xl)
-                .padding(.bottom, AppSpacing.m)
-
-                ScrollView {
-                    VStack(spacing: AppSpacing.s) {
-                        ForEach(templates) { template in
-                            Button(action: {
-                                onSelectTemplate(template)
-                                dismiss()
-                            }) {
-                                StarterHabitRow(
-                                    template: template,
-                                    isSelected: false,
-                                    onTap: {}
-                                )
-                            }
-                            .buttonStyle(.plain)
-                        }
-
-                        Divider()
-                            .padding(.vertical, AppSpacing.xs)
-
-                        Button(action: {
-                            onCustom()
-                            dismiss()
-                        }) {
-                            HStack(spacing: AppSpacing.m) {
-                                ZStack {
-                                    RoundedRectangle(cornerRadius: AppRadius.m, style: .continuous)
-                                        .fill(AppColor.bgSunken)
-                                    Image(systemName: "pencil")
-                                        .font(.system(size: 18, weight: .medium))
-                                        .foregroundStyle(AppColor.textSecondary)
-                                }
-                                .frame(width: 48, height: 48)
-
-                                Text("Escribir uno propio")
-                                    .font(AppFont.bodyEmphasis)
-                                    .foregroundStyle(AppColor.textPrimary)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                                Image(systemName: "chevron.right")
-                                    .font(.system(size: 13, weight: .medium))
-                                    .foregroundStyle(AppColor.textTertiary)
-                            }
-                            .padding(.horizontal, AppSpacing.l)
-                            .frame(height: 74)
-                            .background(
-                                RoundedRectangle(cornerRadius: AppRadius.m, style: .continuous)
-                                    .fill(AppColor.bgElevated)
-                            )
-                            .overlay(
-                                RoundedRectangle(cornerRadius: AppRadius.m, style: .continuous)
-                                    .stroke(AppColor.divider, lineWidth: 1)
-                            )
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    .padding(.horizontal, AppSpacing.l)
-                    .padding(.bottom, AppSpacing.xxl)
-                }
-                .scrollIndicators(.hidden)
+    private func toggleTemplate(_ template: StarterHabitTemplate) {
+        if let habitID = templateHabitIDs[template.id] {
+            if let habit = plan.habits.first(where: { $0.id == habitID }) {
+                plan.habits.removeAll { $0.id == habitID }
+                modelContext.delete(habit)
             }
+            templateHabitIDs[template.id] = nil
+            return
         }
+
+        guard canAddMore else { return }
+
+        let habit = OnboardingHabitDraft.from(template).makeHabit()
+        modelContext.insert(habit)
+        plan.habits.append(habit)
+        templateHabitIDs[template.id] = habit.id
     }
 }
 
 #Preview {
+    let plan = Plan(
+        title: "Mi semana",
+        motivation: "Sentirme con más energía",
+        endsAt: AppCalendar.current.date(byAdding: .day, value: 30, to: .now) ?? .now
+    )
+
     AppBackground {
         OnboardingHabitsScreen(
-            habitDrafts: .constant([]),
+            plan: plan,
             onContinue: {}
         )
     }

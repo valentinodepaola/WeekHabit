@@ -52,6 +52,8 @@ struct CreateHabitView: View {
     @State private var newReplacementHabitCue: String = ""
 
     private let habitToEdit: Habit?
+    private let requiredPlans: [Plan]
+    private let locksPlanSelection: Bool
 
     private var isSaveDisabled: Bool {
         if habitName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -100,9 +102,14 @@ struct CreateHabitView: View {
     init(
         habitToEdit: Habit? = nil,
         initialDaysPerWeek: Int = 0,
-        initialActiveDays: Set<Weekday> = []
+        initialActiveDays: Set<Weekday> = [],
+        initialPlanIDs: Set<UUID> = [],
+        requiredPlans: [Plan] = [],
+        locksPlanSelection: Bool = false
     ) {
         self.habitToEdit = habitToEdit
+        self.requiredPlans = requiredPlans
+        self.locksPlanSelection = locksPlanSelection
 
         let initialScheduleKind: HabitScheduleKind
         if let habitToEdit {
@@ -131,7 +138,14 @@ struct CreateHabitView: View {
         _allowsWeeklyFreeze = State(initialValue: habitToEdit?.allowsWeeklyFreeze ?? true)
         _isReminderEnabled = State(initialValue: habitToEdit?.isReminderEnabled ?? false)
         _reminderTime = State(initialValue: habitToEdit?.reminderTime ?? Self.defaultReminderTime())
-        _selectedPlans = State(initialValue: Set(habitToEdit?.plans.map(\.id) ?? []))
+        let requiredPlanIDs = requiredPlans.map(\.id)
+        let initialSelectedPlanIDs: [UUID]
+        if let habitToEdit {
+            initialSelectedPlanIDs = habitToEdit.plans.map(\.id) + requiredPlanIDs
+        } else {
+            initialSelectedPlanIDs = Array(initialPlanIDs) + requiredPlanIDs
+        }
+        _selectedPlans = State(initialValue: Set(initialSelectedPlanIDs))
         _replacementMode = State(initialValue: habitToEdit?.replacementHabit == nil ? .skip : .existing)
         _selectedReplacementHabitID = State(initialValue: habitToEdit?.replacementHabit?.id)
     }
@@ -207,8 +221,10 @@ struct CreateHabitView: View {
                         onRequestAuthorization: requestNotificationAuthorization
                     )
 
-                    // 6. Plan
-                    HabitPlansSection(selectedPlans: $selectedPlans)
+                    if !locksPlanSelection {
+                        // 6. Plan
+                        HabitPlansSection(selectedPlans: $selectedPlans)
+                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(AppSpacing.l)
@@ -267,7 +283,12 @@ struct CreateHabitView: View {
         let normalizedReminderEnabled = isReminderEnabled && notificationAuthorizationStatus.allowsReminderScheduling
         let replacementHabit = resolvedReplacementHabit()
 
-        let linkedPlans = allPlans.filter { selectedPlans.contains($0.id) }
+        let requiredPlanIDs = Set(requiredPlans.map(\.id))
+        let selectedPlanIDs = locksPlanSelection ? requiredPlanIDs : selectedPlans.union(requiredPlanIDs)
+        var linkedPlans = allPlans.filter { selectedPlanIDs.contains($0.id) }
+        for requiredPlan in requiredPlans where !linkedPlans.contains(where: { $0.id == requiredPlan.id }) {
+            linkedPlans.append(requiredPlan)
+        }
         let savedHabit: Habit
 
         if let habitToEdit {
@@ -322,6 +343,8 @@ struct CreateHabitView: View {
             habit.plans = linkedPlans
             savedHabit = habit
         }
+
+        try? modelContext.save()
 
         Task {
             await HabitReminderService.refreshReminder(for: savedHabit)

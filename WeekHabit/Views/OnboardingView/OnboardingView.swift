@@ -3,7 +3,7 @@
 //  WeekHabit
 //
 //  Flujo goal-first: meta → motivación → tamaño mínimo → hábitos → notificaciones.
-//  Crea un Plan (si hay meta) con los hábitos al salir del paso de hábitos.
+//  Crea un Plan en vivo al entrar al paso de hábitos y lo guarda al continuar.
 //
 
 import SwiftData
@@ -17,7 +17,8 @@ struct OnboardingView: View {
     @State private var step: OnboardingStep = .intro
     @State private var goalText: String = ""
     @State private var motivationText: String = ""
-    @State private var habitDrafts: [OnboardingHabitDraft] = []
+    @State private var createdPlan: Plan?
+    @State private var didRequestPlanCreation = false
 
     let onFinish: () -> Void
 
@@ -73,13 +74,20 @@ struct OnboardingView: View {
             )
         case .size:
             OnboardingSizeScreen(
-                onContinue: goForward
+                onContinue: {
+                    ensurePlan()
+                    goForward()
+                }
             )
         case .habits:
-            OnboardingHabitsScreen(
-                habitDrafts: $habitDrafts,
-                onContinue: createPlanAndHabits
-            )
+            if let createdPlan {
+                OnboardingHabitsScreen(
+                    plan: createdPlan,
+                    onContinue: continueFromHabits
+                )
+            } else {
+                ProgressView()
+            }
         case .notifications:
             OnboardingNotificationsScreen(
                 onRequestNotifications: requestNotifications,
@@ -101,28 +109,27 @@ struct OnboardingView: View {
         step = nextStep
     }
 
-    private func createPlanAndHabits() {
+    private func ensurePlan() {
+        guard createdPlan == nil, !didRequestPlanCreation else { return }
+        didRequestPlanCreation = true
+
         let trimmedGoal = goalText.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedMotivation = motivationText.trimmingCharacters(in: .whitespacesAndNewlines)
 
-        let habits = habitDrafts.map { draft -> Habit in
-            let h = draft.makeHabit()
-            modelContext.insert(h)
-            return h
-        }
+        let endsAt = AppCalendar.startOfDay(
+            for: AppCalendar.current.date(byAdding: .day, value: 30, to: .now) ?? .now
+        )
+        let plan = Plan(
+            title: trimmedGoal.isEmpty ? "Mi semana" : trimmedGoal,
+            motivation: trimmedMotivation.isEmpty ? nil : trimmedMotivation,
+            endsAt: endsAt
+        )
+        modelContext.insert(plan)
+        createdPlan = plan
+    }
 
-        if !trimmedGoal.isEmpty {
-            let endsAt = AppCalendar.startOfDay(
-                for: AppCalendar.current.date(byAdding: .day, value: 30, to: .now) ?? .now
-            )
-            let plan = Plan(
-                title: trimmedGoal,
-                motivation: trimmedMotivation.isEmpty ? nil : trimmedMotivation,
-                endsAt: endsAt
-            )
-            modelContext.insert(plan)
-            plan.habits = habits
-        }
+    private func continueFromHabits() {
+        guard let createdPlan, !createdPlan.habits.isEmpty else { return }
 
         try? modelContext.save()
         goForward()
