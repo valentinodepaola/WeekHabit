@@ -244,34 +244,16 @@ struct FocusSessionView: View {
     }
 
     private func markCompleted(_ habit: Habit, completedAt: Date, sessionID: UUID) -> MilestoneCelebrationPayload? {
-        let entriesForDay = habit.entries.filter {
-            AppCalendar.isSameDay($0.date, completedAt)
-        }
-
-        if let firstEntry = entriesForDay.first {
-            firstEntry.kind = .completed
-            firstEntry.completedAt = completedAt
-            firstEntry.source = .focusSession
-            firstEntry.focusSessionID = sessionID
-            firstEntry.value = habit.sessionTargetValue
-            firstEntry.completedCount = Int(habit.sessionTargetValue.rounded())
-
-            for duplicate in entriesForDay.dropFirst() {
-                modelContext.delete(duplicate)
-            }
-        } else {
-            modelContext.insert(
-                HabitEntry(
-                    date: completedAt,
-                    completedAt: completedAt,
-                    source: .focusSession,
-                    focusSessionID: sessionID,
-                    completedCount: Int(habit.sessionTargetValue.rounded()),
-                    value: habit.sessionTargetValue,
-                    habit: habit
-                )
-            )
-        }
+        HabitTrackingService.setCompleted(
+            habit,
+            on: completedAt,
+            source: .focusSession,
+            completedAt: completedAt,
+            value: habit.sessionTargetValue,
+            focusSessionID: sessionID,
+            modelContext: modelContext,
+            streakFreezes: habit.streakFreezes
+        )
 
         guard let milestone = habit.crossedMilestone(on: completedAt) else { return nil }
         habit.markMilestoneCelebrated(milestone)

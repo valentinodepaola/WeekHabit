@@ -29,14 +29,15 @@ There is no lint configuration and no test target.
 
 ## Architecture
 
-The app uses a lightweight Model-View style with SwiftUI + SwiftData.
+The app uses a pragmatic SwiftUI architecture with SwiftData.
 
 - Views read with `@Query`.
-- Views mutate with `@Environment(\.modelContext)`.
+- Reusable mutations live in domain services such as `HabitTrackingService` and `HabitEditorService`.
+- Complex forms group editable state and validation in value-type drafts such as `HabitDraft`.
 - Domain logic lives in model extensions, not in layout code.
-- There is no ViewModel, repository, networking, authentication, or external sync layer.
+- Views keep presentation effects, navigation, haptics, and feature-local UI state.
 
-`WeekHabitApp.swift` creates the `ModelContainer` with `Schema(versionedSchema: SchemaV12.self)` and `HabitMigrationPlan.self`.
+`WeekHabitApp.swift` creates the `ModelContainer` with `Schema(versionedSchema: SchemaV17.self)` and `HabitMigrationPlan.self`.
 
 `RootView` switches between `OnboardingView` and `ContentView` using `@AppStorage("hasCompletedAppOnboarding")`. It also refreshes habit reminders when the app starts or returns active.
 
@@ -163,7 +164,8 @@ For sensitive habit states such as misses, slips, breaks, recovery, or pauses, n
 - New persisted fields require updating model initializers and callers.
 - Shape changes require a new `SchemaV*` and a `MigrationStage` in `HabitMigrationPlan`.
 - Do not mutate old schemas to represent new persisted shapes.
-- Keep data mutations in the owning view unless a reusable service already exists.
+- Add reusable mutations to a domain service instead of duplicating them across views.
+- Never delete or convert `.urge` entries while changing the primary daily state.
 
 ## Forms
 

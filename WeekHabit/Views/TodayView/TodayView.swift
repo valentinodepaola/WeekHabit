@@ -707,32 +707,19 @@ struct TodayView: View {
             return
         }
 
-        let entriesForToday = habit.entries.filter {
-            AppCalendar.isSameDay($0.date, referenceDate)
-        }
-        let stateEntriesForToday = entriesForToday.filter { $0.kind != .urge }
-        let completedEntriesForToday = entriesForToday.filter { $0.kind == .completed }
-
         let willComplete = !habit.isCompleted(on: referenceDate)
         let closesDay = willComplete && remainingTodayCount == 1
-        var insertedEntry: HabitEntry?
+        var result: HabitTrackingResult?
 
         transitionHabitBetweenSections {
-            if willComplete {
-                stateEntriesForToday.forEach { modelContext.delete($0) }
-                deleteFreeze(for: habit, on: referenceDate)
-                let entry = HabitEntry(
-                    date: referenceDate,
-                    completedAt: .now,
-                    source: .today,
-                    value: 1,
-                    habit: habit
-                )
-                modelContext.insert(entry)
-                insertedEntry = entry
-            } else {
-                completedEntriesForToday.forEach { modelContext.delete($0) }
-            }
+            result = HabitTrackingService.toggleCompletion(
+                for: habit,
+                on: referenceDate,
+                source: .today,
+                completedAt: .now,
+                modelContext: modelContext,
+                streakFreezes: streakFreezes
+            )
         }
 
         if closesDay {
@@ -742,7 +729,7 @@ struct TodayView: View {
             }
         }
 
-        if willComplete, let insertedEntry {
+        if willComplete, let insertedEntry = result?.entry {
             presentLiveMilestoneIfNeeded(
                 for: habit,
                 on: referenceDate,
@@ -755,25 +742,16 @@ struct TodayView: View {
     private func markMinimumCompleted(for habit: Habit, on date: Date) {
         guard !habit.isCompleted(on: date) else { return }
 
-        let entriesForDay = habit.entries.filter {
-            AppCalendar.isSameDay($0.date, date)
-        }
-        let stateEntriesForDay = entriesForDay.filter { $0.kind != .urge }
         let closesDay = AppCalendar.isSameDay(date, referenceDate) && remainingTodayCount == 1
 
         transitionHabitBetweenSections {
-            stateEntriesForDay.forEach { modelContext.delete($0) }
-            deleteFreeze(for: habit, on: date)
-            modelContext.insert(
-                HabitEntry(
-                    date: date,
-                    completedAt: .now,
-                    source: .today,
-                    kind: .minimum,
-                    completedCount: 0,
-                    value: 0,
-                    habit: habit
-                )
+            HabitTrackingService.markMinimum(
+                for: habit,
+                on: date,
+                source: .today,
+                completedAt: .now,
+                modelContext: modelContext,
+                streakFreezes: streakFreezes
             )
         }
 
@@ -838,14 +816,12 @@ struct TodayView: View {
     }
 
     private func applyWeeklyFreezes(reference: Date) {
-        for habit in habits where habit.allowsWeeklyFreeze {
-            guard let protectedDate = habit.weeklyFreezeCandidate(reference: reference),
-                  !streakFreezes.containsFreeze(for: habit, weekContaining: protectedDate) else {
-                continue
-            }
-
-            modelContext.insert(StreakFreeze(habit: habit, protectedDate: protectedDate))
-        }
+        HabitTrackingService.applyWeeklyFreezes(
+            to: habits,
+            existing: streakFreezes,
+            reference: reference,
+            modelContext: modelContext
+        )
     }
 
     private func presentRecoveryPromptIfNeeded() {
@@ -963,49 +939,28 @@ struct TodayView: View {
         value: Double,
         source: HabitEntrySource
     ) {
-        let wasCompleted = habit.totalValue(on: date) >= habit.sessionTargetValue
+        let wasCompleted = habit.isCompleted(on: date)
         let closesDay = source == .today
             && AppCalendar.isSameDay(date, referenceDate)
             && !wasCompleted
             && remainingTodayCount == 1
-        let entriesForDay = habit.entries.filter {
-            AppCalendar.isSameDay($0.date, date)
-        }
-        let stateEntriesForDay = entriesForDay.filter { $0.kind != .urge }
+        var result: HabitTrackingResult?
 
         transitionHabitBetweenSections {
-            if value <= 0 {
-                entriesForDay
-                    .filter { $0.kind == .completed || $0.kind == .minimum }
-                    .forEach { modelContext.delete($0) }
-                return
-            }
-
-            if let entry = stateEntriesForDay.first {
-                entry.kind = .completed
-                entry.value = value
-                entry.completedCount = Int(value.rounded())
-                entry.completedAt = .now
-                entry.source = source
-                stateEntriesForDay.dropFirst().forEach { modelContext.delete($0) }
-            } else {
-                modelContext.insert(
-                    HabitEntry(
-                        date: date,
-                        completedAt: .now,
-                        source: source,
-                        completedCount: Int(value.rounded()),
-                        value: value,
-                        habit: habit
-                    )
-                )
-            }
+            result = HabitTrackingService.upsertQuantity(
+                for: habit,
+                on: date,
+                value: value,
+                source: source,
+                completedAt: source == .manual ? nil : .now,
+                modelContext: modelContext,
+                streakFreezes: streakFreezes
+            )
         }
 
         guard value > 0 else { return }
 
-        let isCompleted = habit.totalValue(on: date) >= habit.sessionTargetValue
-        if !wasCompleted && isCompleted {
+        if result?.becameCompleted == true {
             AppHaptics.play(.quantityCompleted)
             if closesDay {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
@@ -1019,110 +974,62 @@ struct TodayView: View {
                     afterDayClosed: closesDay
                 )
             }
-        } else if !isCompleted {
+        } else if result?.isCompleted == false {
             AppHaptics.play(.quantityLogged)
         }
     }
 
     private func toggleRest(for habit: Habit) {
-        let entriesForToday = habit.entries.filter {
-            AppCalendar.isSameDay($0.date, referenceDate)
-        }
-        let stateEntriesForToday = entriesForToday.filter { $0.kind != .urge }
-        let willSkip = !habit.isSkipped(on: referenceDate)
-
         transitionHabitBetweenSections {
-            stateEntriesForToday.forEach { modelContext.delete($0) }
-
-            if willSkip {
-                modelContext.insert(
-                    HabitEntry(
-                        date: referenceDate,
-                        completedAt: nil,
-                        source: .today,
-                        kind: .skipped,
-                        completedCount: 0,
-                        value: 0,
-                        habit: habit
-                    )
-                )
-            }
+            HabitTrackingService.toggleRest(
+                for: habit,
+                on: referenceDate,
+                source: .today,
+                modelContext: modelContext,
+                streakFreezes: streakFreezes
+            )
         }
 
         AppHaptics.play(.skipToggled)
     }
 
     private func persistSlip(for habit: Habit, trigger: SlipTrigger?, context: String?) {
-        guard habit.isBreakHabit else { return }
-
-        let hadSlipBefore = habit.isSlip(on: referenceDate)
-        let entriesForToday = habit.entries.filter {
-            AppCalendar.isSameDay($0.date, referenceDate)
-        }
-        let stateEntriesForToday = entriesForToday.filter { $0.kind != .urge }
+        var didCreateSlip = false
 
         transitionHabitBetweenSections {
-            if let existingSlip = stateEntriesForToday.first(where: { $0.kind == .slip }) {
-                existingSlip.completedAt = existingSlip.completedAt ?? .now
-                existingSlip.source = .today
-                existingSlip.completedCount = 0
-                existingSlip.value = 0
-                existingSlip.slipTrigger = trigger
-                existingSlip.slipContext = context
-                stateEntriesForToday
-                    .filter { $0.id != existingSlip.id }
-                    .forEach { modelContext.delete($0) }
-            } else {
-                stateEntriesForToday.forEach { modelContext.delete($0) }
-                modelContext.insert(
-                    HabitEntry(
-                        date: referenceDate,
-                        completedAt: .now,
-                        source: .today,
-                        kind: .slip,
-                        completedCount: 0,
-                        value: 0,
-                        slipTrigger: trigger,
-                        slipContext: context,
-                        habit: habit
-                    )
-                )
-            }
-
-            deleteFreeze(for: habit, on: referenceDate)
+            didCreateSlip = HabitTrackingService.recordSlip(
+                for: habit,
+                on: referenceDate,
+                trigger: trigger,
+                context: context,
+                modelContext: modelContext,
+                streakFreezes: streakFreezes
+            )
         }
 
-        if !hadSlipBefore {
+        if didCreateSlip {
             presentReplacementPromptAfterCurrentSheet(for: habit)
         }
     }
 
     private func persistUrge(for habit: Habit, trigger: SlipTrigger?) {
-        guard habit.isBreakHabit else { return }
-
-        modelContext.insert(
-            HabitEntry(
-                date: referenceDate,
-                completedAt: .now,
-                source: .today,
-                kind: .urge,
-                completedCount: 0,
-                value: 0,
-                slipTrigger: trigger,
-                habit: habit
-            )
+        HabitTrackingService.recordUrge(
+            for: habit,
+            on: referenceDate,
+            trigger: trigger,
+            modelContext: modelContext
         )
 
         presentReplacementPromptAfterCurrentSheet(for: habit)
     }
 
     private func undoSlip(for habit: Habit) {
-        let entriesForToday = habit.entries.filter {
-            AppCalendar.isSameDay($0.date, referenceDate) && $0.kind == .slip
-        }
-
         transitionHabitBetweenSections {
-            entriesForToday.forEach { modelContext.delete($0) }
+            HabitTrackingService.undoSlip(
+                for: habit,
+                on: referenceDate,
+                modelContext: modelContext
+            )
         }
     }
 
@@ -1135,43 +1042,11 @@ struct TodayView: View {
         }
     }
 
-    private func deleteFreeze(for habit: Habit, on date: Date) {
-        streakFreezes
-            .filter { $0.habitID == habit.id && AppCalendar.isSameDay($0.protectedDate, date) }
-            .forEach { modelContext.delete($0) }
-    }
-
     private func persistRecoveryMiss(_ candidate: RecoveryPromptCandidate, reason: HabitFailureReason?) {
-        let entriesForDay = candidate.habit.entries.filter {
-            AppCalendar.isSameDay($0.date, candidate.date)
-        }
-        let stateEntriesForDay = entriesForDay.filter { $0.kind != .urge }
-
-        if let existingMiss = stateEntriesForDay.first(where: { $0.kind == .missed }) {
-            existingMiss.failureReasonKind = reason
-            stateEntriesForDay
-                .filter { $0.kind == .missed && $0.id != existingMiss.id }
-                .forEach { modelContext.delete($0) }
-            sheetRoute = nil
-            return
-        }
-
-        guard stateEntriesForDay.isEmpty else {
-            sheetRoute = nil
-            return
-        }
-
-        modelContext.insert(
-            HabitEntry(
-                date: candidate.date,
-                completedAt: nil,
-                source: .today,
-                kind: .missed,
-                completedCount: 0,
-                value: 0,
-                failureReason: reason,
-                habit: candidate.habit
-            )
+        HabitTrackingService.recordRecoveryMiss(
+            candidate,
+            reason: reason,
+            modelContext: modelContext
         )
         sheetRoute = nil
     }

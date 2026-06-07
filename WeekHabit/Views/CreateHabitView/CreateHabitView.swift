@@ -26,62 +26,16 @@ struct CreateHabitView: View {
     @Query(sort: \Habit.createdAt, order: .reverse)
     private var allHabits: [Habit]
 
-    @State private var habitName: String = ""
-    @State private var note: String = ""
-    @State private var cue: String = ""
-    @State private var minimumViableTitle: String = ""
-    @State private var selectedIconName: String = HabitAppearance.defaultIconName
-    @State private var selectedColorHex: String = HabitAppearance.defaultColorHex
-    @State private var direction: HabitDirection = .build
-    @State private var trackingKind: HabitTrackingKind = .check
-    @State private var measurementUnit: HabitMeasurementUnit = .none
-    @State private var targetValueText: String = "1"
-    @State private var scheduleKind: HabitScheduleKind = .daily
-    @State private var timesPerWeek: Int = 1
-    @State private var selectedActiveDays: Set<Weekday> = []
-    @State private var hasEndDate: Bool = false
-    @State private var endsAt: Date = .now
-    @State private var allowsWeeklyFreeze: Bool = true
-    @State private var isReminderEnabled: Bool = false
-    @State private var reminderTime: Date = Self.defaultReminderTime()
+    @State private var draft: HabitDraft
     @State private var notificationAuthorizationStatus: UNAuthorizationStatus = .notDetermined
-    @State private var selectedPlans: Set<UUID> = []
-    @State private var replacementMode: HabitReplacementMode = .skip
-    @State private var selectedReplacementHabitID: UUID?
-    @State private var newReplacementHabitName: String = ""
-    @State private var newReplacementHabitCue: String = ""
+    @State private var saveFailure: HabitSaveFailure?
 
     private let habitToEdit: Habit?
     private let requiredPlans: [Plan]
     private let locksPlanSelection: Bool
 
     private var isSaveDisabled: Bool {
-        if habitName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            return true
-        }
-
-        if trackingKind == .quantity {
-            guard parsedTargetValue > 0 else { return true }
-            if measurementUnit == .none { return true }
-        }
-
-        if direction == .`break` && replacementMode == .create {
-            let trimmed = newReplacementHabitName.trimmingCharacters(in: .whitespacesAndNewlines)
-            if trimmed.isEmpty { return true }
-        }
-
-        if direction == .`break` && replacementMode == .existing {
-            if selectedReplacementHabitID == nil { return true }
-        }
-
-        switch scheduleKind {
-        case .daily:
-            return false
-        case .specificDays:
-            return selectedActiveDays.isEmpty
-        case .timesPerWeek:
-            return !(1...7).contains(timesPerWeek)
-        }
+        draft.isSaveDisabled
     }
 
     private var isEditing: Bool {
@@ -92,11 +46,6 @@ struct CreateHabitView: View {
         allHabits.filter { candidate in
             candidate.direction == .build && candidate.id != habitToEdit?.id
         }
-    }
-
-    private var parsedTargetValue: Double {
-        let normalized = targetValueText.replacingOccurrences(of: ",", with: ".")
-        return Double(normalized) ?? 0
     }
 
     init(
@@ -111,43 +60,15 @@ struct CreateHabitView: View {
         self.requiredPlans = requiredPlans
         self.locksPlanSelection = locksPlanSelection
 
-        let initialScheduleKind: HabitScheduleKind
-        if let habitToEdit {
-            initialScheduleKind = habitToEdit.scheduleKind
-        } else if initialDaysPerWeek > 0 || !initialActiveDays.isEmpty {
-            initialScheduleKind = .specificDays
-        } else {
-            initialScheduleKind = .daily
-        }
-
-        _habitName = State(initialValue: habitToEdit?.title ?? "")
-        _note = State(initialValue: habitToEdit?.note ?? "")
-        _cue = State(initialValue: habitToEdit?.cue ?? "")
-        _minimumViableTitle = State(initialValue: habitToEdit?.minimumViableTitle ?? "")
-        _selectedIconName = State(initialValue: habitToEdit?.iconName ?? HabitAppearance.defaultIconName)
-        _selectedColorHex = State(initialValue: habitToEdit?.colorHex ?? HabitAppearance.defaultColorHex)
-        _direction = State(initialValue: habitToEdit?.direction ?? .build)
-        _trackingKind = State(initialValue: habitToEdit?.trackingKind ?? .check)
-        _measurementUnit = State(initialValue: Self.normalizedInitialUnit(habitToEdit?.measurementUnit ?? .none))
-        _targetValueText = State(initialValue: Habit.formattedQuantity(habitToEdit?.sessionTargetValue ?? 1))
-        _scheduleKind = State(initialValue: initialScheduleKind)
-        _timesPerWeek = State(initialValue: habitToEdit?.targetDaysPerWeek ?? max(initialDaysPerWeek, 1))
-        _selectedActiveDays = State(initialValue: habitToEdit?.activeDaysOfWeek ?? initialActiveDays)
-        _hasEndDate = State(initialValue: habitToEdit?.endsAt != nil)
-        _endsAt = State(initialValue: habitToEdit?.endsAt ?? .now)
-        _allowsWeeklyFreeze = State(initialValue: habitToEdit?.allowsWeeklyFreeze ?? true)
-        _isReminderEnabled = State(initialValue: habitToEdit?.isReminderEnabled ?? false)
-        _reminderTime = State(initialValue: habitToEdit?.reminderTime ?? Self.defaultReminderTime())
-        let requiredPlanIDs = requiredPlans.map(\.id)
-        let initialSelectedPlanIDs: [UUID]
-        if let habitToEdit {
-            initialSelectedPlanIDs = habitToEdit.plans.map(\.id) + requiredPlanIDs
-        } else {
-            initialSelectedPlanIDs = Array(initialPlanIDs) + requiredPlanIDs
-        }
-        _selectedPlans = State(initialValue: Set(initialSelectedPlanIDs))
-        _replacementMode = State(initialValue: habitToEdit?.replacementHabit == nil ? .skip : .existing)
-        _selectedReplacementHabitID = State(initialValue: habitToEdit?.replacementHabit?.id)
+        _draft = State(
+            initialValue: HabitDraft(
+                habit: habitToEdit,
+                initialDaysPerWeek: initialDaysPerWeek,
+                initialActiveDays: initialActiveDays,
+                initialPlanIDs: initialPlanIDs,
+                requiredPlans: requiredPlans
+            )
+        )
     }
 
     var body: some View {
@@ -166,94 +87,83 @@ struct CreateHabitView: View {
                         .padding(.bottom, AppSpacing.xs)
 
                     // 0. Dirección
-                    HabitDirectionSection(direction: $direction)
+                    HabitDirectionSection(direction: $draft.direction)
 
                     // 1. Acción
                     HabitBasicInfoSection(
-                        habitName: $habitName,
-                        note: $note,
-                        selectedIconName: $selectedIconName,
-                        selectedColorHex: $selectedColorHex
+                        habitName: $draft.name,
+                        note: $draft.note,
+                        selectedIconName: $draft.iconName,
+                        selectedColorHex: $draft.colorHex
                     )
 
-                    HabitMinimalVersionSection(minimumViableTitle: $minimumViableTitle)
+                    HabitMinimalVersionSection(minimumViableTitle: $draft.minimumViableTitle)
 
                     // 2. Señal
-                    HabitCueSection(cue: $cue)
+                    HabitCueSection(cue: $draft.cue)
 
-                    if direction == .`break` {
+                    if draft.direction == .`break` {
                         HabitReplacementSection(
                             availableHabits: replacementCandidates,
-                            mode: $replacementMode,
-                            selectedHabitID: $selectedReplacementHabitID,
-                            newHabitName: $newReplacementHabitName,
-                            newHabitCue: $newReplacementHabitCue
+                            mode: $draft.replacementMode,
+                            selectedHabitID: $draft.replacementHabitID,
+                            newHabitName: $draft.newReplacementHabitName,
+                            newHabitCue: $draft.newReplacementHabitCue
                         )
                     }
 
                     // 3. Medición (siempre visible — el selector check/quantity es parte)
                     HabitMeasurementSection(
-                        trackingKind: $trackingKind,
-                        measurementUnit: $measurementUnit,
-                        targetValueText: $targetValueText
+                        trackingKind: $draft.trackingKind,
+                        measurementUnit: $draft.measurementUnit,
+                        targetValueText: $draft.targetValueText
                     )
 
                     // 4. Ritmo
                     HabitScheduleSection(
-                        scheduleKind: $scheduleKind,
-                        timesPerWeek: $timesPerWeek,
-                        selectedActiveDays: $selectedActiveDays,
-                        showFlexible: direction != .`break`
+                        scheduleKind: $draft.scheduleKind,
+                        timesPerWeek: $draft.timesPerWeek,
+                        selectedActiveDays: $draft.activeDays,
+                        showFlexible: draft.direction != .`break`
                     )
 
                     HabitEndDateSection(
-                        hasEndDate: $hasEndDate,
-                        endsAt: $endsAt
+                        hasEndDate: $draft.hasEndDate,
+                        endsAt: $draft.endsAt
                     )
 
-                    HabitWeeklyFreezeSection(allowsWeeklyFreeze: $allowsWeeklyFreeze)
+                    HabitWeeklyFreezeSection(allowsWeeklyFreeze: $draft.allowsWeeklyFreeze)
 
                     // 5. Recordatorio
                     HabitReminderSection(
-                        isReminderEnabled: $isReminderEnabled,
-                        reminderTime: $reminderTime,
+                        isReminderEnabled: $draft.isReminderEnabled,
+                        reminderTime: $draft.reminderTime,
                         authorizationStatus: notificationAuthorizationStatus,
                         onRequestAuthorization: requestNotificationAuthorization
                     )
 
                     if !locksPlanSelection {
                         // 6. Plan
-                        HabitPlansSection(selectedPlans: $selectedPlans)
+                        HabitPlansSection(selectedPlans: $draft.selectedPlanIDs)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(AppSpacing.l)
                 .padding(.bottom, AppSpacing.xxl)
-                .onChange(of: direction) { _, newValue in
-                    if newValue == .`break` && scheduleKind == .timesPerWeek {
-                        scheduleKind = .daily
-                    }
-                    if newValue == .build {
-                        replacementMode = .skip
-                        selectedReplacementHabitID = nil
-                    }
+                .onChange(of: draft.direction) { _, _ in
+                    draft.reconcileDirection()
                 }
                 .onChange(of: replacementCandidates.map(\.id)) { _, candidateIDs in
-                    guard replacementMode == .existing else { return }
-                    if selectedReplacementHabitID == nil || !candidateIDs.contains(selectedReplacementHabitID!) {
-                        selectedReplacementHabitID = candidateIDs.first
+                    guard draft.replacementMode == .existing else { return }
+                    if draft.replacementHabitID.map({ candidateIDs.contains($0) }) != true {
+                        draft.replacementHabitID = candidateIDs.first
                     }
                     if candidateIDs.isEmpty {
-                        replacementMode = .skip
+                        draft.replacementMode = .skip
                     }
                 }
-                .onChange(of: trackingKind) { _, newValue in
-                    if newValue == .check {
-                        measurementUnit = .none
-                        targetValueText = "1"
-                    } else if measurementUnit == .none {
-                        measurementUnit = .minutes
-                    }
+                .onChange(of: draft.trackingKind) { _, _ in
+                    draft.reconcileTrackingKind()
                 }
                 .task {
                     await refreshNotificationAuthorizationStatus()
@@ -267,84 +177,35 @@ struct CreateHabitView: View {
                 }
             }
         }
+        .alert(item: $saveFailure) { failure in
+            Alert(
+                title: Text("No se pudo guardar"),
+                message: Text(failure.message),
+                dismissButton: .default(Text("Entendido"))
+            )
+        }
     }
 
     private func saveHabit() {
         guard !isSaveDisabled else { return }
 
-        let trimmedName = habitName.trimmingCharacters(in: .whitespacesAndNewlines)
-        let trimmedNote = note.trimmingCharacters(in: .whitespacesAndNewlines)
-        let trimmedCue = cue.trimmingCharacters(in: .whitespacesAndNewlines)
-        let trimmedMinimumViableTitle = minimumViableTitle.trimmingCharacters(in: .whitespacesAndNewlines)
-        let normalizedTargetValue = trackingKind == .check ? 1 : parsedTargetValue
-        let normalizedMeasurementUnit: HabitMeasurementUnit = trackingKind == .check ? .none : measurementUnit
-        let normalizedEndsAt = hasEndDate ? AppCalendar.startOfDay(for: endsAt) : nil
-        let normalizedPlan = normalizedSchedulePlan()
-        let normalizedReminderEnabled = isReminderEnabled && notificationAuthorizationStatus.allowsReminderScheduling
-        let replacementHabit = resolvedReplacementHabit()
-
-        let requiredPlanIDs = Set(requiredPlans.map(\.id))
-        let selectedPlanIDs = locksPlanSelection ? requiredPlanIDs : selectedPlans.union(requiredPlanIDs)
-        var linkedPlans = allPlans.filter { selectedPlanIDs.contains($0.id) }
-        for requiredPlan in requiredPlans where !linkedPlans.contains(where: { $0.id == requiredPlan.id }) {
-            linkedPlans.append(requiredPlan)
-        }
         let savedHabit: Habit
-
-        if let habitToEdit {
-            if let activeExperiment = experiments.activeExperiment(for: habitToEdit.id) {
-                activeExperiment.cancel()
-            }
-
-            habitToEdit.title = trimmedName
-            habitToEdit.note = trimmedNote.isEmpty ? nil : trimmedNote
-            habitToEdit.cue = trimmedCue.isEmpty ? nil : trimmedCue
-            habitToEdit.minimumViableTitle = trimmedMinimumViableTitle.isEmpty ? nil : trimmedMinimumViableTitle
-            habitToEdit.iconName = selectedIconName
-            habitToEdit.colorHex = selectedColorHex
-            habitToEdit.direction = direction
-            habitToEdit.replacementHabit = direction == .`break` ? replacementHabit : nil
-            habitToEdit.trackingKind = trackingKind
-            habitToEdit.measurementUnit = normalizedMeasurementUnit
-            habitToEdit.customUnitName = nil
-            habitToEdit.targetValuePerSession = normalizedTargetValue
-            habitToEdit.scheduleKind = scheduleKind
-            habitToEdit.targetDaysPerWeek = normalizedPlan.targetDaysPerWeek
-            habitToEdit.activeDaysOfWeek = normalizedPlan.activeDays
-            habitToEdit.endsAt = normalizedEndsAt
-            habitToEdit.allowsWeeklyFreeze = allowsWeeklyFreeze
-            habitToEdit.isReminderEnabled = normalizedReminderEnabled
-            habitToEdit.reminderTime = normalizedReminderEnabled ? reminderTime : nil
-            habitToEdit.plans = linkedPlans
-            savedHabit = habitToEdit
-        } else {
-            let habit = Habit(
-                title: trimmedName,
-                note: trimmedNote.isEmpty ? nil : trimmedNote,
-                cue: trimmedCue.isEmpty ? nil : trimmedCue,
-                minimumViableTitle: trimmedMinimumViableTitle.isEmpty ? nil : trimmedMinimumViableTitle,
-                iconName: selectedIconName,
-                colorHex: selectedColorHex,
-                targetDaysPerWeek: normalizedPlan.targetDaysPerWeek,
-                activeDaysOfWeek: normalizedPlan.activeDays,
-                trackingKind: trackingKind,
-                measurementUnit: normalizedMeasurementUnit,
-                customUnitName: nil,
-                targetValuePerSession: normalizedTargetValue,
-                scheduleKind: scheduleKind,
-                endsAt: normalizedEndsAt,
-                direction: direction,
-                replacementHabit: direction == .`break` ? replacementHabit : nil,
-                allowsWeeklyFreeze: allowsWeeklyFreeze,
-                isReminderEnabled: normalizedReminderEnabled,
-                reminderTime: normalizedReminderEnabled ? reminderTime : nil
+        do {
+            savedHabit = try HabitEditorService.save(
+                draft: draft,
+                editing: habitToEdit,
+                experiments: experiments,
+                allPlans: allPlans,
+                allHabits: allHabits,
+                requiredPlans: requiredPlans,
+                locksPlanSelection: locksPlanSelection,
+                canScheduleReminders: notificationAuthorizationStatus.allowsReminderScheduling,
+                modelContext: modelContext
             )
-            modelContext.insert(habit)
-            habit.plans = linkedPlans
-            savedHabit = habit
+        } catch {
+            saveFailure = HabitSaveFailure(message: error.localizedDescription)
+            return
         }
-
-        try? modelContext.save()
 
         Task {
             await HabitReminderService.refreshReminder(for: savedHabit)
@@ -353,56 +214,12 @@ struct CreateHabitView: View {
         dismiss()
     }
 
-    private func resolvedReplacementHabit() -> Habit? {
-        guard direction == .`break` else { return nil }
-
-        switch replacementMode {
-        case .skip:
-            return nil
-        case .existing:
-            guard let selectedReplacementHabitID else { return nil }
-            return allHabits.first { $0.id == selectedReplacementHabitID }
-        case .create:
-            let trimmedName = newReplacementHabitName.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !trimmedName.isEmpty else { return nil }
-
-            let trimmedCue = newReplacementHabitCue.trimmingCharacters(in: .whitespacesAndNewlines)
-            let habit = Habit(
-                title: trimmedName,
-                cue: trimmedCue.isEmpty ? nil : trimmedCue,
-                iconName: "figure.mind.and.body",
-                colorHex: selectedColorHex,
-                targetDaysPerWeek: 7,
-                activeDaysOfWeek: Set(Weekday.ordered),
-                scheduleKind: .daily,
-                direction: .build
-            )
-            modelContext.insert(habit)
-            return habit
-        }
-    }
-
-    private func normalizedSchedulePlan() -> (targetDaysPerWeek: Int, activeDays: Set<Weekday>) {
-        switch scheduleKind {
-        case .daily:
-            return (7, Set(Weekday.ordered))
-        case .specificDays:
-            return (selectedActiveDays.count, selectedActiveDays)
-        case .timesPerWeek:
-            return (timesPerWeek, Set(Weekday.ordered))
-        }
-    }
-
-    private static func normalizedInitialUnit(_ unit: HabitMeasurementUnit) -> HabitMeasurementUnit {
-        unit == .custom ? .minutes : unit
-    }
-
     private func refreshNotificationAuthorizationStatus() async {
         let status = await HabitReminderService.authorizationStatus()
         notificationAuthorizationStatus = status
 
         if !status.allowsReminderScheduling {
-            isReminderEnabled = false
+            draft.isReminderEnabled = false
         }
     }
 
@@ -411,19 +228,15 @@ struct CreateHabitView: View {
             let granted = await HabitReminderService.requestAuthorization()
             await refreshNotificationAuthorizationStatus()
             if granted {
-                isReminderEnabled = true
+                draft.isReminderEnabled = true
             }
         }
     }
+}
 
-    private static func defaultReminderTime() -> Date {
-        AppCalendar.current.date(
-            bySettingHour: 9,
-            minute: 0,
-            second: 0,
-            of: .now
-        ) ?? .now
-    }
+private struct HabitSaveFailure: Identifiable {
+    let id = UUID()
+    let message: String
 }
 
 private struct HabitMinimalVersionSection: View {
