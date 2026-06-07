@@ -76,7 +76,8 @@ Estado de feature y servicios de dominio
         |
         v
 Lógica de dominio de solo lectura
-  Habit+Domain
+  Habit+Scheduling / Completion / Streaks
+  Habit+Freezes / Recovery / Presentation
   Habit+Insights
   HabitExperiment+Domain
   FocusSession+Domain
@@ -266,34 +267,21 @@ Regla importante: no editar schemas antiguos para cambios de forma persistida. C
 
 ## Lógica de dominio
 
-### `Habit+Domain`
+### Dominio de `Habit`
 
-Contiene la lógica reusable de hábitos:
+La lógica reusable está separada por responsabilidad:
 
-- `isFinished(reference:)`
-- `isLoggable(on:)`
-- `isScheduled(on:)`
-- `isActive(on:)`
-- `isCompleted(on:)`
-- `totalValue(on:)`
-- `completedWeekdays(reference:)`
-- `completedDaysThisWeek(reference:)`
-- `weekProgress(reference:)`
-- `currentStreak(reference:)`
-- `currentStreakBreakdown(reference:)`
-- `displayStreak(reference:)`
-- `bestStreak(reference:)`
-- `completionMatrix(weeks:reference:)`
-- `completedDaysSince(_:reference:)`
-- `expectedDaysSince(_:reference:)`
-- `completionRatio(since:reference:)`
+| Archivo | Responsabilidad |
+|---|---|
+| `Habit+Scheduling` | Fechas, programación, pausas y días registrables |
+| `Habit+Completion` | Estados diarios, cantidades, progreso semanal y ratios |
+| `Habit+Streaks` | Racha actual, visible, histórica y desglose |
+| `Habit+Freezes` | Protección y candidatos de comodín semanal |
+| `Habit+Recovery` | Candidatos diarios y semanales de recuperación |
+| `Habit+Presentation` | Textos derivados, formato y matriz del heatmap |
 
-También expone textos derivados como:
-
-- `targetPerSessionText`
-- `scheduleSummaryText`
-- `unitDisplayText`
-- `isFlexibleSchedule`
+Los métodos mantienen APIs pequeñas sobre `Habit`. Para lógica nueva, elegir el archivo
+según la regla de negocio en lugar de crear otra extensión general.
 
 ### `Habit+Insights`
 
@@ -585,7 +573,7 @@ Reglas prácticas:
 
 ### Nueva lógica de fechas, rachas o semanas
 
-1. Agregar método en `Habit+Domain`, `Plan+Domain` o helper adecuado.
+1. Agregar el método al archivo de dominio responsable o a `Plan+Domain`.
 2. Usar `AppCalendar`.
 3. Mantener el método puro cuando sea posible.
 4. Evitar duplicar filtros de `entries` dentro de varias vistas.

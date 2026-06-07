@@ -42,7 +42,8 @@ xcodebuild -project WeekHabit.xcodeproj \
 - Cada bug corregido en tracking, scheduling, streaks, freezes o recovery debe incluir
   una prueba de regresión.
 
-## Estado de fase 2
+## Estado de fases 2 y 3
 
-La fase 2 agregó el target, fixtures en memoria y 13 pruebas de regresión. La suite
-completa compila y pasa en iOS Simulator.
+La fase 2 agregó el target, fixtures en memoria y 13 pruebas de regresión. La fase 3
+dividió el dominio monolítico de `Habit` por responsabilidad. La suite completa compila y
+pasa en iOS Simulator.

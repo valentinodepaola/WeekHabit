@@ -59,7 +59,20 @@ campo como un estado independiente ni implementa la transacción de SwiftData.
 ## Próximas extracciones
 
 - Aplicar un draft equivalente a `CreatePlanView`.
-- Dividir `Habit+Domain.swift` por scheduling, streaks, freezes y recovery.
+
+## Dominio de hábitos
+
+La lógica de solo lectura de `Habit` se organiza por responsabilidad:
+
+- `Habit+Scheduling`: calendario, pausas, fechas y días registrables.
+- `Habit+Completion`: estados diarios, cantidades y progreso.
+- `Habit+Streaks`: rachas y su desglose.
+- `Habit+Freezes`: protección y candidatos de comodín semanal.
+- `Habit+Recovery`: candidatos para prompts de recuperación.
+- `Habit+Presentation`: copy derivado y matriz visual.
+
+La fase 3 eliminó el archivo monolítico `Habit+Domain.swift` sin cambiar sus APIs ni
+comportamiento observable.
 
 ## Pruebas
 
@@ -70,5 +83,5 @@ scheduling, streaks, freezes y recovery descritos en `TESTING.md`.
 Las vistas no se prueban para demostrar reglas de negocio. Cuando una regla es difícil de
 probar sin renderizar una vista, debe extraerse primero a dominio o a un servicio.
 
-La fase 2 de arquitectura está completa: el target compila y sus 13 pruebas de regresión
-pasan en iOS Simulator.
+Las fases 2 y 3 de arquitectura están protegidas por 13 pruebas de regresión que pasan en
+iOS Simulator.

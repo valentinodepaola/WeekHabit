@@ -61,7 +61,12 @@ The app uses a pragmatic SwiftUI architecture with SwiftData.
 
 Important domain files:
 
-- `Domain/Habit+Domain.swift`: schedule checks, loggability, quantities, streaks and streak breakdowns, weekly progress, heatmap matrix.
+- `Domain/Habit+Scheduling.swift`: schedule checks, loggability, pauses, end dates, and week traversal.
+- `Domain/Habit+Completion.swift`: daily entry state, quantities, weekly progress, and completion ratios.
+- `Domain/Habit+Streaks.swift`: current/display/best streaks and streak breakdowns.
+- `Domain/Habit+Freezes.swift`: freeze protection and weekly freeze candidates.
+- `Domain/Habit+Recovery.swift`: recovery prompt candidates.
+- `Domain/Habit+Presentation.swift`: derived copy, quantity formatting, and heatmap matrix.
 - `Insights/Habit+InsightMetrics.swift`: 30-day per-habit metrics, confidence, failures, best day/hour inputs.
 - `Insights/HabitCollection+Insights.swift`: aggregate snapshots, attention habit, contextual best day/hour, experiment suggestions.
 - `Domain/HabitExperiment+Domain.swift`: apply, keep, revert, cancel, review experiments.
