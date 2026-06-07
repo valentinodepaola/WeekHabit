@@ -586,3 +586,6 @@ Reglas prácticas:
 ## Estado de documentación
 
 Esta documentación describe la versión actual del repo con `SchemaV17`, navegación de 3 tabs, onboarding conectado, planes, recordatorios, hábitos cuantificables, recuperación post-fallo, comodines de racha (`StreakFreeze`) y soporte de malos hábitos (`EntryKind.slip`, `EntryKind.urge`).
+
+Las fases pendientes del refactor arquitectónico y sus criterios de aceptación están
+documentados en `REFACTOR_HANDOFF.md`.

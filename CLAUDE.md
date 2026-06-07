@@ -31,6 +31,8 @@ There is no lint configuration. `WeekHabitTests` is the unit test target.
 
 The app uses a pragmatic SwiftUI architecture with SwiftData.
 
+Read `REFACTOR_HANDOFF.md` before continuing the remaining architectural refactor phases.
+
 - Views read with `@Query`.
 - Reusable mutations live in domain services such as `HabitTrackingService`, `HabitEditorService`, and `PlanEditorService`.
 - Complex forms group editable state and validation in value-type drafts such as `HabitDraft` and `PlanDraft`.

@@ -59,6 +59,7 @@ implementan las transacciones de SwiftData.
 ## Próximas extracciones
 
 - Auditar las mutaciones SwiftData restantes en vistas de onboarding, detalle y revisión.
+- El plan detallado de las fases 5 y 6 está en `REFACTOR_HANDOFF.md`.
 
 ## Dominio de hábitos
 

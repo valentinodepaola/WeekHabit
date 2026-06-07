@@ -52,5 +52,5 @@ xcodebuild -project WeekHabit.xcodeproj \
 
 La fase 2 agregó el target, fixtures en memoria y 13 pruebas de regresión. La fase 3
 dividió el dominio monolítico de `Habit` por responsabilidad. La fase 4 extrajo
-`PlanDraft` y `PlanEditorService` y elevó la suite a 16 pruebas. La suite completa compila
+`PlanDraft` y `PlanEditorService`, y elevó la suite a 16 pruebas. La suite completa compila
 y pasa en iOS Simulator.
