@@ -51,14 +51,14 @@ y conservar únicamente las decisiones de presentación.
 
 ## Formularios
 
-`HabitDraft` contiene el estado editable, validación y normalización de
-`CreateHabitView`. `HabitEditorService` crea o actualiza las entidades y relaciones.
-La vista coordina permisos, errores, recordatorios y navegación, pero ya no mantiene cada
-campo como un estado independiente ni implementa la transacción de SwiftData.
+`HabitDraft` y `PlanDraft` contienen el estado editable, validación y normalización de sus
+formularios. `HabitEditorService` y `PlanEditorService` crean o actualizan las entidades y
+relaciones. Las vistas coordinan permisos, errores, recordatorios y navegación, pero no
+implementan las transacciones de SwiftData.
 
 ## Próximas extracciones
 
-- Aplicar un draft equivalente a `CreatePlanView`.
+- Auditar las mutaciones SwiftData restantes en vistas de onboarding, detalle y revisión.
 
 ## Dominio de hábitos
 
@@ -83,5 +83,5 @@ scheduling, streaks, freezes y recovery descritos en `TESTING.md`.
 Las vistas no se prueban para demostrar reglas de negocio. Cuando una regla es difícil de
 probar sin renderizar una vista, debe extraerse primero a dominio o a un servicio.
 
-Las fases 2 y 3 de arquitectura están protegidas por 13 pruebas de regresión que pasan en
-iOS Simulator.
+Las fases 2, 3 y 4 de arquitectura están protegidas por 16 pruebas de regresión que pasan
+en iOS Simulator.

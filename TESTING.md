@@ -33,6 +33,12 @@ xcodebuild -project WeekHabit.xcodeproj \
 - Un `.urge` no bloquea el prompt de recuperación.
 - Los hábitos flexibles evalúan recuperación sobre semanas cerradas.
 
+### Editor de planes
+
+- El draft normaliza textos, fechas e hitos vacíos.
+- Crear un plan persiste campos, hábitos vinculados e hitos normalizados.
+- Editar un plan reconcilia hitos sin perder la completitud de los existentes.
+
 ## Convenciones
 
 - Las fechas de prueba son fijas; no usar `.now` salvo que la regla bajo prueba dependa
@@ -42,8 +48,9 @@ xcodebuild -project WeekHabit.xcodeproj \
 - Cada bug corregido en tracking, scheduling, streaks, freezes o recovery debe incluir
   una prueba de regresión.
 
-## Estado de fases 2 y 3
+## Estado de fases 2, 3 y 4
 
 La fase 2 agregó el target, fixtures en memoria y 13 pruebas de regresión. La fase 3
-dividió el dominio monolítico de `Habit` por responsabilidad. La suite completa compila y
-pasa en iOS Simulator.
+dividió el dominio monolítico de `Habit` por responsabilidad. La fase 4 extrajo
+`PlanDraft` y `PlanEditorService` y elevó la suite a 16 pruebas. La suite completa compila
+y pasa en iOS Simulator.

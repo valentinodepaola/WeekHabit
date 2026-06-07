@@ -71,8 +71,9 @@ Vistas SwiftUI
         |
         v
 Estado de feature y servicios de dominio
-  HabitDraft
+  HabitDraft / PlanDraft
   HabitTrackingService
+  HabitEditorService / PlanEditorService
         |
         v
 Lógica de dominio de solo lectura
@@ -419,6 +420,10 @@ Al guardar:
 - elegir fecha de fin;
 - definir meta de completitud;
 - seleccionar hábitos asociados.
+
+El formulario mantiene su estado, validación y normalización en `PlanDraft`.
+`PlanEditorService` centraliza la creación/edición del plan, las relaciones con hábitos y
+la reconciliación de hitos. La vista solo coordina presentación, errores y cierre.
 
 ### `PlanWrapUpView`
 

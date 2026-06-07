@@ -4,7 +4,7 @@ This file gives concise guidance for coding agents working in this repository.
 
 ## Project
 
-WeekHabit is a SwiftUI iOS app for weekly habit tracking and rhythm building. It is a single Xcode project (`WeekHabit.xcodeproj`) with no Swift Package Manager dependencies, no CocoaPods, and no test target.
+WeekHabit is a SwiftUI iOS app for weekly habit tracking and rhythm building. It is a single Xcode project (`WeekHabit.xcodeproj`) with no Swift Package Manager dependencies or CocoaPods, plus the `WeekHabitTests` unit test target.
 
 Stack: Swift 5.0, SwiftUI, SwiftData, UserNotifications, iOS 26.4+, universal iPhone/iPad.
 
@@ -25,15 +25,15 @@ xcodebuild -project WeekHabit.xcodeproj \
   build CODE_SIGNING_ALLOWED=NO
 ```
 
-There is no lint configuration and no test target.
+There is no lint configuration. `WeekHabitTests` is the unit test target.
 
 ## Architecture
 
 The app uses a pragmatic SwiftUI architecture with SwiftData.
 
 - Views read with `@Query`.
-- Reusable mutations live in domain services such as `HabitTrackingService` and `HabitEditorService`.
-- Complex forms group editable state and validation in value-type drafts such as `HabitDraft`.
+- Reusable mutations live in domain services such as `HabitTrackingService`, `HabitEditorService`, and `PlanEditorService`.
+- Complex forms group editable state and validation in value-type drafts such as `HabitDraft` and `PlanDraft`.
 - Domain logic lives in model extensions, not in layout code.
 - Views keep presentation effects, navigation, haptics, and feature-local UI state.
 
@@ -176,9 +176,8 @@ For sensitive habit states such as misses, slips, breaks, recovery, or pauses, n
 
 `CreateHabitView` and `CreatePlanView` are the reference patterns:
 
-- local `@State` per field;
-- computed `isSaveDisabled`;
-- normalize values before saving;
-- insert/update directly with `modelContext`;
-- dismiss after save;
+- group editable state, validation, and normalization in a value-type draft;
+- delegate persistence and relationship reconciliation to an editor service;
+- show persistence failures instead of silencing them;
+- dismiss only after a successful save;
 - refresh side effects explicitly when needed, such as reminders.

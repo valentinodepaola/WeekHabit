@@ -13,18 +13,13 @@ struct CreatePlanView: View {
     @Query(sort: \Habit.createdAt, order: .reverse) private var allHabits: [Habit]
     @Query(sort: \Plan.createdAt, order: .reverse) private var allPlans: [Plan]
 
-    @State private var planName: String = ""
-    @State private var motivation: String = ""
-    @State private var measurableOutcome: String = ""
-    @State private var endsAt: Date = Calendar.current.date(byAdding: .day, value: 30, to: .now) ?? .now
-    @State private var targetCompletionRate: Double = 0.8
-    @State private var selectedHabits: Set<UUID> = []
-    @State private var milestoneDrafts: [MilestoneDraft] = []
+    @State private var draft: PlanDraft
+    @State private var saveFailure: PlanSaveFailure?
 
     private let planToEdit: Plan?
 
     private var isSaveDisabled: Bool {
-        planName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        draft.isSaveDisabled
     }
 
     private var isEditing: Bool {
@@ -37,17 +32,7 @@ struct CreatePlanView: View {
 
     init(planToEdit: Plan? = nil) {
         self.planToEdit = planToEdit
-
-        _planName = State(initialValue: planToEdit?.title ?? "")
-        _motivation = State(initialValue: planToEdit?.motivation ?? "")
-        _measurableOutcome = State(initialValue: planToEdit?.measurableOutcome ?? "")
-        _endsAt = State(initialValue: planToEdit?.endsAt ?? Calendar.current.date(byAdding: .day, value: 30, to: .now) ?? .now)
-        _targetCompletionRate = State(initialValue: planToEdit?.targetCompletionRate ?? 0.8)
-        _selectedHabits = State(initialValue: Set(planToEdit?.habits.map(\.id) ?? []))
-        _milestoneDrafts = State(initialValue: (planToEdit?.milestones ?? [])
-            .sorted { $0.targetDate < $1.targetDate }
-            .map { MilestoneDraft(id: $0.id, title: $0.title, targetDate: $0.targetDate) }
-        )
+        _draft = State(initialValue: PlanDraft(plan: planToEdit))
     }
 
     var body: some View {
@@ -70,25 +55,32 @@ struct CreatePlanView: View {
                     }
 
                     PlanBasicInfoSection(
-                        planName: $planName,
-                        motivation: $motivation
+                        planName: $draft.name,
+                        motivation: $draft.motivation
                     )
 
-                    PlanMeasurableSection(measurableOutcome: $measurableOutcome)
+                    PlanMeasurableSection(measurableOutcome: $draft.measurableOutcome)
 
                     PlanScheduleSection(
-                        endsAt: $endsAt,
-                        targetCompletionRate: $targetCompletionRate
+                        endsAt: $draft.endsAt,
+                        targetCompletionRate: $draft.targetCompletionRate
                     )
 
-                    PlanMilestonesSection(milestones: $milestoneDrafts, planEndsAt: endsAt)
+                    PlanMilestonesSection(milestones: $draft.milestones, planEndsAt: draft.endsAt)
 
-                    PlanHabitsSection(selectedHabits: $selectedHabits)
+                    PlanHabitsSection(selectedHabits: $draft.selectedHabitIDs)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(AppSpacing.l)
                 .padding(.bottom, AppSpacing.xxl)
             }
+        }
+        .alert(item: $saveFailure) { failure in
+            Alert(
+                title: Text("No se pudo guardar"),
+                message: Text(failure.message),
+                dismissButton: .default(Text("Entendido"))
+            )
         }
     }
 
@@ -120,57 +112,25 @@ struct CreatePlanView: View {
     private func savePlan() {
         guard !isSaveDisabled else { return }
 
-        let trimmedName = planName.trimmingCharacters(in: .whitespacesAndNewlines)
-        let trimmedMotivation = motivation.trimmingCharacters(in: .whitespacesAndNewlines)
-        let trimmedOutcome = measurableOutcome.trimmingCharacters(in: .whitespacesAndNewlines)
-        let normalizedEndsAt = AppCalendar.startOfDay(for: endsAt)
-        let linkedHabits = allHabits.filter { selectedHabits.contains($0.id) }
-
-        if let planToEdit {
-            planToEdit.title = trimmedName
-            planToEdit.motivation = trimmedMotivation.isEmpty ? nil : trimmedMotivation
-            planToEdit.measurableOutcome = trimmedOutcome.isEmpty ? nil : trimmedOutcome
-            planToEdit.endsAt = normalizedEndsAt
-            planToEdit.targetCompletionRate = targetCompletionRate
-            planToEdit.habits = linkedHabits
-            reconcileMilestones(for: planToEdit)
-        } else {
-            let plan = Plan(
-                title: trimmedName,
-                motivation: trimmedMotivation.isEmpty ? nil : trimmedMotivation,
-                measurableOutcome: trimmedOutcome.isEmpty ? nil : trimmedOutcome,
-                endsAt: normalizedEndsAt,
-                targetCompletionRate: targetCompletionRate
+        do {
+            _ = try PlanEditorService.save(
+                draft: draft,
+                editing: planToEdit,
+                allHabits: allHabits,
+                modelContext: modelContext
             )
-            modelContext.insert(plan)
-            plan.habits = linkedHabits
-            for draft in milestoneDrafts where !draft.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                modelContext.insert(PlanMilestone(title: draft.title, targetDate: draft.targetDate, plan: plan))
-            }
+        } catch {
+            saveFailure = PlanSaveFailure(message: error.localizedDescription)
+            return
         }
 
         dismiss()
     }
+}
 
-    private func reconcileMilestones(for plan: Plan) {
-        let existingByID = Dictionary(uniqueKeysWithValues: plan.milestones.map { ($0.id, $0) })
-        let draftIDs = Set(milestoneDrafts.map(\.id))
-
-        for milestone in plan.milestones where !draftIDs.contains(milestone.id) {
-            modelContext.delete(milestone)
-        }
-
-        for draft in milestoneDrafts {
-            let trimmedTitle = draft.title.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !trimmedTitle.isEmpty else { continue }
-            if let existing = existingByID[draft.id] {
-                existing.title = trimmedTitle
-                existing.targetDate = AppCalendar.startOfDay(for: draft.targetDate)
-            } else {
-                modelContext.insert(PlanMilestone(title: trimmedTitle, targetDate: draft.targetDate, plan: plan))
-            }
-        }
-    }
+private struct PlanSaveFailure: Identifiable {
+    let id = UUID()
+    let message: String
 }
 
 #Preview {
