@@ -14,6 +14,8 @@ struct OnboardingView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    @Query(sort: \Plan.createdAt, order: .reverse) private var existingPlans: [Plan]
+
     @State private var step: OnboardingStep = .intro
     @State private var goalText: String = ""
     @State private var motivationText: String = ""
@@ -115,6 +117,13 @@ struct OnboardingView: View {
 
         let trimmedGoal = goalText.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedMotivation = motivationText.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if let existingPlan = existingPlans.first {
+            existingPlan.title = trimmedGoal.isEmpty ? "Mi semana" : trimmedGoal
+            existingPlan.motivation = trimmedMotivation.isEmpty ? nil : trimmedMotivation
+            createdPlan = existingPlan
+            return
+        }
 
         let endsAt = AppCalendar.startOfDay(
             for: AppCalendar.current.date(byAdding: .day, value: 30, to: .now) ?? .now
