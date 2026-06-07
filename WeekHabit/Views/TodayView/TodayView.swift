@@ -302,6 +302,9 @@ struct TodayView: View {
                 } : nil,
                 onMinimum: {
                     markMinimumCompleted(for: habit, on: referenceDate)
+                },
+                onOpenDetail: {
+                    selectedHabit = habit
                 }
             ) {
                 toggleCompletion(for: habit)
@@ -352,7 +355,10 @@ struct TodayView: View {
                 TodayCompletedHabitRow(
                     habit: habit,
                     metadata: completionMetadata(for: habit),
-                    isMinimumCompleted: habit.isMinimumCompleted(on: referenceDate) && !habit.isCompleted(on: referenceDate)
+                    isMinimumCompleted: habit.isMinimumCompleted(on: referenceDate) && !habit.isCompleted(on: referenceDate),
+                    onOpenDetail: {
+                        selectedHabit = habit
+                    }
                 ) {
                     toggleCompletion(for: habit)
                 }
@@ -398,6 +404,9 @@ struct TodayView: View {
                     },
                     onUndo: {
                         undoSlip(for: habit)
+                    },
+                    onOpenDetail: {
+                        selectedHabit = habit
                     }
                 )
                 .todayHabitSectionMotion(habit.id, in: habitSectionNamespace, reduceMotion: reduceMotion)
@@ -434,7 +443,10 @@ struct TodayView: View {
                         for: habit.id,
                         reference: referenceDate
                     ),
-                    referenceDate: referenceDate
+                    referenceDate: referenceDate,
+                    onOpenDetail: {
+                        selectedHabit = habit
+                    }
                 ) {
                     toggleCompletion(for: habit)
                 }
@@ -1287,173 +1299,6 @@ private extension View {
                 )
             )
             .zIndex(1)
-        }
-    }
-}
-
-private struct TodayCompletedHabitRow: View {
-    let habit: Habit
-    let metadata: String
-    var isMinimumCompleted: Bool = false
-    let onToggle: () -> Void
-
-    var body: some View {
-        HStack(alignment: .center, spacing: AppSpacing.m) {
-            Button(action: onToggle) {
-                Image(systemName: "checkmark")
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(.white)
-                    .frame(width: 32, height: 32)
-                    .background(isMinimumCompleted ? habit.habitColor.opacity(0.55) : habit.habitColor)
-                    .clipShape(RoundedRectangle(cornerRadius: AppRadius.s, style: .continuous))
-                    .overlay {
-                        RoundedRectangle(cornerRadius: AppRadius.s, style: .continuous)
-                            .strokeBorder(isMinimumCompleted ? habit.habitColor : Color.clear, lineWidth: 1)
-                    }
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(isMinimumCompleted ? "Marcar completo \(habit.title)" : "Desmarcar \(habit.title)")
-
-            VStack(alignment: .leading, spacing: AppSpacing.xxs) {
-                Text(habit.title)
-                    .font(AppFont.bodyEmphasis)
-                    .foregroundStyle(isMinimumCompleted ? AppColor.textPrimary.opacity(0.72) : AppColor.textSecondary)
-                    .strikethrough(!isMinimumCompleted, color: AppColor.textSecondary)
-                    .lineLimit(1)
-
-                Text(metadata)
-                    .font(AppFont.label)
-                    .foregroundStyle(AppColor.textTertiary)
-                    .lineLimit(1)
-            }
-
-            Spacer(minLength: 0)
-
-            completedIconBadge
-        }
-        .padding(.horizontal, AppSpacing.l)
-        .padding(.vertical, AppSpacing.m)
-        .frame(maxWidth: .infinity, minHeight: 68, alignment: .leading)
-        .background(isMinimumCompleted ? AppColor.bgElevated.opacity(0.88) : AppColor.bgElevated.opacity(0.72))
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous)
-                .strokeBorder(
-                    isMinimumCompleted ? habit.habitColor.opacity(0.28) : AppColor.divider.opacity(0.7),
-                    lineWidth: 1
-                )
-        }
-    }
-
-    private var completedIconBadge: some View {
-        ZStack {
-            Circle()
-                .fill(habit.habitColor.opacity(0.14))
-
-            Image(systemName: habit.iconName)
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(habit.habitColor)
-        }
-        .frame(width: 38, height: 38)
-        .accessibilityHidden(true)
-    }
-}
-
-private struct TodaySlipHabitRow: View {
-    let habit: Habit
-    let metadata: String
-    let onEdit: () -> Void
-    let onUndo: () -> Void
-
-    var body: some View {
-        HStack(alignment: .center, spacing: AppSpacing.m) {
-            Image(systemName: "arrow.counterclockwise")
-                .font(.system(size: 14, weight: .bold))
-                .foregroundStyle(AppColor.warning)
-                .frame(width: 32, height: 32)
-                .background(AppColor.warning.opacity(0.13))
-                .clipShape(RoundedRectangle(cornerRadius: AppRadius.s, style: .continuous))
-                .overlay {
-                    RoundedRectangle(cornerRadius: AppRadius.s, style: .continuous)
-                        .strokeBorder(AppColor.warning.opacity(0.34), lineWidth: 1)
-                }
-
-            VStack(alignment: .leading, spacing: AppSpacing.xxs) {
-                Text(habit.title)
-                    .font(AppFont.bodyEmphasis)
-                    .foregroundStyle(AppColor.textPrimary)
-                    .lineLimit(1)
-
-                Text(metadata)
-                    .font(AppFont.label)
-                    .foregroundStyle(AppColor.textSecondary)
-                    .lineLimit(2)
-            }
-
-            Spacer(minLength: 0)
-
-            HStack(spacing: AppSpacing.xs) {
-                Button(action: onEdit) {
-                    Image(systemName: "pencil")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(AppColor.editAction)
-                        .frame(width: 32, height: 32)
-                        .background(AppColor.editAction.opacity(0.12))
-                        .clipShape(Circle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Editar contexto de \(habit.title)")
-
-                Button(action: onUndo) {
-                    Image(systemName: "arrow.uturn.backward")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(AppColor.warning)
-                        .frame(width: 32, height: 32)
-                        .background(AppColor.warning.opacity(0.12))
-                        .clipShape(Circle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Deshacer slip de \(habit.title)")
-            }
-        }
-        .padding(.horizontal, AppSpacing.l)
-        .padding(.vertical, AppSpacing.m)
-        .frame(maxWidth: .infinity, minHeight: 76, alignment: .leading)
-        .background(AppColor.bgElevated)
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous)
-                .strokeBorder(AppColor.warning.opacity(0.20), lineWidth: 1)
-        }
-    }
-}
-
-private struct TodayFreezeBanner: View {
-    let message: String
-
-    var body: some View {
-        HStack(alignment: .top, spacing: AppSpacing.m) {
-            Image(systemName: "shield.fill")
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(AppColor.info)
-                .frame(width: 30, height: 30)
-                .background(AppColor.info.opacity(0.14))
-                .clipShape(Circle())
-
-            Text(message)
-                .font(AppFont.label)
-                .foregroundStyle(AppColor.textSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal, AppSpacing.m)
-        .padding(.vertical, AppSpacing.s)
-        .background(AppColor.info.opacity(0.08))
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.m, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: AppRadius.m, style: .continuous)
-                .strokeBorder(AppColor.info.opacity(0.22), lineWidth: 1)
         }
     }
 }

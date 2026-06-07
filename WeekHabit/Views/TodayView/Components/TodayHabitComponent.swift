@@ -15,6 +15,7 @@ struct TodayHabitComponent: View {
     var onUrge: (() -> Void)? = nil
     var onSlip: (() -> Void)? = nil
     var onMinimum: (() -> Void)? = nil
+    var onOpenDetail: (() -> Void)? = nil
     let onToggle: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -25,11 +26,21 @@ struct TodayHabitComponent: View {
             HStack(alignment: .center, spacing: AppSpacing.m) {
                 completeToggle
 
-                textContent
+                HStack(spacing: AppSpacing.m) {
+                    textContent
 
-                Spacer(minLength: AppSpacing.s)
+                    Spacer(minLength: AppSpacing.s)
 
-                iconColumn
+                    iconColumn
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    onOpenDetail?()
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityAddTraits(.isButton)
+                .accessibilityHint("Ver detalle")
             }
 
             if hasMinimumAction {
