@@ -6,6 +6,16 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXContainerItemProxy section */
+		B20000072F99AE8F00C47A6D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A91382222F99AE8F00C47A6D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A91382292F99AE8F00C47A6D;
+			remoteInfo = WeekHabit;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		A913822A2F99AE8F00C47A6D /* WeekHabit.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WeekHabit.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B20000012F99AE8F00C47A6D /* WeekHabitTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WeekHabitTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -146,16 +156,6 @@
 			);
 		};
 /* End PBXProject section */
-
-/* Begin PBXContainerItemProxy section */
-		B20000072F99AE8F00C47A6D /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = A91382222F99AE8F00C47A6D /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = A91382292F99AE8F00C47A6D;
-			remoteInfo = WeekHabit;
-		};
-/* End PBXContainerItemProxy section */
 
 /* Begin PBXResourcesBuildPhase section */
 		A91382282F99AE8F00C47A6D /* Resources */ = {

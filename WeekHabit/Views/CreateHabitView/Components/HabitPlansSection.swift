@@ -15,24 +15,19 @@ struct HabitPlansSection: View {
     }
 
     var body: some View {
-        CreateHabitFormSection(
-            title: "Plan",
-            helper: "Conecta este hábito con una meta que importa."
-        ) {
-            if activePlans.isEmpty {
-                emptyState
-            } else {
-                VStack(spacing: AppSpacing.s) {
-                    ForEach(activePlans) { plan in
-                        PlanSelectionRow(
-                            plan: plan,
-                            isSelected: selectedPlans.contains(plan.id)
-                        ) {
-                            if selectedPlans.contains(plan.id) {
-                                selectedPlans.remove(plan.id)
-                            } else {
-                                selectedPlans.insert(plan.id)
-                            }
+        if activePlans.isEmpty {
+            emptyState
+        } else {
+            VStack(spacing: AppSpacing.s) {
+                ForEach(activePlans) { plan in
+                    PlanSelectionRow(
+                        plan: plan,
+                        isSelected: selectedPlans.contains(plan.id)
+                    ) {
+                        if selectedPlans.contains(plan.id) {
+                            selectedPlans.remove(plan.id)
+                        } else {
+                            selectedPlans.insert(plan.id)
                         }
                     }
                 }

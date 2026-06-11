@@ -101,33 +101,55 @@ struct HabitDraft {
         }
     }
 
-    var isSaveDisabled: Bool {
+    // MARK: - Validación por paso
+    // El formulario se completa en pasos; cada paso valida solo lo suyo y
+    // expone el motivo del bloqueo para mostrarlo junto al CTA.
+
+    /// Paso 1 — Acción: nombre y, para hábitos a dejar, reemplazo resuelto.
+    var actionStepBlocker: String? {
         if name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            return true
+            return "Escribe qué vas a hacer para continuar."
         }
+        if direction == .break && replacementMode == .create
+            && newReplacementHabitName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return "Ponle nombre al reemplazo, o elige omitirlo por ahora."
+        }
+        if direction == .break && replacementMode == .existing && replacementHabitID == nil {
+            return "Elige el hábito de reemplazo, o cambia de opción."
+        }
+        return nil
+    }
 
+    /// Paso 2 — Ritmo: agenda semanal válida y medición completa.
+    var rhythmStepBlocker: String? {
         if trackingKind == .quantity {
-            guard parsedTargetValue > 0, measurementUnit != .none else { return true }
-        }
-
-        if direction == .break && replacementMode == .create {
-            if newReplacementHabitName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                return true
+            if measurementUnit == .none {
+                return "Elige la unidad con la que vas a medirlo."
+            }
+            if parsedTargetValue <= 0 {
+                return "Define una meta por sesión mayor a cero."
             }
         }
-
-        if direction == .break && replacementMode == .existing && replacementHabitID == nil {
-            return true
-        }
-
         switch scheduleKind {
         case .daily:
-            return false
+            return nil
         case .specificDays:
-            return activeDays.isEmpty
+            return activeDays.isEmpty ? "Elige al menos un día de la semana." : nil
         case .timesPerWeek:
-            return !(1...7).contains(timesPerWeek)
+            return (1...7).contains(timesPerWeek) ? nil : "Elige entre 1 y 7 veces por semana."
         }
+    }
+
+    var isActionStepComplete: Bool {
+        actionStepBlocker == nil
+    }
+
+    var isRhythmStepComplete: Bool {
+        rhythmStepBlocker == nil
+    }
+
+    var isSaveDisabled: Bool {
+        !isActionStepComplete || !isRhythmStepComplete
     }
 
     mutating func reconcileDirection() {
