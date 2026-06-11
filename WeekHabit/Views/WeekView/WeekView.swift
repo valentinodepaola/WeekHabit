@@ -131,14 +131,25 @@ struct WeekView: View {
     }
 
     private var dayStrip: some View {
-        HStack(spacing: WeekGridLayout.cellSpacing) {
-            ForEach(daysInWeek, id: \.self) { date in
-                DayColumn(date: date, isToday: AppCalendar.isSameDay(date, .now))
-            }
-        }
-        .padding(.leading, 34)
-        .padding(.trailing, 30)
+        WeekPulseSection(
+            pulses: daysInWeek.map(dayPulse(for:)),
+            completedThisWeek: completedThisWeek,
+            totalGoal: totalGoal
+        )
         .padding(.bottom, AppSpacing.s)
+    }
+
+    private func dayPulse(for date: Date) -> WeekDayPulse {
+        let scheduledHabits = visibleHabits.filter { $0.isLoggable(on: date) }
+        let completed = scheduledHabits.filter { $0.isCompleted(on: date) }.count
+
+        return WeekDayPulse(
+            date: date,
+            isToday: AppCalendar.isSameDay(date, .now),
+            isFuture: AppCalendar.startOfDay(for: date) > AppCalendar.startOfDay(for: .now),
+            completed: completed,
+            scheduled: scheduledHabits.count
+        )
     }
 
     @ViewBuilder
