@@ -30,6 +30,114 @@ Las vistas top-level pueden conservar `@Query` y pasar `ModelContext` a servicio
 no es eliminar SwiftData de SwiftUI, sino evitar que las vistas implementen reglas de
 persistencia.
 
+## Actualización de estado — 2026-06-16
+
+Este bloque resume el estado real después de avanzar el plan de simplificación
+(`PLAN_SIMPLIFICACION.md`). Sirve como punto de partida para una conversación nueva.
+
+### Decisiones de producto tomadas
+
+- **No tocar onboarding por ahora.** El plan proponía B1 (pasar de 6 pasos a 3), pero el
+  onboarding de 6 pasos se conserva por decisión explícita. Por eso las escrituras directas
+  que quedan en onboarding son una excepción documentada, no un descuido.
+- El siguiente paso recomendado ya no es A1: **seguir con A2, partir `TodayView`**.
+
+### A1 completado con excepción documentada
+
+La fase A1 / fase 5 del handoff quedó implementada para todos los flujos acordados excepto
+onboarding. Commits de referencia:
+
+- `54b4507` — Weekly Review.
+- `03016cf` — Today deletes.
+- `611101c` — Focus Session.
+- `6a23863` — EntryNoteSheet.
+- `895187d` — InsightsView / start experiment.
+- `7cb010d` — keep/revert experiment.
+
+Servicios agregados o usados por A1:
+
+- `WeeklyReviewEditorService`
+- `HabitLifecycleService`
+- `PlanLifecycleService`
+- `FocusSessionEditorService`
+- `EntryNoteService`
+- `HabitExperimentService`
+
+Tests agregados por A1:
+
+- `WeeklyReviewEditorServiceTests`
+- `LifecycleServiceTests`
+- `FocusSessionEditorServiceTests`
+- `EntryNoteServiceTests`
+- `HabitExperimentServiceTests`
+
+Auditoría esperada después de A1:
+
+```bash
+rg -n "modelContext\.(insert|delete|save)|try\? modelContext" WeekHabit/Views -g '*.swift'
+```
+
+Debe devolver únicamente las excepciones de onboarding:
+
+- `WeekHabit/Views/OnboardingView/OnboardingView.swift`
+- `WeekHabit/Views/OnboardingView/Components/OnboardingHabitsScreen.swift`
+
+También se movieron `HabitExperiment.keep` y `HabitExperiment.revert` fuera de
+`InsightsView` y `WeeklyReviewView`, hacia `HabitExperimentService`.
+
+### A3 implementado, pendiente de commit
+
+A3 se implementó después de A1 y actualmente puede estar como worktree sin commit si esta
+sección aparece antes de cerrar la fase. Cambios esperados:
+
+- Se eliminó `WeekHabit/Models/Insights/HabitCollection+Insights.swift`.
+- Se partió en:
+  - `WeekHabit/Models/Insights/HabitCollection+InsightSnapshot.swift`
+  - `WeekHabit/Models/Insights/HabitCollection+InsightContexts.swift`
+  - `WeekHabit/Models/Insights/HabitCollection+ExperimentSuggestions.swift`
+- Se agregaron:
+  - `WeekHabitTests/InsightMetricsTests.swift`
+  - `WeekHabitTests/ExperimentSuggestionTests.swift`
+
+Cobertura agregada:
+
+- Readiness: warmup, provisional y stable.
+- Snapshot global: ventanas de 30 días, delta, 12 trend buckets y `minimumDays`.
+- Confianza: niveles high/learning/low, marcas manuales no confiables y focus sessions.
+- `attentionHabit`: priorización por baja consistencia y failure types.
+- `urgePeakHourInsight`: mínimo de 3 urges y contexto por hábito.
+- Sugerencias de experimentos: sin datos, exclusión de hábitos activos, reducción de días,
+  hora fija y orden por prioridad.
+
+Última validación conocida para A3:
+
+```bash
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer \
+xcodebuild -project WeekHabit.xcodeproj -scheme WeekHabit \
+  -destination 'generic/platform=iOS Simulator' \
+  -configuration Debug \
+  -derivedDataPath /private/tmp/WeekHabit_DerivedData \
+  build CODE_SIGNING_ALLOWED=NO
+
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer \
+xcodebuild -project WeekHabit.xcodeproj -scheme WeekHabit \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+  -derivedDataPath /private/tmp/WeekHabit_DerivedData \
+  test
+```
+
+Resultado: build verde, suite verde con **43 tests passed**, `git diff --check` limpio.
+
+### Pendiente del plan
+
+- **A2**: partir `TodayView` (siguiente paso recomendado).
+- **A4**: medir rendimiento antes de cachear.
+- **A5**: higiene de tokens oportunística.
+- **B1**: onboarding mínimo queda descartado/no tocar por ahora.
+- **B2**: gramática visual de Week + leyenda.
+- **B3**: educación just-in-time.
+- **B4**: jerarquía del menú de creación.
+
 ## Estado completado
 
 ### Fase 1: escrituras compartidas y formularios de hábitos

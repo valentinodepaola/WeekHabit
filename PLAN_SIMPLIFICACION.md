@@ -21,6 +21,18 @@ xcodebuild -project WeekHabit.xcodeproj \
   build CODE_SIGNING_ALLOWED=NO
 ```
 
+## Estado actual — 2026-06-16
+
+- **A1 está terminado** para el alcance acordado. Onboarding queda como excepción
+  intencional porque se decidió conservar el onboarding de 6 pasos y no tocarlo.
+- **A3 está implementado**: `HabitCollection+Insights.swift` fue partido en tres
+  archivos y se agregaron tests de métricas/ranking de Insights.
+- Última validación conocida: build verde, suite verde con **43 tests passed**,
+  `git diff --check` limpio.
+- **Siguiente paso recomendado:** A2, partir `TodayView`.
+- Para continuar desde otra conversación, leer primero `REFACTOR_HANDOFF.md`; tiene el
+  detalle de commits, archivos, comandos y pendientes.
+
 ---
 
 ## Parte B primero en un punto: B1 reduce el alcance de A1

@@ -13,6 +13,28 @@ xcodebuild -project WeekHabit.xcodeproj \
   test
 ```
 
+## Estado actual de la suite
+
+Última validación conocida (2026-06-16): **43 tests passed** en
+`platform=iOS Simulator,name=iPhone 17 Pro`.
+
+Además de la cobertura inicial, la suite ya cubre:
+
+- Servicios de persistencia extraídos en A1:
+  - `WeeklyReviewEditorService`
+  - `HabitLifecycleService`
+  - `PlanLifecycleService`
+  - `FocusSessionEditorService`
+  - `EntryNoteService`
+  - `HabitExperimentService`
+- Métricas y ranking de Insights agregados en A3:
+  - readiness;
+  - snapshot global;
+  - confianza high/learning/low;
+  - `attentionHabit`;
+  - `urgePeakHourInsight`;
+  - sugerencias de experimentos y orden por prioridad.
+
 ## Cobertura inicial
 
 ### Mutaciones de tracking
@@ -48,7 +70,7 @@ xcodebuild -project WeekHabit.xcodeproj \
 - Cada bug corregido en tracking, scheduling, streaks, freezes o recovery debe incluir
   una prueba de regresión.
 
-## Estado de fases 2, 3 y 4
+## Estado histórico de fases 2, 3 y 4
 
 La fase 2 agregó el target, fixtures en memoria y 13 pruebas de regresión. La fase 3
 dividió el dominio monolítico de `Habit` por responsabilidad. La fase 4 extrajo
