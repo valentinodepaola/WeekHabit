@@ -36,6 +36,7 @@ struct TodayView: View {
     @State private var showDeleteHabitAlert = false
     @State private var planToDelete: Plan?
     @State private var showDeletePlanAlert = false
+    @State private var deleteFailure: TodayDeleteFailure?
     @State private var expandedPlans: Set<UUID> = []
     @State private var detailPlan: Plan?
     @State private var didShowRecoveryPromptThisSession = false
@@ -200,6 +201,13 @@ struct TodayView: View {
                 Button("Borrar", role: .destructive) { deleteSelectedPlan() }
             } message: {
                 Text("Los hábitos del plan no serán eliminados.")
+            }
+            .alert(item: $deleteFailure) { failure in
+                Alert(
+                    title: Text("No se pudo borrar"),
+                    message: Text(failure.message),
+                    dismissButton: .default(Text("Entendido"))
+                )
             }
             .animation(
                 AppMotion.respectful(AppMotion.gentle, reduceMotion),
@@ -1074,8 +1082,13 @@ struct TodayView: View {
         guard let habitToDelete else { return }
         let habitID = habitToDelete.id
 
-        withAnimation(AppMotion.smooth) {
-            modelContext.delete(habitToDelete)
+        do {
+            try withAnimation(AppMotion.smooth) {
+                try HabitLifecycleService.delete(habitToDelete, modelContext: modelContext)
+            }
+        } catch {
+            deleteFailure = TodayDeleteFailure(message: error.localizedDescription)
+            return
         }
 
         Task {
@@ -1088,12 +1101,22 @@ struct TodayView: View {
     private func deleteSelectedPlan() {
         guard let planToDelete else { return }
 
-        withAnimation(AppMotion.smooth) {
-            modelContext.delete(planToDelete)
+        do {
+            try withAnimation(AppMotion.smooth) {
+                try PlanLifecycleService.delete(planToDelete, modelContext: modelContext)
+            }
+        } catch {
+            deleteFailure = TodayDeleteFailure(message: error.localizedDescription)
+            return
         }
 
         self.planToDelete = nil
     }
+}
+
+private struct TodayDeleteFailure: Identifiable {
+    let id = UUID()
+    let message: String
 }
 
 // MARK: - Routes
