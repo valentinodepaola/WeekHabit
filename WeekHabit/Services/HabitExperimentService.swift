@@ -36,4 +36,23 @@ enum HabitExperimentService {
 
         return experiment
     }
+
+    static func keep(
+        _ experiment: HabitExperiment,
+        reference: Date = .now,
+        modelContext: ModelContext
+    ) throws {
+        experiment.keep(reference: reference)
+        try modelContext.save()
+    }
+
+    static func revert(
+        _ experiment: HabitExperiment,
+        on habit: Habit,
+        reference: Date = .now,
+        modelContext: ModelContext
+    ) throws {
+        experiment.revert(on: habit, reference: reference)
+        try modelContext.save()
+    }
 }

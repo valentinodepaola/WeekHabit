@@ -295,17 +295,34 @@ struct InsightsView: View {
     }
 
     private func keep(_ experiment: HabitExperiment) {
-        withAnimation(AppMotion.respectful(AppMotion.smooth, reduceMotion)) {
-            experiment.keep(reference: referenceDate)
+        do {
+            try withAnimation(AppMotion.respectful(AppMotion.smooth, reduceMotion)) {
+                try HabitExperimentService.keep(
+                    experiment,
+                    reference: referenceDate,
+                    modelContext: modelContext
+                )
+            }
+            AppHaptics.play(.experimentApplied)
+        } catch {
+            assertionFailure("Failed to keep habit experiment: \(error)")
         }
-        AppHaptics.play(.experimentApplied)
     }
 
     private func revert(_ experiment: HabitExperiment, habit: Habit) {
-        withAnimation(AppMotion.respectful(AppMotion.smooth, reduceMotion)) {
-            experiment.revert(on: habit, reference: referenceDate)
+        do {
+            try withAnimation(AppMotion.respectful(AppMotion.smooth, reduceMotion)) {
+                try HabitExperimentService.revert(
+                    experiment,
+                    on: habit,
+                    reference: referenceDate,
+                    modelContext: modelContext
+                )
+            }
+            AppHaptics.play(.selection)
+        } catch {
+            assertionFailure("Failed to revert habit experiment: \(error)")
         }
-        AppHaptics.play(.selection)
     }
 }
 
