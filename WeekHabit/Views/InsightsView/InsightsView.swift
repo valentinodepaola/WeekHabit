@@ -276,25 +276,22 @@ struct InsightsView: View {
     }
 
     private func startExperiment(_ suggestion: RhythmExperimentSuggestion) {
-        guard experiments.activeExperiment(for: suggestion.habit.id, reference: referenceDate) == nil else {
-            return
+        do {
+            let didStart = try withAnimation(AppMotion.respectful(AppMotion.smooth, reduceMotion)) {
+                try HabitExperimentService.start(
+                    suggestion: suggestion,
+                    existingExperiments: experiments,
+                    reference: referenceDate,
+                    modelContext: modelContext
+                ) != nil
+            }
+
+            if didStart {
+                AppHaptics.play(.experimentApplied)
+            }
+        } catch {
+            assertionFailure("Failed to start habit experiment: \(error)")
         }
-
-        let experiment = HabitExperiment(
-            habit: suggestion.habit,
-            experimentTargetDaysPerWeek: suggestion.targetDaysPerWeek,
-            experimentActiveDaysOfWeek: suggestion.activeDays,
-            suggestedStartHour: suggestion.suggestedStartHour,
-            baselineConsistency: suggestion.baselineConsistency,
-            startedAt: referenceDate
-        )
-
-        withAnimation(AppMotion.respectful(AppMotion.smooth, reduceMotion)) {
-            experiment.apply(to: suggestion.habit)
-            modelContext.insert(experiment)
-        }
-
-        AppHaptics.play(.experimentApplied)
     }
 
     private func keep(_ experiment: HabitExperiment) {
