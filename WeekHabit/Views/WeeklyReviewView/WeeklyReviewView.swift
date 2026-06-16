@@ -31,6 +31,7 @@ struct WeeklyReviewView: View {
     @State private var reflectionText: String = ""
     @State private var habitRoute: HabitRoute?
     @State private var didConfirm = false
+    @State private var saveFailure: WeeklyReviewSaveFailure?
 
     private var referenceDate: Date { .now }
 
@@ -127,6 +128,13 @@ struct WeeklyReviewView: View {
             }
             .task {
                 seedDefaultDecisions()
+            }
+            .alert(item: $saveFailure) { failure in
+                Alert(
+                    title: Text("No se pudo guardar"),
+                    message: Text(failure.message),
+                    dismissButton: .default(Text("Entendido"))
+                )
             }
         }
     }
@@ -310,11 +318,6 @@ struct WeeklyReviewView: View {
         AppHaptics.play(.selection)
     }
 
-    private func applyPause(_ habit: Habit) {
-        let start = AppCalendar.startOfDay(for: referenceDate)
-        habit.pausedUntil = AppCalendar.current.date(byAdding: .day, value: 7, to: start) ?? start
-    }
-
     private func keep(_ experiment: HabitExperiment) {
         withAnimation(AppMotion.respectful(AppMotion.smooth, reduceMotion)) {
             experiment.keep(reference: referenceDate)
@@ -333,39 +336,35 @@ struct WeeklyReviewView: View {
         guard !didConfirm else { return }
         didConfirm = true
 
-        if reviews.contains(where: { AppCalendar.isSameDay($0.weekStart, weekStart) }) {
+        let input = WeeklyReviewInput(
+            weekStart: weekStart,
+            weekEnd: weekEnd,
+            reflectionNote: reflectionText,
+            decisions: decisions
+        )
+
+        let result: WeeklyReviewSaveResult
+        do {
+            result = try WeeklyReviewEditorService.save(
+                input: input,
+                habits: reviewHabits,
+                existingReviews: reviews,
+                reference: referenceDate,
+                modelContext: modelContext
+            )
+        } catch {
+            didConfirm = false
+            saveFailure = WeeklyReviewSaveFailure(message: error.localizedDescription)
+            return
+        }
+
+        guard result.didCreateReview else {
             dismiss()
             return
         }
 
-        let note = reflectionText.trimmingCharacters(in: .whitespacesAndNewlines)
-        let review = WeeklyReview(
-            weekStart: weekStart,
-            reflectionNote: note.isEmpty ? nil : note
-        )
-
-        var habitsToPause: [Habit] = []
-
-        for habit in reviewHabits {
-            let kind = decisions[habit.id] ?? .keep
-            let stats = habit.completionStats(from: weekStart, to: weekEnd)
-            review.decisions.append(
-                WeeklyReviewDecision(habit: habit, decision: kind, ratio: stats.ratio)
-            )
-            if kind == .pause {
-                habitsToPause.append(habit)
-            }
-        }
-
-        for habit in habitsToPause {
-            applyPause(habit)
-        }
-
-        modelContext.insert(review)
-
-        let pausedIDs = habitsToPause.map(\.id)
         Task {
-            for id in pausedIDs {
+            for id in result.pausedHabitIDs {
                 await HabitReminderService.cancelReminder(forHabitID: id)
             }
             await HabitReminderService.refreshAllReminders(for: habits)
@@ -385,4 +384,9 @@ struct WeeklyReviewView: View {
             )
         }
     }
+}
+
+private struct WeeklyReviewSaveFailure: Identifiable {
+    let id = UUID()
+    let message: String
 }
