@@ -23,6 +23,7 @@ struct FocusSessionView: View {
     @State private var milestoneCover: MilestoneCelebrationPayload?
     @State private var milestoneQueue: [MilestoneCelebrationPayload] = []
     @State private var shouldDismissAfterMilestones = false
+    @State private var saveFailure: FocusSessionSaveFailure?
 
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
@@ -66,6 +67,13 @@ struct FocusSessionView: View {
         }
         .fullScreenCover(item: $milestoneCover, onDismiss: presentNextMilestoneOrDismiss) { payload in
             MilestoneCelebrationView(habit: payload.habit, milestone: payload.milestone)
+        }
+        .alert(item: $saveFailure) { failure in
+            Alert(
+                title: Text("No se pudo iniciar"),
+                message: Text(failure.message),
+                dismissButton: .default(Text("Entendido"))
+            )
         }
     }
 
@@ -171,15 +179,21 @@ struct FocusSessionView: View {
     }
 
     private func startSession() {
-        let newSession = FocusSession(
-            selectedHabitIDs: selectedHabitIDs,
-            durationSeconds: selectedDuration.durationSeconds,
-            startedAt: .now
-        )
+        let startedAt = Date()
 
-        modelContext.insert(newSession)
-        session = newSession
-        now = .now
+        do {
+            session = try FocusSessionEditorService.start(
+                selectedHabitIDs: selectedHabitIDs,
+                durationSeconds: selectedDuration.durationSeconds,
+                startedAt: startedAt,
+                modelContext: modelContext
+            )
+        } catch {
+            saveFailure = FocusSessionSaveFailure(message: error.localizedDescription)
+            return
+        }
+
+        now = startedAt
 
         withAnimation(AppMotion.respectful(AppMotion.smooth, reduceMotion)) {
             phase = .running
@@ -270,6 +284,11 @@ private enum FocusSessionPhase {
     case setup
     case running
     case review
+}
+
+private struct FocusSessionSaveFailure: Identifiable {
+    let id = UUID()
+    let message: String
 }
 
 #Preview {
