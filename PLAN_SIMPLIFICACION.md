@@ -27,9 +27,12 @@ xcodebuild -project WeekHabit.xcodeproj \
   intencional porque se decidió conservar el onboarding de 6 pasos y no tocarlo.
 - **A3 está implementado**: `HabitCollection+Insights.swift` fue partido en tres
   archivos y se agregaron tests de métricas/ranking de Insights.
-- Última validación conocida: build verde, suite verde con **43 tests passed**,
+- **A2 está implementado**: `TodayView.swift` pasó de 1.206 → 692 líneas. Se extrajeron
+  `HabitCollection+Today`, `TodayHeaderSection`, `TodayHabitListSection`,
+  `TodayPlansSection`, `TodayRouting` y se agregaron 10 tests en `TodayCollectionsTests`.
+- Última validación conocida: build verde, suite verde con **53 tests passed**,
   `git diff --check` limpio.
-- **Siguiente paso recomendado:** A2, partir `TodayView`.
+- **Siguiente paso recomendado:** A4 (medir antes de cachear) o B2/B3 (producto puro).
 - Para continuar desde otra conversación, leer primero `REFACTOR_HANDOFF.md`; tiene el
   detalle de commits, archivos, comandos y pendientes.
 

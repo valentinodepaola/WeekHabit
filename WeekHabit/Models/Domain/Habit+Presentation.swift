@@ -134,6 +134,103 @@ extension Habit {
 
         return String(format: "%.1f", value)
     }
+
+    /// Copy mostrada bajo la fila de un hábito completado en Hoy.
+    /// Incluye hora y fuente de la marca, o describe la versión mínima si aplica.
+    func todayCompletionMetadata(reference: Date) -> String {
+        let entriesForDay = entries.filter {
+            AppCalendar.isSameDay($0.date, reference)
+        }
+
+        let completedEntry = entriesForDay
+            .filter { $0.kind == .completed }
+            .sorted { lhs, rhs in
+                (lhs.completedAt ?? lhs.date) > (rhs.completedAt ?? rhs.date)
+            }
+            .first
+        let minimumEntry = entriesForDay
+            .filter { $0.kind == .minimum }
+            .sorted { lhs, rhs in
+                (lhs.completedAt ?? lhs.date) > (rhs.completedAt ?? rhs.date)
+            }
+            .first
+
+        guard let entry = completedEntry ?? minimumEntry else {
+            return "Meta semanal alcanzada"
+        }
+
+        if entry.kind == .minimum {
+            let title = minimumViableTitle?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            return title.isEmpty ? "Versión mínima" : "Versión mínima · \(title)"
+        }
+
+        let sourceText: String
+        switch entry.source {
+        case .today:
+            sourceText = "marca confiable"
+        case .focusSession:
+            sourceText = "sesión de ritmo"
+        case .manual:
+            sourceText = "registrado después"
+        }
+
+        guard let completedAt = entry.completedAt else {
+            return sourceText
+        }
+
+        return "\(Self.hourMinuteFormatter.string(from: completedAt)) · \(sourceText)"
+    }
+
+    /// Copy mostrada bajo la fila de un slip registrado en Hoy.
+    func todaySlipMetadata(reference: Date) -> String {
+        guard let entry = slipEntry(on: reference) else {
+            return "Slip registrado"
+        }
+
+        var parts: [String] = []
+
+        if let completedAt = entry.completedAt {
+            parts.append(Self.hourMinuteFormatter.string(from: completedAt))
+        }
+
+        if let trigger = entry.slipTrigger {
+            parts.append(trigger.title)
+        }
+
+        let trimmedContext = entry.slipContext?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if !trimmedContext.isEmpty {
+            parts.append(trimmedContext)
+        }
+
+        return parts.isEmpty ? "Slip registrado" : parts.joined(separator: " · ")
+    }
+
+    private static let hourMinuteFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.calendar = AppCalendar.current
+        formatter.locale = Locale(identifier: "es_MX")
+        formatter.dateFormat = "HH:mm"
+        return formatter
+    }()
+}
+
+extension Sequence where Element == StreakFreeze {
+    /// Mensaje del banner de comodines aplicados esta semana.
+    /// Espera recibir solo los freezes de la semana actual.
+    func todayBannerMessage() -> String? {
+        let sorted = Array(self).sorted { $0.protectedDate < $1.protectedDate }
+        guard let first = sorted.first else { return nil }
+
+        let weekday = AppCalendar.weekday(of: first.protectedDate)
+            .displayName
+            .lowercased(with: Locale(identifier: "es_MX"))
+
+        if sorted.count == 1 {
+            return "Comodín usado el \(weekday). Tu racha sigue viva."
+        }
+
+        return "\(sorted.count) comodines usados esta semana. Tu racha sigue viva."
+    }
 }
 
 extension Array where Element == CellState {

@@ -40,7 +40,10 @@ Este bloque resume el estado real después de avanzar el plan de simplificación
 - **No tocar onboarding por ahora.** El plan proponía B1 (pasar de 6 pasos a 3), pero el
   onboarding de 6 pasos se conserva por decisión explícita. Por eso las escrituras directas
   que quedan en onboarding son una excepción documentada, no un descuido.
-- El siguiente paso recomendado ya no es A1: **seguir con A2, partir `TodayView`**.
+- **A2 está implementado.** El commit anterior (`ea43836 "Implementamos A2 y actualizamos
+  handoff"`) en realidad cerró A3 (Insights); el nombre quedó como error de naming.
+- El siguiente paso recomendado es **A4** (medir rendimiento antes de cachear) o **B2/B3**
+  (producto puro, sin dependencias de código pendiente).
 
 ### A1 completado con excepción documentada
 
@@ -128,9 +131,48 @@ xcodebuild -project WeekHabit.xcodeproj -scheme WeekHabit \
 
 Resultado: build verde, suite verde con **43 tests passed**, `git diff --check` limpio.
 
+### A2 implementado
+
+`TodayView.swift` pasó de **1.206 → 692 líneas** (-43%). El objetivo "~450" del plan no se
+alcanzó al pie de la letra; lo que queda son ~280 líneas de acciones de coordinación
+(toggle/persist/milestone/delete) que viven legítimamente en la vista. Si en el futuro
+se quiere reducir más, el siguiente candidato es extraer un `TodayMilestoneCoordinator`
+con la lógica de `presentLiveMilestoneIfNeeded` + `presentDeferredNoteIfNeeded` +
+`scheduleDeferredNotePresentation` (~70 líneas).
+
+Archivos nuevos:
+
+- `WeekHabit/Models/Domain/HabitCollection+Today.swift` — `loggableToday`, `pendingToday`,
+  `completedToday`, `skippedToday`, `slippedToday`, `dailyProgress`, freezes de la semana,
+  y `Habit.meetsTodaySectionTarget(on:)`.
+- `WeekHabit/Views/TodayView/Components/TodayHeaderSection.swift`
+- `WeekHabit/Views/TodayView/Components/TodayHabitListSection.swift`
+- `WeekHabit/Views/TodayView/Components/TodayPlansSection.swift`
+- `WeekHabit/Views/TodayView/Components/TodayRouting.swift` — enums `TodayCoverRoute`,
+  `TodaySheetRoute`, `TodayDeleteFailure` y view modifiers `todayListRow` /
+  `todayHabitSectionMotion`.
+- `WeekHabitTests/TodayCollectionsTests.swift` — 10 tests.
+
+Archivos modificados:
+
+- `Habit+Presentation.swift` — `todayCompletionMetadata(reference:)`,
+  `todaySlipMetadata(reference:)`, y `[StreakFreeze].todayBannerMessage()`.
+- `TodayView.swift` — usa los nuevos componentes y dominio.
+
+Cobertura nueva en `TodayCollectionsTests`:
+
+- `loggableToday` filtra schedule, `endsAt` pasado y respeta el día final.
+- Pending/Completed/Skipped/Slipped son mutuamente excluyentes y cubren todo `todayHabits`.
+- `completedToday` incluye marcas de versión mínima.
+- Hábitos flexibles que cumplen meta semanal cuentan como completados todo el resto de la
+  semana.
+- `dailyProgress` con 0/1/parcial, ignorando descansos del cálculo del denominador.
+
+Última validación: build verde, suite verde con **53 tests passed**, `git diff --check`
+limpio. Auditoría sigue devolviendo solo las 4 excepciones de onboarding.
+
 ### Pendiente del plan
 
-- **A2**: partir `TodayView` (siguiente paso recomendado).
 - **A4**: medir rendimiento antes de cachear.
 - **A5**: higiene de tokens oportunística.
 - **B1**: onboarding mínimo queda descartado/no tocar por ahora.
