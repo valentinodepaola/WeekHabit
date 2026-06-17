@@ -91,6 +91,15 @@ struct TodayView: View {
     private var activeTodayCount: Int { todayHabits.activeCountToday(on: referenceDate) }
     private var remainingTodayCount: Int { pendingHabits.count }
     private var dailyProgress: Double { todayHabits.dailyProgress(on: referenceDate) }
+    private var focusCandidateHabits: [Habit] {
+        todayHabits.filter {
+            !$0.isSkipped(on: referenceDate) && !$0.isSlip(on: referenceDate)
+        }
+    }
+
+    private var focusDisabledReason: String? {
+        focusCandidateHabits.isEmpty ? "No hay hábitos disponibles para hoy." : nil
+    }
 
     private var weeklyReviewWeekStart: Date? {
         WeeklyReviewService.needsReview(
@@ -256,9 +265,7 @@ struct TodayView: View {
             openSlipContext: { sheetRoute = .slipLog(habit: $0) },
             undoSlip: { undoSlip(for: $0) },
             startFocus: {
-                coverRoute = .focus(habits: todayHabits.filter {
-                    !$0.isSkipped(on: referenceDate) && !$0.isSlip(on: referenceDate)
-                })
+                coverRoute = .focus(habits: focusCandidateHabits)
             }
         )
     }
@@ -306,10 +313,10 @@ struct TodayView: View {
     private func routeSheet(_ route: TodaySheetRoute) -> some View {
         switch route {
         case .createMenu:
-            WHCreationSheet { option in
+            WHCreationSheet(focusDisabledReason: focusDisabledReason) { option in
                 handleCreationSelection(option)
             }
-            .presentationDetents([.height(380), .medium])
+            .presentationDetents([.height(420), .medium])
             .presentationDragIndicator(.visible)
             .presentationBackground(AppColor.bgCanvas)
         case .quantityLog(let habit, let date):
@@ -390,9 +397,8 @@ struct TodayView: View {
             case .plan:
                 coverRoute = .plan(.create)
             case .focus:
-                coverRoute = .focus(habits: todayHabits.filter {
-                    !$0.isSkipped(on: referenceDate) && !$0.isSlip(on: referenceDate)
-                })
+                guard !focusCandidateHabits.isEmpty else { return }
+                coverRoute = .focus(habits: focusCandidateHabits)
             }
         }
     }

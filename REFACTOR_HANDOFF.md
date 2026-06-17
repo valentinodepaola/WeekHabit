@@ -42,8 +42,8 @@ Este bloque resume el estado real después de avanzar el plan de simplificación
   que quedan en onboarding son una excepción documentada, no un descuido.
 - **A2 está implementado.** El commit anterior (`ea43836 "Implementamos A2 y actualizamos
   handoff"`) en realidad cerró A3 (Insights); el nombre quedó como error de naming.
-- El siguiente paso recomendado es **B4** (jerarquía del menú de creación) o **A4**
-  (medir rendimiento antes de cachear).
+- El siguiente paso recomendado es **A4** (medir rendimiento antes de cachear) o **A5**
+  (higiene de tokens oportunística).
 
 ### A1 completado con excepción documentada
 
@@ -191,12 +191,22 @@ limpio. Auditoría sigue devolviendo solo las 4 excepciones de onboarding.
 Última validación: build verde, suite verde con **54 tests passed**, `git diff --check`
 limpio.
 
+### B4 implementado
+
+- `WHCreationSheet` jerarquiza **Nuevo hábito** como acción principal.
+- **Nuevo plan** y **Sesión de foco** quedan como opciones secundarias.
+- Foco se deshabilita con razón visible cuando no hay hábitos disponibles para hoy.
+- Today y Week calculan los hábitos disponibles para foco y pasan solo la razón al sheet.
+- La acción de foco conserva un guard para no abrir una sesión vacía.
+
+Última validación: build verde, `git diff --check` limpio. Validación manual del usuario:
+funcionó bien.
+
 ### Pendiente del plan
 
 - **A4**: medir rendimiento antes de cachear.
 - **A5**: higiene de tokens oportunística.
 - **B1**: onboarding mínimo queda descartado/no tocar por ahora.
-- **B4**: jerarquía del menú de creación.
 
 ## Estado completado
 

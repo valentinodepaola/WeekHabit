@@ -90,6 +90,16 @@ struct WeekView: View {
         return "Completados"
     }
 
+    private var focusCandidateHabits: [Habit] {
+        habits.filter {
+            $0.isLoggable(on: .now) && !$0.isSkipped(on: .now) && !$0.isSlip(on: .now)
+        }
+    }
+
+    private var focusDisabledReason: String? {
+        focusCandidateHabits.isEmpty ? "No hay hábitos disponibles para hoy." : nil
+    }
+
     private var weeklyReviewWeekStart: Date? {
         WeeklyReviewService.needsReview(
             reference: .now,
@@ -260,10 +270,10 @@ struct WeekView: View {
                 .presentationDragIndicator(.visible)
                 .presentationBackground(AppColor.bgCanvas)
         case .createMenu:
-            WHCreationSheet { option in
+            WHCreationSheet(focusDisabledReason: focusDisabledReason) { option in
                 handleCreationSelection(option)
             }
-            .presentationDetents([.height(380), .medium])
+            .presentationDetents([.height(420), .medium])
             .presentationDragIndicator(.visible)
             .presentationBackground(AppColor.bgCanvas)
         case .quantityLog(let habit, let date):
@@ -291,8 +301,8 @@ struct WeekView: View {
             case .plan:
                 coverRoute = .plan(.create)
             case .focus:
-                let todayHabits = habits.filter { $0.isLoggable(on: .now) && !$0.isSkipped(on: .now) }
-                coverRoute = .focus(habits: todayHabits)
+                guard !focusCandidateHabits.isEmpty else { return }
+                coverRoute = .focus(habits: focusCandidateHabits)
             }
         }
     }

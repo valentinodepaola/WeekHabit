@@ -34,9 +34,11 @@ xcodebuild -project WeekHabit.xcodeproj \
   familias visuales.
 - **B3 está implementado**: comodín, versión mínima y urges se explican just-in-time
   con flags one-shot.
-- Última validación conocida: build verde, suite verde con **54 tests passed**,
-  `git diff --check` limpio.
-- **Siguiente paso recomendado:** B4 (menú de creación) o A4 (medir antes de cachear).
+- **B4 está implementado**: el menú de creación jerarquiza Hábito, deja Plan/Foco como
+  secundarios y deshabilita Foco con razón visible cuando no hay hábitos para hoy.
+- Última validación conocida: B4 con build verde; suite verde previa con **54 tests
+  passed**; `git diff --check` limpio.
+- **Siguiente paso recomendado:** A4 (medir antes de cachear) o A5 (higiene de tokens).
 - Para continuar desde otra conversación, leer primero `REFACTOR_HANDOFF.md`; tiene el
   detalle de commits, archivos, comandos y pendientes.
 
@@ -255,6 +257,9 @@ Hábito como opción primaria; Plan y Foco con subtítulo de una línea que diga
 qué son; Foco deshabilitado (con razón visible) cuando no hay hábitos para hoy.
 Sin gating duro — solo jerarquía visual.
 
+**Estado:** implementado. `WHCreationSheet` mantiene la presentación desacoplada del
+dominio; Today y Week calculan la disponibilidad de Foco y pasan una razón visible.
+
 ---
 
 ## Orden de ejecución recomendado
@@ -266,7 +271,7 @@ Sin gating duro — solo jerarquía visual.
 | 3 | **A3** Tests + partición de Insights | Red de seguridad antes de seguir moviendo código |
 | 4 | **A2** Partir TodayView | El god-file, ya con servicios y tests detrás |
 | 5 | **B2 + B3** Leyenda Week + just-in-time | Producto puro, sin dependencias de código pendiente |
-| 6 | **A4 / A5 / B4** | Según dolor medido y oportunidad |
+| 6 | **A4 / A5** | Según dolor medido y oportunidad |
 
 ## Verificación global (al final de cada fase)
 
