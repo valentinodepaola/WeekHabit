@@ -107,6 +107,7 @@ struct WeekView: View {
                         monthYearLabel: monthYearLabel,
                         weekNumber: weekNumber,
                         weekOffset: $weekOffset,
+                        onShowLegend: { sheetRoute = .legend },
                         onCreate: { sheetRoute = .createMenu }
                     )
 
@@ -253,6 +254,11 @@ struct WeekView: View {
     @ViewBuilder
     private func routeSheet(_ route: WeekSheetRoute) -> some View {
         switch route {
+        case .legend:
+            WeekLegendSheet()
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+                .presentationBackground(AppColor.bgCanvas)
         case .createMenu:
             WHCreationSheet { option in
                 handleCreationSelection(option)
@@ -392,12 +398,14 @@ private enum WeekCoverRoute: Identifiable {
 }
 
 private enum WeekSheetRoute: Identifiable {
+    case legend
     case createMenu
     case quantityLog(habit: Habit, date: Date)
     case weeklyReview(weekStart: Date)
 
     var id: String {
         switch self {
+        case .legend: return "legend"
         case .createMenu: return "createMenu"
         case .quantityLog(let habit, let date): return "quantityLog-\(habit.id)-\(date.timeIntervalSinceReferenceDate)"
         case .weeklyReview(let weekStart): return "weeklyReview-\(weekStart.timeIntervalSinceReferenceDate)"
