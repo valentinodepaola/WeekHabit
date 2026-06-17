@@ -26,6 +26,8 @@ struct TodayView: View {
     private var weeklyReviews: [WeeklyReview]
 
     @AppStorage("weeklyReviewWeekdayRaw") private var weeklyReviewWeekdayRaw: Int = Weekday.sunday.rawValue
+    @AppStorage(OnceFlag.hasSeenFreezeExplainer.rawValue) private var hasSeenFreezeExplainer = false
+    @AppStorage(OnceFlag.hasSeenUrgeTooltip.rawValue) private var hasSeenUrgeTooltip = false
 
     @State private var coverRoute: TodayCoverRoute?
     @State private var milestoneCover: MilestoneCelebrationPayload?
@@ -39,6 +41,7 @@ struct TodayView: View {
     @State private var deleteFailure: TodayDeleteFailure?
     @State private var expandedPlans: Set<UUID> = []
     @State private var detailPlan: Plan?
+    @State private var latestFreezeExplainerMessage: String?
     @State private var didShowRecoveryPromptThisSession = false
     @Namespace private var habitSectionNamespace
 
@@ -72,6 +75,11 @@ struct TodayView: View {
     private var weeklyFreezes: [StreakFreeze] {
         let habitIDs = Set(todayHabits.filter { $0.allowsWeeklyFreeze }.map(\.id))
         return streakFreezes.usedInWeek(of: referenceDate, habitIDs: habitIDs)
+    }
+
+    private var freezeExplainerMessage: String? {
+        guard !hasSeenFreezeExplainer else { return nil }
+        return latestFreezeExplainerMessage ?? weeklyFreezes.todayBannerMessage()
     }
 
     private var tomorrowHabitsCount: Int {
@@ -131,9 +139,15 @@ struct TodayView: View {
                             activeCount: activeTodayCount,
                             remainingCount: remainingTodayCount,
                             slipCount: slippedHabits.count,
-                            freezeMessage: weeklyFreezes.todayBannerMessage(),
+                            freezeMessage: freezeExplainerMessage,
+                            showsUrgeExplainer: !hasSeenUrgeTooltip,
                             namespace: habitSectionNamespace,
                             reduceMotion: reduceMotion,
+                            onDismissFreezeExplainer: {
+                                latestFreezeExplainerMessage = nil
+                                hasSeenFreezeExplainer = true
+                            },
+                            onDismissUrgeExplainer: { hasSeenUrgeTooltip = true },
                             actions: habitActions
                         )
                     }
@@ -228,7 +242,10 @@ struct TodayView: View {
             toggleCompletion: { toggleCompletion(for: $0) },
             markMinimum: { markMinimumCompleted(for: $0, on: referenceDate) },
             openDetail: { selectedHabit = $0 },
-            openUrgeLog: { sheetRoute = .urgeLog(habit: $0) },
+            openUrgeLog: { habit in
+                hasSeenUrgeTooltip = true
+                sheetRoute = .urgeLog(habit: habit)
+            },
             openSlipLog: { sheetRoute = .slipLog(habit: $0) },
             toggleRest: { toggleRest(for: $0) },
             requestDelete: { habit in
@@ -328,6 +345,9 @@ struct TodayView: View {
                 onSave: { reason in
                     persistRecoveryMiss(candidate, reason: reason)
                 },
+                onCreateMinimum: { title in
+                    createMinimumVersion(for: candidate, title: title)
+                },
                 onSkip: {
                     persistRecoveryMiss(candidate, reason: nil)
                 }
@@ -422,7 +442,7 @@ struct TodayView: View {
         let closesDay = AppCalendar.isSameDay(date, referenceDate) && remainingTodayCount == 1
 
         transitionHabitBetweenSections {
-            HabitTrackingService.markMinimum(
+            _ = HabitTrackingService.markMinimum(
                 for: habit,
                 on: date,
                 source: .today,
@@ -489,12 +509,16 @@ struct TodayView: View {
     }
 
     private func applyWeeklyFreezes(reference: Date) {
-        HabitTrackingService.applyWeeklyFreezes(
+        let insertedFreezes = HabitTrackingService.applyWeeklyFreezes(
             to: habits,
             existing: streakFreezes,
             reference: reference,
             modelContext: modelContext
         )
+
+        if !insertedFreezes.isEmpty && !hasSeenFreezeExplainer {
+            latestFreezeExplainerMessage = insertedFreezes.todayBannerMessage()
+        }
     }
 
     private func presentRecoveryPromptIfNeeded() {
@@ -630,6 +654,20 @@ struct TodayView: View {
             modelContext: modelContext
         )
         sheetRoute = nil
+    }
+
+    private func createMinimumVersion(for candidate: RecoveryPromptCandidate, title: String) {
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+
+        candidate.habit.minimumViableTitle = trimmed
+        HabitTrackingService.recordRecoveryMiss(
+            candidate,
+            reason: nil,
+            modelContext: modelContext
+        )
+        sheetRoute = nil
+        AppHaptics.play(.selection)
     }
 
     private func transitionHabitBetweenSections(_ mutation: @escaping () -> Void) {

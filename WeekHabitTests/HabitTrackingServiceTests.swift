@@ -179,7 +179,7 @@ final class HabitTrackingServiceTests: XCTestCase {
         store.context.insert(freeze)
         try store.save()
 
-        HabitTrackingService.applyWeeklyFreezes(
+        let inserted = HabitTrackingService.applyWeeklyFreezes(
             to: [habit],
             existing: [freeze],
             reference: reference,
@@ -187,8 +187,32 @@ final class HabitTrackingServiceTests: XCTestCase {
         )
         try store.save()
 
+        XCTAssertTrue(inserted.isEmpty)
         let freezes = try store.context.fetch(FetchDescriptor<StreakFreeze>())
         XCTAssertEqual(freezes.count, 1)
+    }
+
+    func testApplyingWeeklyFreezeReturnsInsertedFreeze() throws {
+        let store = try TestStore()
+        let reference = TestFactory.date(day: 7)
+        let missedDay = TestFactory.date(day: 2)
+        let habit = TestFactory.habit(createdAt: missedDay)
+        store.insert(habit)
+        try store.save()
+
+        let inserted = HabitTrackingService.applyWeeklyFreezes(
+            to: [habit],
+            existing: [],
+            reference: reference,
+            modelContext: store.context
+        )
+        try store.save()
+
+        let freezes = try store.context.fetch(FetchDescriptor<StreakFreeze>())
+        XCTAssertEqual(inserted.count, 1)
+        XCTAssertEqual(freezes.count, 1)
+        XCTAssertEqual(inserted.first?.id, freezes.first?.id)
+        XCTAssertTrue(AppCalendar.isSameDay(inserted.first?.protectedDate ?? .distantPast, missedDay))
     }
 
     private func primaryEntries(for habit: Habit, on date: Date) -> [HabitEntry] {

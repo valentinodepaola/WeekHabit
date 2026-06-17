@@ -33,8 +33,11 @@ struct TodayHabitListSection: View {
     let remainingCount: Int
     let slipCount: Int
     let freezeMessage: String?
+    let showsUrgeExplainer: Bool
     let namespace: Namespace.ID
     let reduceMotion: Bool
+    let onDismissFreezeExplainer: () -> Void
+    let onDismissUrgeExplainer: () -> Void
     let actions: TodayHabitActions
 
     var body: some View {
@@ -51,7 +54,10 @@ struct TodayHabitListSection: View {
             )
 
             if let freezeMessage {
-                TodayFreezeBanner(message: freezeMessage)
+                TodayFreezeBanner(
+                    message: freezeMessage,
+                    onDismiss: onDismissFreezeExplainer
+                )
                     .todayListRow(
                         EdgeInsets(top: 0, leading: AppSpacing.l, bottom: AppSpacing.s, trailing: AppSpacing.l)
                     )
@@ -127,7 +133,9 @@ struct TodayHabitListSection: View {
             onUrge: habit.isBreakHabit ? { actions.openUrgeLog(habit) } : nil,
             onSlip: habit.isBreakHabit ? { actions.openSlipLog(habit) } : nil,
             onMinimum: { actions.markMinimum(habit) },
-            onOpenDetail: { actions.openDetail(habit) }
+            onOpenDetail: { actions.openDetail(habit) },
+            showsUrgeExplainer: showsUrgeExplainer && firstBreakHabitIDForUrgeExplainer == habit.id,
+            onDismissUrgeExplainer: onDismissUrgeExplainer
         ) {
             actions.toggleCompletion(habit)
         }
@@ -155,6 +163,10 @@ struct TodayHabitListSection: View {
             }
             .tint(AppColor.editAction)
         }
+    }
+
+    private var firstBreakHabitIDForUrgeExplainer: UUID? {
+        pendingHabits.first(where: { $0.isBreakHabit })?.id
     }
 
     private func completedRow(_ habit: Habit) -> some View {

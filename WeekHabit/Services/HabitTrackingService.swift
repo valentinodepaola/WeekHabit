@@ -276,20 +276,27 @@ enum HabitTrackingService {
         )
     }
 
+    @discardableResult
     static func applyWeeklyFreezes(
         to habits: [Habit],
         existing streakFreezes: [StreakFreeze],
         reference: Date,
         modelContext: ModelContext
-    ) {
+    ) -> [StreakFreeze] {
+        var insertedFreezes: [StreakFreeze] = []
+
         for habit in habits where habit.allowsWeeklyFreeze {
             guard let protectedDate = habit.weeklyFreezeCandidate(reference: reference),
                   !streakFreezes.containsFreeze(for: habit, weekContaining: protectedDate) else {
                 continue
             }
 
-            modelContext.insert(StreakFreeze(habit: habit, protectedDate: protectedDate))
+            let freeze = StreakFreeze(habit: habit, protectedDate: protectedDate)
+            modelContext.insert(freeze)
+            insertedFreezes.append(freeze)
         }
+
+        return insertedFreezes
     }
 
     private static func stateEntries(for habit: Habit, on date: Date) -> [HabitEntry] {

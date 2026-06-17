@@ -13,6 +13,8 @@ struct CreateHabitActionStep: View {
     let replacementCandidates: [Habit]
     let autoFocusName: Bool
 
+    @AppStorage(OnceFlag.hasSeenBreakIntro.rawValue) private var hasSeenBreakIntro = false
+    @State private var showsBreakIntro = false
     @FocusState private var isNameFocused: Bool
 
     var body: some View {
@@ -38,7 +40,15 @@ struct CreateHabitActionStep: View {
                         isSelected: draft.direction == .`break`
                     ) {
                         draft.direction = .`break`
+                        if !hasSeenBreakIntro {
+                            showsBreakIntro = true
+                            hasSeenBreakIntro = true
+                        }
                     }
+                }
+
+                if showsBreakIntro && draft.direction == .`break` {
+                    breakIntroCard
                 }
             }
 
@@ -84,6 +94,31 @@ struct CreateHabitActionStep: View {
         draft.direction == .build
             ? "Ej: Leer 10 minutos"
             : "Ej: Revisar el celular en la cama"
+    }
+
+    private var breakIntroCard: some View {
+        HStack(alignment: .top, spacing: AppSpacing.s) {
+            Image(systemName: "waveform.path.ecg")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(AppColor.warning)
+                .frame(width: 28, height: 28)
+                .background(AppColor.warning.opacity(0.12))
+                .clipShape(Circle())
+
+            Text("En hábitos de dejar podrás registrar impulsos y slips para entender el patrón sin juzgarlo.")
+                .font(AppFont.callout)
+                .foregroundStyle(AppColor.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Spacer(minLength: 0)
+        }
+        .padding(AppSpacing.m)
+        .background(AppColor.warning.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.m, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: AppRadius.m, style: .continuous)
+                .strokeBorder(AppColor.warning.opacity(0.22), lineWidth: 1)
+        }
     }
 }
 

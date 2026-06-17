@@ -21,7 +21,7 @@ xcodebuild -project WeekHabit.xcodeproj \
   build CODE_SIGNING_ALLOWED=NO
 ```
 
-## Estado actual — 2026-06-16
+## Estado actual — 2026-06-17
 
 - **A1 está terminado** para el alcance acordado. Onboarding queda como excepción
   intencional porque se decidió conservar el onboarding de 6 pasos y no tocarlo.
@@ -30,9 +30,13 @@ xcodebuild -project WeekHabit.xcodeproj \
 - **A2 está implementado**: `TodayView.swift` pasó de 1.206 → 692 líneas. Se extrajeron
   `HabitCollection+Today`, `TodayHeaderSection`, `TodayHabitListSection`,
   `TodayPlansSection`, `TodayRouting` y se agregaron 10 tests en `TodayCollectionsTests`.
-- Última validación conocida: build verde, suite verde con **53 tests passed**,
+- **B2 está implementado**: Week tiene leyenda on-demand y estados agrupados en 4
+  familias visuales.
+- **B3 está implementado**: comodín, versión mínima y urges se explican just-in-time
+  con flags one-shot.
+- Última validación conocida: build verde, suite verde con **54 tests passed**,
   `git diff --check` limpio.
-- **Siguiente paso recomendado:** A4 (medir antes de cachear) o B2/B3 (producto puro).
+- **Siguiente paso recomendado:** B4 (menú de creación) o A4 (medir antes de cachear).
 - Para continuar desde otra conversación, leer primero `REFACTOR_HANDOFF.md`; tiene el
   detalle de commits, archivos, comandos y pendientes.
 

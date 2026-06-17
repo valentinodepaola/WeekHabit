@@ -30,7 +30,7 @@ Las vistas top-level pueden conservar `@Query` y pasar `ModelContext` a servicio
 no es eliminar SwiftData de SwiftUI, sino evitar que las vistas implementen reglas de
 persistencia.
 
-## Actualización de estado — 2026-06-16
+## Actualización de estado — 2026-06-17
 
 Este bloque resume el estado real después de avanzar el plan de simplificación
 (`PLAN_SIMPLIFICACION.md`). Sirve como punto de partida para una conversación nueva.
@@ -42,8 +42,8 @@ Este bloque resume el estado real después de avanzar el plan de simplificación
   que quedan en onboarding son una excepción documentada, no un descuido.
 - **A2 está implementado.** El commit anterior (`ea43836 "Implementamos A2 y actualizamos
   handoff"`) en realidad cerró A3 (Insights); el nombre quedó como error de naming.
-- El siguiente paso recomendado es **A4** (medir rendimiento antes de cachear) o **B2/B3**
-  (producto puro, sin dependencias de código pendiente).
+- El siguiente paso recomendado es **B4** (jerarquía del menú de creación) o **A4**
+  (medir rendimiento antes de cachear).
 
 ### A1 completado con excepción documentada
 
@@ -171,13 +171,31 @@ Cobertura nueva en `TodayCollectionsTests`:
 Última validación: build verde, suite verde con **53 tests passed**, `git diff --check`
 limpio. Auditoría sigue devolviendo solo las 4 excepciones de onboarding.
 
+### B2 implementado
+
+- Week tiene una leyenda on-demand desde el botón `?` del header.
+- `WeekGridCell.State` quedó agrupado en 4 familias visuales: hecho, pausa con intención,
+  señal útil y vacío.
+- La galería interna muestra todos los estados del grid semanal.
+
+### B3 implementado
+
+- Se agregó `OnceFlag` para centralizar flags de educación one-shot.
+- El explainer de comodín aparece en Today solo hasta que se descarta.
+- El prompt de recuperación puede crear una versión mínima editable en un tap.
+- Al elegir "Dejar" en el formulario aparece una frase introductoria una sola vez.
+- El primer botón de impulso en Today muestra una ayuda inline descartable.
+- `HabitTrackingService.applyWeeklyFreezes` ahora devuelve los comodines insertados y
+  tiene cobertura de tests.
+
+Última validación: build verde, suite verde con **54 tests passed**, `git diff --check`
+limpio.
+
 ### Pendiente del plan
 
 - **A4**: medir rendimiento antes de cachear.
 - **A5**: higiene de tokens oportunística.
 - **B1**: onboarding mínimo queda descartado/no tocar por ahora.
-- **B2**: gramática visual de Week + leyenda.
-- **B3**: educación just-in-time.
 - **B4**: jerarquía del menú de creación.
 
 ## Estado completado
