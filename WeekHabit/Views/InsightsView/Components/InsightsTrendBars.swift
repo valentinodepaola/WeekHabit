@@ -9,9 +9,9 @@ struct InsightsTrendBars: View {
     let values: [Double]
 
     var body: some View {
-        HStack(alignment: .bottom, spacing: 7) {
+        HStack(alignment: .bottom, spacing: AppSpacing.s) {
             ForEach(Array(values.enumerated()), id: \.offset) { index, value in
-                RoundedRectangle(cornerRadius: 5, style: .continuous)
+                RoundedRectangle(cornerRadius: AppRadius.xs, style: .continuous)
                     .fill(color(for: index, value: value))
                     .frame(height: barHeight(for: value))
                     .frame(maxWidth: .infinity)

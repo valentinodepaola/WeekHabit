@@ -174,7 +174,6 @@ struct InsightsView: View {
             Text("ÚLTIMOS 30 DÍAS")
                 .font(AppFont.label)
                 .foregroundStyle(AppColor.textTertiary)
-                .tracking(1.2)
 
             Text("Tu ritmo")
                 .font(AppFont.title)
@@ -190,7 +189,7 @@ struct InsightsView: View {
                     Circle()
                         .fill(AppColor.warning.opacity(0.14))
                     Image(systemName: "hourglass")
-                        .font(.system(size: 19, weight: .semibold))
+                        .font(AppFont.iconMedium)
                         .foregroundStyle(AppColor.warning)
                 }
                 .frame(width: 46, height: 46)
@@ -199,7 +198,6 @@ struct InsightsView: View {
                     Text("INSIGHTS EN PREPARACIÓN")
                         .font(AppFont.label)
                         .foregroundStyle(AppColor.textTertiary)
-                        .tracking(0.8)
 
                     Text(readiness.remainingDays == 1 ? "Falta 1 día" : "Faltan \(readiness.remainingDays) días")
                         .font(AppFont.bodyEmphasis)
@@ -227,16 +225,13 @@ struct InsightsView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(AppSpacing.l)
-        .background(AppColor.bgElevated)
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous))
-        .appElevation(.low)
+        .insightCard()
     }
 
     private var emptyState: some View {
         VStack(alignment: .leading, spacing: AppSpacing.s) {
             Image(systemName: "chart.line.uptrend.xyaxis")
-                .font(.system(size: 28, weight: .semibold))
+                .font(AppFont.iconXL)
                 .foregroundStyle(AppColor.accent)
 
             Text("Aún no hay ritmo que leer")
@@ -249,10 +244,7 @@ struct InsightsView: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(AppSpacing.l)
-        .background(AppColor.bgElevated)
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous))
-        .appElevation(.low)
+        .insightCard()
     }
 
     private var summaryCards: some View {

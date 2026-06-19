@@ -17,7 +17,7 @@ struct UrgePeakHoursCard: View {
         VStack(alignment: .leading, spacing: AppSpacing.l) {
             HStack(alignment: .top, spacing: AppSpacing.m) {
                 Image(systemName: "waveform.path.ecg")
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(AppFont.iconMedium)
                     .foregroundStyle(AppColor.warning)
                     .frame(width: 42, height: 42)
                     .background(AppColor.warning.opacity(0.14))
@@ -27,7 +27,6 @@ struct UrgePeakHoursCard: View {
                     Text("PICO DE IMPULSO")
                         .font(AppFont.label)
                         .foregroundStyle(AppColor.textTertiary)
-                        .tracking(0.8)
 
                     Text(insight.window.displayText)
                         .font(AppFont.bodyEmphasis)
@@ -44,17 +43,14 @@ struct UrgePeakHoursCard: View {
 
             hourlyBars
         }
-        .padding(AppSpacing.l)
-        .background(AppColor.bgElevated)
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous))
-        .appElevation(.low)
+        .insightCard()
     }
 
     private var hourlyBars: some View {
         VStack(alignment: .leading, spacing: AppSpacing.s) {
-            HStack(alignment: .bottom, spacing: 3) {
+            HStack(alignment: .bottom, spacing: AppSpacing.xs) {
                 ForEach(buckets) { bucket in
-                    RoundedRectangle(cornerRadius: 3, style: .continuous)
+                    RoundedRectangle(cornerRadius: AppRadius.xs, style: .continuous)
                         .fill(color(for: bucket))
                         .frame(height: barHeight(for: bucket))
                         .frame(maxWidth: .infinity)

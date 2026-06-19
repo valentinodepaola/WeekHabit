@@ -27,7 +27,7 @@ struct ActiveExperimentCard: View {
                 Circle()
                     .fill(AppColor.info.opacity(0.14))
                 Image(systemName: "flask")
-                    .font(.system(size: 19, weight: .semibold))
+                    .font(AppFont.iconMedium)
                     .foregroundStyle(AppColor.info)
             }
             .frame(width: 46, height: 46)
@@ -36,7 +36,6 @@ struct ActiveExperimentCard: View {
                 Text("EXPERIMENTO ACTIVO")
                     .font(AppFont.label)
                     .foregroundStyle(AppColor.textTertiary)
-                    .tracking(0.8)
 
                 Text(title)
                     .font(AppFont.bodyEmphasis)
@@ -52,9 +51,7 @@ struct ActiveExperimentCard: View {
 
             Spacer()
         }
-        .padding(AppSpacing.l)
-        .background(AppColor.infoMuted.opacity(0.5))
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous))
+        .insightCard(background: AppColor.infoMuted.opacity(0.5), elevation: nil)
         .overlay {
             RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous)
                 .stroke(AppColor.info.opacity(0.18), lineWidth: 1)

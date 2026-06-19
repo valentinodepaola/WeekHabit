@@ -227,9 +227,31 @@ APP_PATH=/ruta/a/WeekHabit.app scripts/seed_performance_data.sh
 Última validación: build verde, suite verde, `git diff --check` limpio. La auditoría de
 escrituras directas sigue devolviendo solo las excepciones de onboarding.
 
+### A5 implementado
+
+- Se agregó `View.insightCard(...)` para centralizar padding, fondo, radio y elevación de
+  las cards de Insights.
+- `InsightsHeroCard`, `InsightSummaryCard`, `InsightConfidenceCard`,
+  `RhythmExperimentCard`, `ExperimentReviewCard`, `UrgePeakHoursCard`, `ActiveExperimentCard`,
+  `warmupCard` y `emptyState` usan el modifier compartido.
+- Se agregaron tokens tipográficos en `AppFont`:
+  - `insightHeroMetric`
+  - `dataMetric`
+  - `iconSmall`
+  - `iconMedium`
+  - `iconLarge`
+  - `iconXL`
+- El hero de Insights dejó de usar `Font.system(size: 64...)` directo.
+- Se migraron tamaños de iconos, radios/espaciados de barras y chips de Insights a tokens
+  existentes o nuevos.
+- Se eliminaron los `.tracking(...)` locales de Insights.
+- No se introdujeron usos nuevos de aliases legacy.
+
+Última validación: build verde, suite verde, `git diff --check` limpio. La auditoría de
+escrituras directas sigue devolviendo solo las excepciones de onboarding.
+
 ### Pendiente del plan
 
-- **A5**: higiene de tokens oportunística.
 - **B1**: onboarding mínimo queda descartado/no tocar por ahora.
 
 ## Estado completado

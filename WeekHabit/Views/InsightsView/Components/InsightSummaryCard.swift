@@ -21,7 +21,7 @@ struct InsightSummaryCard: View {
                 RoundedRectangle(cornerRadius: AppRadius.m, style: .continuous)
                     .fill(iconColor.opacity(0.14))
                 Image(systemName: icon)
-                    .font(.system(size: 22, weight: .semibold))
+                    .font(AppFont.iconLarge)
                     .foregroundStyle(iconColor)
             }
             .frame(width: 56, height: 56)
@@ -31,7 +31,6 @@ struct InsightSummaryCard: View {
                     Text(title)
                         .font(AppFont.label)
                         .foregroundStyle(AppColor.textTertiary)
-                        .tracking(0.8)
                         .lineLimit(1)
 
                     if isProvisional {
@@ -61,11 +60,7 @@ struct InsightSummaryCard: View {
                     .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, AppSpacing.l)
-        .padding(.vertical, AppSpacing.m)
-        .background(AppColor.bgElevated)
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous))
-        .appElevation(.low)
+        .insightCard(horizontalPadding: AppSpacing.l, verticalPadding: AppSpacing.m)
     }
 }
 

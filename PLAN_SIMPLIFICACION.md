@@ -39,8 +39,13 @@ xcodebuild -project WeekHabit.xcodeproj \
 - **A4 está implementado**: seed DEBUG de 5 hábitos × 365 días, script de activación en
   simulador, mediciones DEBUG en Insights/Week y `AppFormatters` centralizado. No se
   cacheó nada porque la decisión queda condicionada a medición con Time Profiler.
-- Última validación conocida: A4 con build verde; suite verde; `git diff --check` limpio.
-- **Siguiente paso recomendado:** A5 (higiene de tokens).
+- **A5 está implementado**: Insights usa `insightCard(...)`, el 64pt del hero vive en
+  `AppFont.insightHeroMetric`, se agregaron tokens de métricas/iconos y se migraron los
+  hardcodes visuales principales sin introducir aliases legacy.
+- Última validación conocida: A5 con build verde, suite verde y `git diff --check`
+  limpio.
+- **Siguiente paso recomendado:** no queda fase abierta del plan acordado. B1 sigue
+  descartado/no tocar por ahora.
 - Para continuar desde otra conversación, leer primero `REFACTOR_HANDOFF.md`; tiene el
   detalle de commits, archivos, comandos y pendientes.
 
