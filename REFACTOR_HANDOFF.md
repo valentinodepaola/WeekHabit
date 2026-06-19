@@ -202,9 +202,33 @@ limpio.
 Última validación: build verde, `git diff --check` limpio. Validación manual del usuario:
 funcionó bien.
 
+### A4 implementado
+
+- Se agregó `PerformanceSeedService` en DEBUG para generar un dataset reproducible de
+  **5 hábitos × 365 días** con completados, mínimos, descansos, misses, slips y urges.
+- Se agregó `scripts/seed_performance_data.sh` para pedir el seed en un simulador:
+
+```bash
+APP_PATH=/ruta/a/WeekHabit.app scripts/seed_performance_data.sh
+```
+
+  `APP_PATH` es opcional si la app ya está instalada. El script marca el onboarding como
+  completado y activa `debugSeedPerformanceDataOnLaunch`; `ContentView` ejecuta el seed
+  una vez y apaga el flag.
+- `InsightsView` tiene un botón DEBUG de `speedometer` para disparar el mismo seed a mano.
+- Se agregó `AppPerformance.measure` para loguear tiempos DEBUG de métricas calientes en
+  Insights y Week. En release solo ejecuta el bloque sin logging.
+- Se agregó `AppFormatters` y se centralizó el locale `es_MX` y los `DateFormatter`
+  repetidos.
+- No se cachearon métricas todavía: A4 pedía medir antes de cachear. Con el seed y los
+  logs ya existe la base para correr Time Profiler y decidir si hace falta un cache
+  `@State` por firma.
+
+Última validación: build verde, suite verde, `git diff --check` limpio. La auditoría de
+escrituras directas sigue devolviendo solo las excepciones de onboarding.
+
 ### Pendiente del plan
 
-- **A4**: medir rendimiento antes de cachear.
 - **A5**: higiene de tokens oportunística.
 - **B1**: onboarding mínimo queda descartado/no tocar por ahora.
 

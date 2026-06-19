@@ -52,15 +52,11 @@ struct TodayView: View {
     }
 
     private var currentDateTitle: String {
-        let locale = Locale(identifier: "es_MX")
-        let formatter = DateFormatter()
-        formatter.calendar = AppCalendar.current
-        formatter.locale = locale
-        formatter.dateFormat = "EEEE d 'DE' MMMM"
-        return formatter
-            .string(from: referenceDate)
-            .folding(options: .diacriticInsensitive, locale: locale)
-            .uppercased(with: locale)
+        AppFormatters.uppercasedString(
+            from: referenceDate,
+            format: "EEEE d 'DE' MMMM",
+            foldingDiacritics: true
+        )
     }
 
     private var todayHabits: [Habit] {
@@ -223,7 +219,7 @@ struct TodayView: View {
 
     private var emptyTodayContent: some View {
         TodayEmptyStateView(
-            weekdayName: currentWeekday.displayName.lowercased(with: Locale(identifier: "es_MX")),
+            weekdayName: AppFormatters.lowercased(currentWeekday.displayName),
             tomorrowHabitsCount: tomorrowHabitsCount
         ) {
             coverRoute = .habit(.create(prefill: HabitPrefill(
@@ -541,11 +537,7 @@ struct TodayView: View {
 
     private func weekRangeText(for weekStart: Date) -> String {
         let weekEnd = AppCalendar.current.date(byAdding: .day, value: 6, to: weekStart) ?? weekStart
-        let formatter = DateFormatter()
-        formatter.calendar = AppCalendar.current
-        formatter.locale = Locale(identifier: "es_MX")
-        formatter.dateFormat = "d MMM"
-        return "\(formatter.string(from: weekStart)) - \(formatter.string(from: weekEnd))"
+        return "\(AppFormatters.string(from: weekStart, format: "d MMM")) - \(AppFormatters.string(from: weekEnd, format: "d MMM"))"
     }
 
     private func upsertQuantityEntry(

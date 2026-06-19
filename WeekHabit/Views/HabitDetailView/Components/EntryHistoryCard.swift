@@ -134,10 +134,6 @@ struct EntryHistoryCard: View {
 
     private func dateText(for entry: HabitEntry) -> String {
         let moment = entry.completedAt ?? entry.date
-        let formatter = DateFormatter()
-        formatter.calendar = AppCalendar.current
-        formatter.locale = Locale(identifier: "es_MX")
-        formatter.dateFormat = "d MMM, HH:mm"
-        return formatter.string(from: moment)
+        return AppFormatters.string(from: moment, format: "d MMM, HH:mm")
     }
 }

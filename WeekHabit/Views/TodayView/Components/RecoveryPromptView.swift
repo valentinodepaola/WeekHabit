@@ -186,7 +186,7 @@ struct RecoveryPromptView: View {
     private var weekdayName: String {
         AppCalendar.weekday(of: candidate.date)
             .displayName
-            .lowercased(with: Locale(identifier: "es_MX"))
+            .lowercased(with: AppFormatters.esMXLocale)
     }
 
     private var shouldShowMinimumSuggestion: Bool {
@@ -198,7 +198,7 @@ struct RecoveryPromptView: View {
     private var suggestedMinimumTitle: String {
         let habitTitle = candidate.habit.title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !habitTitle.isEmpty else { return "Hacer una versión mínima" }
-        return "Solo empezar \(habitTitle.lowercased(with: Locale(identifier: "es_MX")))"
+        return "Solo empezar \(AppFormatters.lowercased(habitTitle))"
     }
 
     private func rowBackground(for reason: HabitFailureReason) -> Color {

@@ -35,8 +35,10 @@ struct WeekView: View {
     }
 
     private var visibleHabits: [Habit] {
-        habits.filter { habit in
-            daysInWeek.contains { habit.isLoggable(on: $0) || habit.isCompleted(on: $0) }
+        AppPerformance.measure("Week visible habits") {
+            habits.filter { habit in
+                daysInWeek.contains { habit.isLoggable(on: $0) || habit.isCompleted(on: $0) }
+            }
         }
     }
 
@@ -47,14 +49,11 @@ struct WeekView: View {
     }
 
     private var monthYearLabel: String {
-        let formatter = DateFormatter()
-        formatter.calendar = AppCalendar.current
-        formatter.locale = Locale(identifier: "es_MX")
-        formatter.dateFormat = "MMMM yyyy"
-        return formatter
-            .string(from: referenceDate)
-            .folding(options: .diacriticInsensitive, locale: formatter.locale)
-            .uppercased(with: formatter.locale)
+        AppFormatters.uppercasedString(
+            from: referenceDate,
+            format: "MMMM yyyy",
+            foldingDiacritics: true
+        )
     }
 
     private var weekNumber: Int {
@@ -67,12 +66,16 @@ struct WeekView: View {
     }
 
     private var totalGoal: Int {
-        visibleHabits.reduce(0) { $0 + $1.targetDaysPerWeek }
+        AppPerformance.measure("Week total goal") {
+            visibleHabits.reduce(0) { $0 + $1.targetDaysPerWeek }
+        }
     }
 
     private var completedThisWeek: Int {
-        visibleHabits.reduce(0) { partial, habit in
-            partial + habit.completedDaysThisWeek(reference: referenceDate)
+        AppPerformance.measure("Week completed count") {
+            visibleHabits.reduce(0) { partial, habit in
+                partial + habit.completedDaysThisWeek(reference: referenceDate)
+            }
         }
     }
 
@@ -151,16 +154,18 @@ struct WeekView: View {
     }
 
     private func dayPulse(for date: Date) -> WeekDayPulse {
-        let scheduledHabits = visibleHabits.filter { $0.isLoggable(on: date) }
-        let completed = scheduledHabits.filter { $0.isCompleted(on: date) }.count
+        AppPerformance.measure("Week day pulse") {
+            let scheduledHabits = visibleHabits.filter { $0.isLoggable(on: date) }
+            let completed = scheduledHabits.filter { $0.isCompleted(on: date) }.count
 
-        return WeekDayPulse(
-            date: date,
-            isToday: AppCalendar.isSameDay(date, .now),
-            isFuture: AppCalendar.startOfDay(for: date) > AppCalendar.startOfDay(for: .now),
-            completed: completed,
-            scheduled: scheduledHabits.count
-        )
+            return WeekDayPulse(
+                date: date,
+                isToday: AppCalendar.isSameDay(date, .now),
+                isFuture: AppCalendar.startOfDay(for: date) > AppCalendar.startOfDay(for: .now),
+                completed: completed,
+                scheduled: scheduledHabits.count
+            )
+        }
     }
 
     @ViewBuilder
@@ -374,11 +379,7 @@ struct WeekView: View {
 
     private func weekRangeText(for weekStart: Date) -> String {
         let weekEnd = AppCalendar.current.date(byAdding: .day, value: 6, to: weekStart) ?? weekStart
-        let formatter = DateFormatter()
-        formatter.calendar = AppCalendar.current
-        formatter.locale = Locale(identifier: "es_MX")
-        formatter.dateFormat = "d MMM"
-        return "\(formatter.string(from: weekStart)) - \(formatter.string(from: weekEnd))"
+        return "\(AppFormatters.string(from: weekStart, format: "d MMM")) - \(AppFormatters.string(from: weekEnd, format: "d MMM"))"
     }
 
     private func applyWeeklyFreezes(reference: Date) {

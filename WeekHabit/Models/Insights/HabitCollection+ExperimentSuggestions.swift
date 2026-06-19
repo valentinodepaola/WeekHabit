@@ -130,7 +130,7 @@ extension Sequence where Element == Habit {
         confidence: RhythmConfidence
     ) -> String {
         if stats.ratio < 0.55 {
-            return "\(stats.percentage)% de consistencia · \(confidence.title.lowercased(with: Locale(identifier: "es_MX")))"
+            return "\(stats.percentage)% de consistencia · \(AppFormatters.lowercased(confidence.title))"
         }
 
         return "\(stats.percentage)% de consistencia · señal horaria clara"

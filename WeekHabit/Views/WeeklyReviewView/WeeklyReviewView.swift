@@ -140,11 +140,7 @@ struct WeeklyReviewView: View {
     }
 
     private var weekRangeText: String {
-        let formatter = DateFormatter()
-        formatter.calendar = AppCalendar.current
-        formatter.locale = Locale(identifier: "es_MX")
-        formatter.dateFormat = "d MMM"
-        return "\(formatter.string(from: weekStart)) - \(formatter.string(from: weekEnd))"
+        "\(AppFormatters.string(from: weekStart, format: "d MMM")) - \(AppFormatters.string(from: weekEnd, format: "d MMM"))"
     }
 
     private var emptyState: some View {

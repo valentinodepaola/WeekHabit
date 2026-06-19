@@ -45,7 +45,7 @@ struct MilestoneShareCard: View {
                         .monospacedDigit()
                         .minimumScaleFactor(0.72)
 
-                    Text(copy.title.uppercased(with: Locale(identifier: "es_MX")))
+                    Text(AppFormatters.uppercased(copy.title))
                         .font(.system(size: 34, weight: .medium, design: .default))
                         .foregroundStyle(AppColor.textTertiary)
                         .tracking(2.2)

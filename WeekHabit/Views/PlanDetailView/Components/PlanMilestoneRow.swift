@@ -30,11 +30,7 @@ struct PlanMilestoneRow: View {
     }
 
     private var dateText: String {
-        let formatter = DateFormatter()
-        formatter.calendar = AppCalendar.current
-        formatter.locale = Locale(identifier: "es_MX")
-        formatter.dateFormat = "d MMM"
-        let base = formatter.string(from: milestone.targetDate)
+        let base = AppFormatters.string(from: milestone.targetDate, format: "d MMM")
         if isCompleted { return "Completado · \(base)" }
         if isOverdue { return "Vencido · \(base)" }
         return base

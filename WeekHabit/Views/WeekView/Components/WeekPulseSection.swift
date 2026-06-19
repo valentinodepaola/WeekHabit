@@ -70,7 +70,7 @@ private struct DayPulseColumn: View {
     private var dayAbbrev: String {
         AppCalendar.weekday(of: pulse.date)
             .shortName
-            .uppercased(with: Locale(identifier: "es_MX"))
+            .uppercased(with: AppFormatters.esMXLocale)
     }
 
     private var dayNumber: String {
@@ -124,7 +124,7 @@ private struct DayPulseColumn: View {
 
     private var accessibilityLabel: String {
         let dayText = pulse.date.formatted(
-            Date.FormatStyle(locale: Locale(identifier: "es_MX"))
+            Date.FormatStyle(locale: AppFormatters.esMXLocale)
                 .weekday(.wide)
                 .day()
         )

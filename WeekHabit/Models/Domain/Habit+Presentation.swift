@@ -178,7 +178,7 @@ extension Habit {
             return sourceText
         }
 
-        return "\(Self.hourMinuteFormatter.string(from: completedAt)) · \(sourceText)"
+        return "\(AppFormatters.string(from: completedAt, format: "HH:mm")) · \(sourceText)"
     }
 
     /// Copy mostrada bajo la fila de un slip registrado en Hoy.
@@ -190,7 +190,7 @@ extension Habit {
         var parts: [String] = []
 
         if let completedAt = entry.completedAt {
-            parts.append(Self.hourMinuteFormatter.string(from: completedAt))
+            parts.append(AppFormatters.string(from: completedAt, format: "HH:mm"))
         }
 
         if let trigger = entry.slipTrigger {
@@ -204,14 +204,6 @@ extension Habit {
 
         return parts.isEmpty ? "Slip registrado" : parts.joined(separator: " · ")
     }
-
-    private static let hourMinuteFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.calendar = AppCalendar.current
-        formatter.locale = Locale(identifier: "es_MX")
-        formatter.dateFormat = "HH:mm"
-        return formatter
-    }()
 }
 
 extension Sequence where Element == StreakFreeze {
@@ -223,7 +215,7 @@ extension Sequence where Element == StreakFreeze {
 
         let weekday = AppCalendar.weekday(of: first.protectedDate)
             .displayName
-            .lowercased(with: Locale(identifier: "es_MX"))
+            .lowercased(with: AppFormatters.esMXLocale)
 
         if sorted.count == 1 {
             return "Comodín usado el \(weekday). Tu racha sigue viva."

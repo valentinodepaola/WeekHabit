@@ -18,7 +18,7 @@ struct WeeklyHabitDecisionRow: View {
         }
 
         if let reason = summary.dominantFailureReason {
-            return "\(summary.completed)/\(summary.scheduled) · aparece: \(reason.reason.title.lowercased(with: Locale(identifier: "es_MX")))"
+            return "\(summary.completed)/\(summary.scheduled) · aparece: \(AppFormatters.lowercased(reason.reason.title))"
         }
 
         if summary.hasActiveExperiment {
