@@ -21,19 +21,27 @@ struct InsightsView: View {
     private var referenceDate: Date { .now }
 
     private var snapshot: GlobalInsightSnapshot {
-        habits.globalInsightSnapshot(reference: referenceDate)
+        AppPerformance.measure("Insights snapshot") {
+            habits.globalInsightSnapshot(reference: referenceDate)
+        }
     }
 
     private var readiness: InsightReadiness {
-        habits.insightReadiness(reference: referenceDate)
+        AppPerformance.measure("Insights readiness") {
+            habits.insightReadiness(reference: referenceDate)
+        }
     }
 
     private var confidence: RhythmConfidence {
-        habits.rhythmConfidence(reference: referenceDate)
+        AppPerformance.measure("Insights confidence") {
+            habits.rhythmConfidence(reference: referenceDate)
+        }
     }
 
     private var activeExperimentIDs: Set<UUID> {
-        experiments.activeHabitIDs(reference: referenceDate)
+        AppPerformance.measure("Insights active experiment ids") {
+            experiments.activeHabitIDs(reference: referenceDate)
+        }
     }
 
     private var buildHabits: [Habit] {
@@ -45,22 +53,36 @@ struct InsightsView: View {
     }
 
     private var urgePeakInsight: UrgePeakHourInsight? {
-        breakHabits.urgePeakHourInsight(reference: referenceDate)
+        AppPerformance.measure("Insights urge peak") {
+            breakHabits.urgePeakHourInsight(reference: referenceDate)
+        }
+    }
+
+    private var urgeHourBuckets: [UrgeHourBucket] {
+        AppPerformance.measure("Insights urge buckets") {
+            breakHabits.urgeHourBuckets(reference: referenceDate)
+        }
     }
 
     private var suggestions: [RankedRhythmSuggestion] {
-        buildHabits.rhythmExperimentSuggestions(
-            reference: referenceDate,
-            excludingHabitIDs: activeExperimentIDs
-        )
+        AppPerformance.measure("Insights suggestions") {
+            buildHabits.rhythmExperimentSuggestions(
+                reference: referenceDate,
+                excludingHabitIDs: activeExperimentIDs
+            )
+        }
     }
 
     private var reviewExperiments: [HabitExperiment] {
-        experiments.filter { $0.needsReview(reference: referenceDate) }
+        AppPerformance.measure("Insights review experiments") {
+            experiments.filter { $0.needsReview(reference: referenceDate) }
+        }
     }
 
     private var activeExperiments: [HabitExperiment] {
-        experiments.filter { $0.isActive(reference: referenceDate) }
+        AppPerformance.measure("Insights active experiments") {
+            experiments.filter { $0.isActive(reference: referenceDate) }
+        }
     }
 
     var body: some View {
@@ -106,7 +128,7 @@ struct InsightsView: View {
                                 if let urgePeakInsight {
                                     UrgePeakHoursCard(
                                         insight: urgePeakInsight,
-                                        buckets: breakHabits.urgeHourBuckets(reference: referenceDate)
+                                        buckets: urgeHourBuckets
                                     )
                                 }
 
@@ -132,6 +154,18 @@ struct InsightsView: View {
                     )
                 }
             }
+            #if DEBUG
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        seedPerformanceData()
+                    } label: {
+                        Image(systemName: "speedometer")
+                    }
+                    .accessibilityLabel("Crear datos de performance")
+                }
+            }
+            #endif
         }
     }
 
@@ -140,7 +174,6 @@ struct InsightsView: View {
             Text("ÚLTIMOS 30 DÍAS")
                 .font(AppFont.label)
                 .foregroundStyle(AppColor.textTertiary)
-                .tracking(1.2)
 
             Text("Tu ritmo")
                 .font(AppFont.title)
@@ -156,7 +189,7 @@ struct InsightsView: View {
                     Circle()
                         .fill(AppColor.warning.opacity(0.14))
                     Image(systemName: "hourglass")
-                        .font(.system(size: 19, weight: .semibold))
+                        .font(AppFont.iconMedium)
                         .foregroundStyle(AppColor.warning)
                 }
                 .frame(width: 46, height: 46)
@@ -165,7 +198,6 @@ struct InsightsView: View {
                     Text("INSIGHTS EN PREPARACIÓN")
                         .font(AppFont.label)
                         .foregroundStyle(AppColor.textTertiary)
-                        .tracking(0.8)
 
                     Text(readiness.remainingDays == 1 ? "Falta 1 día" : "Faltan \(readiness.remainingDays) días")
                         .font(AppFont.bodyEmphasis)
@@ -193,16 +225,13 @@ struct InsightsView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(AppSpacing.l)
-        .background(AppColor.bgElevated)
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous))
-        .appElevation(.low)
+        .insightCard()
     }
 
     private var emptyState: some View {
         VStack(alignment: .leading, spacing: AppSpacing.s) {
             Image(systemName: "chart.line.uptrend.xyaxis")
-                .font(.system(size: 28, weight: .semibold))
+                .font(AppFont.iconXL)
                 .foregroundStyle(AppColor.accent)
 
             Text("Aún no hay ritmo que leer")
@@ -215,10 +244,7 @@ struct InsightsView: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(AppSpacing.l)
-        .background(AppColor.bgElevated)
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous))
-        .appElevation(.low)
+        .insightCard()
     }
 
     private var summaryCards: some View {
@@ -238,7 +264,7 @@ struct InsightsView: View {
                 InsightSummaryCard(
                     icon: attention.habit.iconName,
                     iconColor: attention.habit.habitColor,
-                    title: attention.failureType?.title.uppercased(with: Locale(identifier: "es_MX")) ?? "NECESITA ATENCIÓN",
+                    title: attention.failureType.map { AppFormatters.uppercased($0.title) } ?? "NECESITA ATENCIÓN",
                     value: attention.habit.title,
                     detail: attention.recommendation ?? attention.detail,
                     isProvisional: attention.habit.insightReadiness(reference: referenceDate).isProvisional,
@@ -276,40 +302,73 @@ struct InsightsView: View {
     }
 
     private func startExperiment(_ suggestion: RhythmExperimentSuggestion) {
-        guard experiments.activeExperiment(for: suggestion.habit.id, reference: referenceDate) == nil else {
-            return
+        do {
+            let didStart = try withAnimation(AppMotion.respectful(AppMotion.smooth, reduceMotion)) {
+                try HabitExperimentService.start(
+                    suggestion: suggestion,
+                    existingExperiments: experiments,
+                    reference: referenceDate,
+                    modelContext: modelContext
+                ) != nil
+            }
+
+            if didStart {
+                AppHaptics.play(.experimentApplied)
+            }
+        } catch {
+            assertionFailure("Failed to start habit experiment: \(error)")
         }
-
-        let experiment = HabitExperiment(
-            habit: suggestion.habit,
-            experimentTargetDaysPerWeek: suggestion.targetDaysPerWeek,
-            experimentActiveDaysOfWeek: suggestion.activeDays,
-            suggestedStartHour: suggestion.suggestedStartHour,
-            baselineConsistency: suggestion.baselineConsistency,
-            startedAt: referenceDate
-        )
-
-        withAnimation(AppMotion.respectful(AppMotion.smooth, reduceMotion)) {
-            experiment.apply(to: suggestion.habit)
-            modelContext.insert(experiment)
-        }
-
-        AppHaptics.play(.experimentApplied)
     }
 
     private func keep(_ experiment: HabitExperiment) {
-        withAnimation(AppMotion.respectful(AppMotion.smooth, reduceMotion)) {
-            experiment.keep(reference: referenceDate)
+        do {
+            try withAnimation(AppMotion.respectful(AppMotion.smooth, reduceMotion)) {
+                try HabitExperimentService.keep(
+                    experiment,
+                    reference: referenceDate,
+                    modelContext: modelContext
+                )
+            }
+            AppHaptics.play(.experimentApplied)
+        } catch {
+            assertionFailure("Failed to keep habit experiment: \(error)")
         }
-        AppHaptics.play(.experimentApplied)
     }
 
     private func revert(_ experiment: HabitExperiment, habit: Habit) {
-        withAnimation(AppMotion.respectful(AppMotion.smooth, reduceMotion)) {
-            experiment.revert(on: habit, reference: referenceDate)
+        do {
+            try withAnimation(AppMotion.respectful(AppMotion.smooth, reduceMotion)) {
+                try HabitExperimentService.revert(
+                    experiment,
+                    on: habit,
+                    reference: referenceDate,
+                    modelContext: modelContext
+                )
+            }
+            AppHaptics.play(.selection)
+        } catch {
+            assertionFailure("Failed to revert habit experiment: \(error)")
         }
-        AppHaptics.play(.selection)
     }
+
+    #if DEBUG
+    private func seedPerformanceData() {
+        do {
+            let result = try PerformanceSeedService.seedIfNeeded(
+                existingHabits: habits,
+                reference: referenceDate,
+                modelContext: modelContext
+            )
+            if result.skippedBecauseSeedExists {
+                print("WeekHabit performance seed already exists.")
+            } else {
+                print("WeekHabit performance seed inserted \(result.insertedHabitCount) habits and \(result.insertedEntryCount) entries.")
+            }
+        } catch {
+            print("WeekHabit performance seed failed: \(error)")
+        }
+    }
+    #endif
 }
 
 #Preview {

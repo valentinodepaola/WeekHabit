@@ -12,9 +12,9 @@ El enfoque principal no es solo “marcar tareas”, sino ayudar a entender el r
 
 - Proyecto Xcode único: `WeekHabit.xcodeproj`
 - Sin dependencias externas: no SPM, CocoaPods ni paquetes de terceros
-- Sin test target actualmente
+- Target unitario `WeekHabitTests` con SwiftData en memoria
 - UI y comentarios en español
-- Persistencia local con SwiftData y schema versionado hasta `SchemaV12`
+- Persistencia local con SwiftData y schema versionado hasta `SchemaV17`
 
 ## Features actuales
 
@@ -57,20 +57,28 @@ xcodebuild -project WeekHabit.xcodeproj \
   build CODE_SIGNING_ALLOWED=NO
 ```
 
-No hay target de pruebas ni configuración de lint por ahora.
+La estrategia y cobertura de pruebas está documentada en `TESTING.md`. No hay
+configuración de lint por ahora.
 
 ## Arquitectura
 
-El proyecto usa un patrón **Model-View** natural para SwiftUI + SwiftData.
+El proyecto usa una arquitectura SwiftUI pragmática con SwiftData.
 
 ```text
 Vistas SwiftUI
   @Query para leer
-  @Environment(\.modelContext) para escribir
+  Coordinación de navegación, haptics y presentación
         |
         v
-Lógica de dominio
-  Habit+Domain
+Estado de feature y servicios de dominio
+  HabitDraft / PlanDraft
+  HabitTrackingService
+  HabitEditorService / PlanEditorService
+        |
+        v
+Lógica de dominio de solo lectura
+  Habit+Scheduling / Completion / Streaks
+  Habit+Freezes / Recovery / Presentation
   Habit+Insights
   HabitExperiment+Domain
   FocusSession+Domain
@@ -86,12 +94,12 @@ Persistencia SwiftData
   HabitSchema / HabitMigrationPlan
 ```
 
-No existe capa ViewModel, repositorio ni servicio de datos. Las vistas top-level consultan con `@Query`, originan mutaciones con `modelContext`, y delegan cálculos reutilizables a extensiones de dominio.
+Las vistas top-level consultan con `@Query`. Las mutaciones compartidas se delegan a servicios de dominio, mientras que los formularios complejos agrupan estado y validación en drafts de tipo valor.
 
 `WeekHabitApp.swift` crea el `ModelContainer` usando:
 
 ```swift
-Schema(versionedSchema: SchemaV7.self)
+Schema(versionedSchema: SchemaV17.self)
 HabitMigrationPlan.self
 ```
 
@@ -250,7 +258,8 @@ SchemaV8:  + StreakFreeze
 SchemaV9:  + HabitEntry.failureReason y EntryKind.missed
 SchemaV10: cambios aditivos
 SchemaV11: cambios aditivos
-SchemaV12: cambios aditivos (versión actual)
+SchemaV12: cambios aditivos
+SchemaV13–V17: evolución aditiva de hábitos, revisiones y tracking (versión actual: V17)
 ```
 
 `HabitMigrationPlan` registra migraciones lightweight de V1 a V12.
@@ -259,34 +268,21 @@ Regla importante: no editar schemas antiguos para cambios de forma persistida. C
 
 ## Lógica de dominio
 
-### `Habit+Domain`
+### Dominio de `Habit`
 
-Contiene la lógica reusable de hábitos:
+La lógica reusable está separada por responsabilidad:
 
-- `isFinished(reference:)`
-- `isLoggable(on:)`
-- `isScheduled(on:)`
-- `isActive(on:)`
-- `isCompleted(on:)`
-- `totalValue(on:)`
-- `completedWeekdays(reference:)`
-- `completedDaysThisWeek(reference:)`
-- `weekProgress(reference:)`
-- `currentStreak(reference:)`
-- `currentStreakBreakdown(reference:)`
-- `displayStreak(reference:)`
-- `bestStreak(reference:)`
-- `completionMatrix(weeks:reference:)`
-- `completedDaysSince(_:reference:)`
-- `expectedDaysSince(_:reference:)`
-- `completionRatio(since:reference:)`
+| Archivo | Responsabilidad |
+|---|---|
+| `Habit+Scheduling` | Fechas, programación, pausas y días registrables |
+| `Habit+Completion` | Estados diarios, cantidades, progreso semanal y ratios |
+| `Habit+Streaks` | Racha actual, visible, histórica y desglose |
+| `Habit+Freezes` | Protección y candidatos de comodín semanal |
+| `Habit+Recovery` | Candidatos diarios y semanales de recuperación |
+| `Habit+Presentation` | Textos derivados, formato y matriz del heatmap |
 
-También expone textos derivados como:
-
-- `targetPerSessionText`
-- `scheduleSummaryText`
-- `unitDisplayText`
-- `isFlexibleSchedule`
+Los métodos mantienen APIs pequeñas sobre `Habit`. Para lógica nueva, elegir el archivo
+según la regla de negocio en lugar de crear otra extensión general.
 
 ### `Habit+Insights`
 
@@ -424,6 +420,10 @@ Al guardar:
 - elegir fecha de fin;
 - definir meta de completitud;
 - seleccionar hábitos asociados.
+
+El formulario mantiene su estado, validación y normalización en `PlanDraft`.
+`PlanEditorService` centraliza la creación/edición del plan, las relaciones con hábitos y
+la reconciliación de hitos. La vista solo coordina presentación, errores y cierre.
 
 ### `PlanWrapUpView`
 
@@ -578,11 +578,14 @@ Reglas prácticas:
 
 ### Nueva lógica de fechas, rachas o semanas
 
-1. Agregar método en `Habit+Domain`, `Plan+Domain` o helper adecuado.
+1. Agregar el método al archivo de dominio responsable o a `Plan+Domain`.
 2. Usar `AppCalendar`.
 3. Mantener el método puro cuando sea posible.
 4. Evitar duplicar filtros de `entries` dentro de varias vistas.
 
 ## Estado de documentación
 
-Esta documentación describe la versión actual del repo con `SchemaV12`, navegación de 3 tabs, onboarding conectado, planes, recordatorios, hábitos cuantificables, recuperación post-fallo, comodines de racha (`StreakFreeze`) y soporte de malos hábitos (`EntryKind.slip`, `EntryKind.urge`).
+Esta documentación describe la versión actual del repo con `SchemaV17`, navegación de 3 tabs, onboarding conectado, planes, recordatorios, hábitos cuantificables, recuperación post-fallo, comodines de racha (`StreakFreeze`) y soporte de malos hábitos (`EntryKind.slip`, `EntryKind.urge`).
+
+Las fases pendientes del refactor arquitectónico y sus criterios de aceptación están
+documentados en `REFACTOR_HANDOFF.md`.

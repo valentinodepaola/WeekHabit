@@ -65,7 +65,6 @@ struct InsightsHeroCard: View {
                 Text(title)
                     .font(AppFont.label)
                     .foregroundStyle(AppColor.textTertiary)
-                    .tracking(1.2)
                     .lineLimit(1)
 
                 if readiness?.isProvisional == true {
@@ -75,7 +74,7 @@ struct InsightsHeroCard: View {
 
             HStack(alignment: .firstTextBaseline, spacing: AppSpacing.s) {
                 Text(consistencyText)
-                    .font(.system(size: 64, weight: .regular, design: .serif))
+                    .font(AppFont.insightHeroMetric)
                     .foregroundStyle(AppColor.textPrimary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
@@ -116,16 +115,13 @@ struct InsightsHeroCard: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(AppSpacing.xl)
-        .background(AppColor.bgElevated)
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.xl, style: .continuous))
-        .appElevation(.low)
+        .insightCard(padding: AppSpacing.xl, cornerRadius: AppRadius.xl)
     }
 
     private var minimumVersionNote: some View {
         HStack(alignment: .top, spacing: AppSpacing.s) {
             Image(systemName: "checkmark.circle")
-                .font(.system(size: 13, weight: .semibold))
+                .font(AppFont.label)
                 .foregroundStyle(AppColor.info)
                 .frame(width: 22, height: 22)
                 .background(AppColor.info.opacity(0.12))

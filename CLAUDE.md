@@ -4,7 +4,7 @@ This file gives concise guidance for coding agents working in this repository.
 
 ## Project
 
-WeekHabit is a SwiftUI iOS app for weekly habit tracking and rhythm building. It is a single Xcode project (`WeekHabit.xcodeproj`) with no Swift Package Manager dependencies, no CocoaPods, and no test target.
+WeekHabit is a SwiftUI iOS app for weekly habit tracking and rhythm building. It is a single Xcode project (`WeekHabit.xcodeproj`) with no Swift Package Manager dependencies or CocoaPods, plus the `WeekHabitTests` unit test target.
 
 Stack: Swift 5.0, SwiftUI, SwiftData, UserNotifications, iOS 26.4+, universal iPhone/iPad.
 
@@ -25,18 +25,21 @@ xcodebuild -project WeekHabit.xcodeproj \
   build CODE_SIGNING_ALLOWED=NO
 ```
 
-There is no lint configuration and no test target.
+There is no lint configuration. `WeekHabitTests` is the unit test target.
 
 ## Architecture
 
-The app uses a lightweight Model-View style with SwiftUI + SwiftData.
+The app uses a pragmatic SwiftUI architecture with SwiftData.
+
+Read `REFACTOR_HANDOFF.md` before continuing the remaining architectural refactor phases.
 
 - Views read with `@Query`.
-- Views mutate with `@Environment(\.modelContext)`.
+- Reusable mutations live in domain services such as `HabitTrackingService`, `HabitEditorService`, and `PlanEditorService`.
+- Complex forms group editable state and validation in value-type drafts such as `HabitDraft` and `PlanDraft`.
 - Domain logic lives in model extensions, not in layout code.
-- There is no ViewModel, repository, networking, authentication, or external sync layer.
+- Views keep presentation effects, navigation, haptics, and feature-local UI state.
 
-`WeekHabitApp.swift` creates the `ModelContainer` with `Schema(versionedSchema: SchemaV12.self)` and `HabitMigrationPlan.self`.
+`WeekHabitApp.swift` creates the `ModelContainer` with `Schema(versionedSchema: SchemaV17.self)` and `HabitMigrationPlan.self`.
 
 `RootView` switches between `OnboardingView` and `ContentView` using `@AppStorage("hasCompletedAppOnboarding")`. It also refreshes habit reminders when the app starts or returns active.
 
@@ -60,7 +63,12 @@ The app uses a lightweight Model-View style with SwiftUI + SwiftData.
 
 Important domain files:
 
-- `Domain/Habit+Domain.swift`: schedule checks, loggability, quantities, streaks and streak breakdowns, weekly progress, heatmap matrix.
+- `Domain/Habit+Scheduling.swift`: schedule checks, loggability, pauses, end dates, and week traversal.
+- `Domain/Habit+Completion.swift`: daily entry state, quantities, weekly progress, and completion ratios.
+- `Domain/Habit+Streaks.swift`: current/display/best streaks and streak breakdowns.
+- `Domain/Habit+Freezes.swift`: freeze protection and weekly freeze candidates.
+- `Domain/Habit+Recovery.swift`: recovery prompt candidates.
+- `Domain/Habit+Presentation.swift`: derived copy, quantity formatting, and heatmap matrix.
 - `Insights/Habit+InsightMetrics.swift`: 30-day per-habit metrics, confidence, failures, best day/hour inputs.
 - `Insights/HabitCollection+Insights.swift`: aggregate snapshots, attention habit, contextual best day/hour, experiment suggestions.
 - `Domain/HabitExperiment+Domain.swift`: apply, keep, revert, cancel, review experiments.
@@ -163,15 +171,15 @@ For sensitive habit states such as misses, slips, breaks, recovery, or pauses, n
 - New persisted fields require updating model initializers and callers.
 - Shape changes require a new `SchemaV*` and a `MigrationStage` in `HabitMigrationPlan`.
 - Do not mutate old schemas to represent new persisted shapes.
-- Keep data mutations in the owning view unless a reusable service already exists.
+- Add reusable mutations to a domain service instead of duplicating them across views.
+- Never delete or convert `.urge` entries while changing the primary daily state.
 
 ## Forms
 
 `CreateHabitView` and `CreatePlanView` are the reference patterns:
 
-- local `@State` per field;
-- computed `isSaveDisabled`;
-- normalize values before saving;
-- insert/update directly with `modelContext`;
-- dismiss after save;
+- group editable state, validation, and normalization in a value-type draft;
+- delegate persistence and relationship reconciliation to an editor service;
+- show persistence failures instead of silencing them;
+- dismiss only after a successful save;
 - refresh side effects explicitly when needed, such as reminders.

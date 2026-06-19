@@ -9,6 +9,7 @@ struct WeekHeaderSection: View {
     var monthYearLabel: String
     var weekNumber: Int
     @Binding var weekOffset: Int
+    var onShowLegend: (() -> Void)? = nil
     var onCreate: (() -> Void)? = nil
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -41,6 +42,13 @@ struct WeekHeaderSection: View {
                 }
 
                 HStack(spacing: AppSpacing.s) {
+                    if let onShowLegend {
+                        navButton(systemName: "questionmark") {
+                            onShowLegend()
+                        }
+                        .accessibilityLabel("Ver leyenda de la semana")
+                    }
+
                     navButton(systemName: "chevron.left") {
                         withAnimation(AppMotion.respectful(AppMotion.smooth, reduceMotion)) {
                             weekOffset -= 1

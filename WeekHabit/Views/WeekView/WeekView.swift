@@ -35,8 +35,10 @@ struct WeekView: View {
     }
 
     private var visibleHabits: [Habit] {
-        habits.filter { habit in
-            daysInWeek.contains { habit.isLoggable(on: $0) || habit.isCompleted(on: $0) }
+        AppPerformance.measure("Week visible habits") {
+            habits.filter { habit in
+                daysInWeek.contains { habit.isLoggable(on: $0) || habit.isCompleted(on: $0) }
+            }
         }
     }
 
@@ -47,14 +49,11 @@ struct WeekView: View {
     }
 
     private var monthYearLabel: String {
-        let formatter = DateFormatter()
-        formatter.calendar = AppCalendar.current
-        formatter.locale = Locale(identifier: "es_MX")
-        formatter.dateFormat = "MMMM yyyy"
-        return formatter
-            .string(from: referenceDate)
-            .folding(options: .diacriticInsensitive, locale: formatter.locale)
-            .uppercased(with: formatter.locale)
+        AppFormatters.uppercasedString(
+            from: referenceDate,
+            format: "MMMM yyyy",
+            foldingDiacritics: true
+        )
     }
 
     private var weekNumber: Int {
@@ -67,12 +66,16 @@ struct WeekView: View {
     }
 
     private var totalGoal: Int {
-        visibleHabits.reduce(0) { $0 + $1.targetDaysPerWeek }
+        AppPerformance.measure("Week total goal") {
+            visibleHabits.reduce(0) { $0 + $1.targetDaysPerWeek }
+        }
     }
 
     private var completedThisWeek: Int {
-        visibleHabits.reduce(0) { partial, habit in
-            partial + habit.completedDaysThisWeek(reference: referenceDate)
+        AppPerformance.measure("Week completed count") {
+            visibleHabits.reduce(0) { partial, habit in
+                partial + habit.completedDaysThisWeek(reference: referenceDate)
+            }
         }
     }
 
@@ -88,6 +91,16 @@ struct WeekView: View {
         if hasBreak && !hasBuild { return "Evitados" }
         if hasBreak { return "Marcados" }
         return "Completados"
+    }
+
+    private var focusCandidateHabits: [Habit] {
+        habits.filter {
+            $0.isLoggable(on: .now) && !$0.isSkipped(on: .now) && !$0.isSlip(on: .now)
+        }
+    }
+
+    private var focusDisabledReason: String? {
+        focusCandidateHabits.isEmpty ? "No hay hábitos disponibles para hoy." : nil
     }
 
     private var weeklyReviewWeekStart: Date? {
@@ -107,6 +120,7 @@ struct WeekView: View {
                         monthYearLabel: monthYearLabel,
                         weekNumber: weekNumber,
                         weekOffset: $weekOffset,
+                        onShowLegend: { sheetRoute = .legend },
                         onCreate: { sheetRoute = .createMenu }
                     )
 
@@ -131,14 +145,27 @@ struct WeekView: View {
     }
 
     private var dayStrip: some View {
-        HStack(spacing: WeekGridLayout.cellSpacing) {
-            ForEach(daysInWeek, id: \.self) { date in
-                DayColumn(date: date, isToday: AppCalendar.isSameDay(date, .now))
-            }
-        }
-        .padding(.leading, 34)
-        .padding(.trailing, 30)
+        WeekPulseSection(
+            pulses: daysInWeek.map(dayPulse(for:)),
+            completedThisWeek: completedThisWeek,
+            totalGoal: totalGoal
+        )
         .padding(.bottom, AppSpacing.s)
+    }
+
+    private func dayPulse(for date: Date) -> WeekDayPulse {
+        AppPerformance.measure("Week day pulse") {
+            let scheduledHabits = visibleHabits.filter { $0.isLoggable(on: date) }
+            let completed = scheduledHabits.filter { $0.isCompleted(on: date) }.count
+
+            return WeekDayPulse(
+                date: date,
+                isToday: AppCalendar.isSameDay(date, .now),
+                isFuture: AppCalendar.startOfDay(for: date) > AppCalendar.startOfDay(for: .now),
+                completed: completed,
+                scheduled: scheduledHabits.count
+            )
+        }
     }
 
     @ViewBuilder
@@ -242,11 +269,16 @@ struct WeekView: View {
     @ViewBuilder
     private func routeSheet(_ route: WeekSheetRoute) -> some View {
         switch route {
+        case .legend:
+            WeekLegendSheet()
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+                .presentationBackground(AppColor.bgCanvas)
         case .createMenu:
-            WHCreationSheet { option in
+            WHCreationSheet(focusDisabledReason: focusDisabledReason) { option in
                 handleCreationSelection(option)
             }
-            .presentationDetents([.height(380), .medium])
+            .presentationDetents([.height(420), .medium])
             .presentationDragIndicator(.visible)
             .presentationBackground(AppColor.bgCanvas)
         case .quantityLog(let habit, let date):
@@ -274,8 +306,8 @@ struct WeekView: View {
             case .plan:
                 coverRoute = .plan(.create)
             case .focus:
-                let todayHabits = habits.filter { $0.isLoggable(on: .now) && !$0.isSkipped(on: .now) }
-                coverRoute = .focus(habits: todayHabits)
+                guard !focusCandidateHabits.isEmpty else { return }
+                coverRoute = .focus(habits: focusCandidateHabits)
             }
         }
     }
@@ -288,27 +320,17 @@ struct WeekView: View {
             return
         }
 
-        let entriesForDay = habit.entries.filter {
-            AppCalendar.isSameDay($0.date, date)
-        }
         let willMark = !habit.isCompleted(on: date)
 
-        withAnimation(AppMotion.respectful(AppMotion.smooth, reduceMotion)) {
-            if willMark {
-                entriesForDay.forEach { modelContext.delete($0) }
-                deleteFreeze(for: habit, on: date)
-                modelContext.insert(
-                    HabitEntry(
-                        date: date,
-                        completedAt: nil,
-                        source: .manual,
-                        value: 1,
-                        habit: habit
-                    )
-                )
-            } else {
-                entriesForDay.forEach { modelContext.delete($0) }
-            }
+        _ = withAnimation(AppMotion.respectful(AppMotion.smooth, reduceMotion)) {
+            HabitTrackingService.toggleCompletion(
+                for: habit,
+                on: date,
+                source: .manual,
+                completedAt: nil,
+                modelContext: modelContext,
+                streakFreezes: streakFreezes
+            )
         }
 
         if willMark {
@@ -320,34 +342,16 @@ struct WeekView: View {
     }
 
     private func upsertQuantityEntry(for habit: Habit, on date: Date, value: Double) {
-        let entriesForDay = habit.entries.filter {
-            AppCalendar.isSameDay($0.date, date)
-        }
-
-        withAnimation(AppMotion.respectful(AppMotion.smooth, reduceMotion)) {
-            if value <= 0 {
-                entriesForDay.forEach { modelContext.delete($0) }
-            } else if let entry = entriesForDay.first {
-                deleteFreeze(for: habit, on: date)
-                entry.kind = .completed
-                entry.value = value
-                entry.completedCount = Int(value.rounded())
-                entry.completedAt = nil
-                entry.source = .manual
-                entriesForDay.dropFirst().forEach { modelContext.delete($0) }
-            } else {
-                deleteFreeze(for: habit, on: date)
-                modelContext.insert(
-                    HabitEntry(
-                        date: date,
-                        completedAt: nil,
-                        source: .manual,
-                        completedCount: Int(value.rounded()),
-                        value: value,
-                        habit: habit
-                    )
-                )
-            }
+        _ = withAnimation(AppMotion.respectful(AppMotion.smooth, reduceMotion)) {
+            HabitTrackingService.upsertQuantity(
+                for: habit,
+                on: date,
+                value: value,
+                source: .manual,
+                completedAt: nil,
+                modelContext: modelContext,
+                streakFreezes: streakFreezes
+            )
         }
 
         if value > 0, habit.totalValue(on: date) >= habit.sessionTargetValue {
@@ -359,28 +363,14 @@ struct WeekView: View {
     }
 
     private func toggleRest(for habit: Habit, on date: Date) {
-        let entriesForDay = habit.entries.filter {
-            AppCalendar.isSameDay($0.date, date)
-        }
-        let willSkip = !habit.isSkipped(on: date)
-
-        withAnimation(AppMotion.respectful(AppMotion.smooth, reduceMotion)) {
-            entriesForDay.forEach { modelContext.delete($0) }
-
-            if willSkip {
-                deleteFreeze(for: habit, on: date)
-                modelContext.insert(
-                    HabitEntry(
-                        date: date,
-                        completedAt: nil,
-                        source: AppCalendar.isSameDay(date, .now) ? .today : .manual,
-                        kind: .skipped,
-                        completedCount: 0,
-                        value: 0,
-                        habit: habit
-                    )
-                )
-            }
+        _ = withAnimation(AppMotion.respectful(AppMotion.smooth, reduceMotion)) {
+            HabitTrackingService.toggleRest(
+                for: habit,
+                on: date,
+                source: AppCalendar.isSameDay(date, .now) ? .today : .manual,
+                modelContext: modelContext,
+                streakFreezes: streakFreezes
+            )
         }
 
         AppHaptics.play(.selection)
@@ -389,28 +379,16 @@ struct WeekView: View {
 
     private func weekRangeText(for weekStart: Date) -> String {
         let weekEnd = AppCalendar.current.date(byAdding: .day, value: 6, to: weekStart) ?? weekStart
-        let formatter = DateFormatter()
-        formatter.calendar = AppCalendar.current
-        formatter.locale = Locale(identifier: "es_MX")
-        formatter.dateFormat = "d MMM"
-        return "\(formatter.string(from: weekStart)) - \(formatter.string(from: weekEnd))"
-    }
-
-    private func deleteFreeze(for habit: Habit, on date: Date) {
-        streakFreezes
-            .filter { $0.habitID == habit.id && AppCalendar.isSameDay($0.protectedDate, date) }
-            .forEach { modelContext.delete($0) }
+        return "\(AppFormatters.string(from: weekStart, format: "d MMM")) - \(AppFormatters.string(from: weekEnd, format: "d MMM"))"
     }
 
     private func applyWeeklyFreezes(reference: Date) {
-        for habit in habits where habit.allowsWeeklyFreeze {
-            guard let protectedDate = habit.weeklyFreezeCandidate(reference: reference),
-                  !streakFreezes.containsFreeze(for: habit, weekContaining: protectedDate) else {
-                continue
-            }
-
-            modelContext.insert(StreakFreeze(habit: habit, protectedDate: protectedDate))
-        }
+        HabitTrackingService.applyWeeklyFreezes(
+            to: habits,
+            existing: streakFreezes,
+            reference: reference,
+            modelContext: modelContext
+        )
     }
 }
 
@@ -431,12 +409,14 @@ private enum WeekCoverRoute: Identifiable {
 }
 
 private enum WeekSheetRoute: Identifiable {
+    case legend
     case createMenu
     case quantityLog(habit: Habit, date: Date)
     case weeklyReview(weekStart: Date)
 
     var id: String {
         switch self {
+        case .legend: return "legend"
         case .createMenu: return "createMenu"
         case .quantityLog(let habit, let date): return "quantityLog-\(habit.id)-\(date.timeIntervalSinceReferenceDate)"
         case .weeklyReview(let weekStart): return "weeklyReview-\(weekStart.timeIntervalSinceReferenceDate)"

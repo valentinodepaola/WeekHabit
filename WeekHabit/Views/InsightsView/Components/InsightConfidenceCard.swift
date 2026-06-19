@@ -38,7 +38,7 @@ struct InsightConfidenceCard: View {
                 Circle()
                     .fill(color.opacity(0.14))
                 Image(systemName: icon)
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(AppFont.iconMedium)
                     .foregroundStyle(color)
             }
             .frame(width: 44, height: 44)
@@ -48,7 +48,6 @@ struct InsightConfidenceCard: View {
                     Text("CONFIANZA DEL RITMO")
                         .font(AppFont.label)
                         .foregroundStyle(AppColor.textTertiary)
-                        .tracking(0.8)
                     WHConfidenceTag(confidence: equivalentTag)
                 }
 
@@ -64,10 +63,7 @@ struct InsightConfidenceCard: View {
 
             Spacer()
         }
-        .padding(AppSpacing.l)
-        .background(AppColor.bgElevated)
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous))
-        .appElevation(.low)
+        .insightCard()
     }
 }
 

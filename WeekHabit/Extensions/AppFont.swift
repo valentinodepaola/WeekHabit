@@ -30,6 +30,18 @@ enum AppFont {
     static let label = Font.system(size: 13, weight: .medium, design: .default)
     /// 11pt sans medium — tabs, badges, metadatos.
     static let micro = Font.system(size: 11, weight: .medium, design: .default)
+    /// 64pt serif — métrica principal de Insights.
+    static let insightHeroMetric = Font.system(size: 64, weight: .regular, design: .serif)
+    /// 22pt serif regular — métricas compactas.
+    static let dataMetric = Font.system(size: 22, weight: .regular, design: .serif)
+    /// 14pt semibold — símbolos pequeños dentro de cards.
+    static let iconSmall = Font.system(size: 14, weight: .semibold)
+    /// 18pt semibold — símbolos estándar dentro de cards.
+    static let iconMedium = Font.system(size: 18, weight: .semibold)
+    /// 22pt semibold — símbolos destacados dentro de cards.
+    static let iconLarge = Font.system(size: 22, weight: .semibold)
+    /// 28pt semibold — símbolos de empty states.
+    static let iconXL = Font.system(size: 28, weight: .semibold)
 
     // MARK: - Legacy aliases
     // Apuntan al token nuevo más cercano. No agregar nuevos usos —

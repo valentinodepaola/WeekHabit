@@ -25,6 +25,7 @@ struct ComponentsGalleryView: View {
                     emptyStateSection
                     progressSection
                     chipsSection
+                    weekGridSection
                     sectionHeaderSection
                     formSection
                     confidenceSection
@@ -178,6 +179,45 @@ struct ComponentsGalleryView: View {
                 WHChip(label: "Idle", action: {})
                 WHChip(label: "Selected", icon: "checkmark", isSelected: true, action: {})
                 WHChip(label: "Disabled", isDisabled: true, action: {})
+            }
+        }
+    }
+
+    // MARK: - Week grid
+
+    private var weekGridSection: some View {
+        gallerySection(title: "Week grid states") {
+            VStack(alignment: .leading, spacing: AppSpacing.l) {
+                ForEach(WeekGridCellFamily.allCases) { family in
+                    VStack(alignment: .leading, spacing: AppSpacing.s) {
+                        Text(family.title)
+                            .font(AppFont.label)
+                            .foregroundStyle(AppColor.textSecondary)
+
+                        LazyVGrid(
+                            columns: [GridItem(.adaptive(minimum: 104), spacing: AppSpacing.s)],
+                            alignment: .leading,
+                            spacing: AppSpacing.s
+                        ) {
+                            ForEach(family.states, id: \.self) { state in
+                                VStack(alignment: .leading, spacing: AppSpacing.xs) {
+                                    WeekGridCell(
+                                        state: state,
+                                        habitColor: AppColor.accent,
+                                        isInteractive: false,
+                                        onTap: {},
+                                        onSkip: {}
+                                    )
+                                    Text(state.legendTitle)
+                                        .font(AppFont.micro)
+                                        .foregroundStyle(AppColor.textSecondary)
+                                        .lineLimit(2)
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                        }
+                    }
+                }
             }
         }
     }

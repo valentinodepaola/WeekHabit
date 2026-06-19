@@ -210,12 +210,7 @@ private struct YearHeatmapBody: View {
     }
 
     private func monthLabel(for date: Date) -> String {
-        let locale = Locale(identifier: "es_MX")
-        let formatter = DateFormatter()
-        formatter.calendar = AppCalendar.current
-        formatter.locale = locale
-        formatter.setLocalizedDateFormatFromTemplate("MMM")
-        return formatter.string(from: date).uppercased(with: locale)
+        AppFormatters.uppercasedString(from: date, format: "MMM")
     }
     
     private var weekdayLabels: some View {

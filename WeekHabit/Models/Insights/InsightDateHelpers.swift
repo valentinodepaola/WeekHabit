@@ -9,7 +9,7 @@ extension Set where Element == Weekday {
     var weekdayListText: String {
         let names = Weekday.ordered
             .filter { contains($0) }
-            .map { $0.displayName.lowercased(with: Locale(identifier: "es_MX")) }
+            .map { AppFormatters.lowercased($0.displayName) }
 
         switch names.count {
         case 0:

@@ -112,11 +112,7 @@ struct SlipTimelineCard: View {
 
     private func dateText(for slip: HabitEntry) -> String {
         let moment = slip.completedAt ?? slip.date
-        let formatter = DateFormatter()
-        formatter.calendar = AppCalendar.current
-        formatter.locale = Locale(identifier: "es_MX")
-        formatter.dateFormat = "d MMM, HH:mm"
-        return formatter.string(from: moment)
+        return AppFormatters.string(from: moment, format: "d MMM, HH:mm")
     }
 }
 

@@ -57,12 +57,11 @@ struct ExperimentReviewCard: View {
             // Caption
             HStack(spacing: AppSpacing.s) {
                 Image(systemName: "checkmark.seal")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(AppFont.iconSmall)
                     .foregroundStyle(AppColor.info)
                 Text("LISTO PARA REVISAR")
                     .font(AppFont.label)
                     .foregroundStyle(AppColor.textTertiary)
-                    .tracking(0.8)
             }
 
             // Habit + headline
@@ -112,10 +111,7 @@ struct ExperimentReviewCard: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(AppSpacing.l)
-        .background(AppColor.bgElevated)
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous))
-        .appElevation(.low)
+        .insightCard()
     }
 
     private var deltaPill: some View {
@@ -133,10 +129,9 @@ struct ExperimentReviewCard: View {
         VStack(alignment: .leading, spacing: AppSpacing.xxs) {
             Text(label.uppercased())
                 .font(AppFont.label)
-                .tracking(0.8)
                 .foregroundStyle(AppColor.textTertiary)
             Text(value)
-                .font(.system(size: 22, weight: .regular, design: .serif))
+                .font(AppFont.dataMetric)
                 .monospacedDigit()
                 .foregroundStyle(AppColor.textPrimary)
         }

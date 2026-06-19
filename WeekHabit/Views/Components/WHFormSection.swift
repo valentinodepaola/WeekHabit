@@ -3,7 +3,7 @@
 //  WeekHabit
 //
 //  Bloque de formulario: label en mayúsculas + control + helper opcional.
-//  Reemplaza HabitBasicInfoSection y similares en CreateHabitView/CreatePlanView.
+//  Base de las secciones de CreateHabitView/CreatePlanView.
 //
 
 import SwiftUI
