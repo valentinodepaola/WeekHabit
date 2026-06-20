@@ -52,19 +52,46 @@ final class HabitDomainTests: XCTestCase {
         XCTAssertTrue(AppCalendar.isSameDay(candidate?.date ?? reference, missedDay))
     }
 
-    func testFlexibleScheduleOnlyPromptsForCompletedPastWeek() {
-        let previousMonday = TestFactory.date(month: 5, day: 25)
-        let reference = TestFactory.date(day: 1)
+    func testRecoveryPromptOnlyChecksYesterday() {
+        let missedThursday = TestFactory.date(day: 18)
+        let reference = TestFactory.date(day: 20)
         let habit = TestFactory.habit(
-            schedule: .timesPerWeek,
-            targetDaysPerWeek: 3,
-            createdAt: previousMonday
+            schedule: .specificDays,
+            activeDays: [.thursday],
+            targetDaysPerWeek: 1,
+            createdAt: missedThursday
         )
-        TestFactory.entry(.completed, habit: habit, date: previousMonday, value: 1)
+
+        let candidate = habit.recoveryPromptCandidate(before: reference)
+
+        XCTAssertNil(candidate)
+    }
+
+    func testRecoveryPromptUsesYesterdayWhenEligible() {
+        let yesterday = TestFactory.date(day: 19)
+        let reference = TestFactory.date(day: 20)
+        let habit = TestFactory.habit(createdAt: yesterday)
 
         let candidate = habit.recoveryPromptCandidate(before: reference)
 
         XCTAssertNotNil(candidate)
-        XCTAssertTrue(candidate?.isWeeklyFlexibleMiss == true)
+        XCTAssertTrue(AppCalendar.isSameDay(candidate?.date ?? reference, yesterday))
+        XCTAssertFalse(candidate?.isWeeklyFlexibleMiss ?? true)
+    }
+
+    func testFlexibleScheduleRecoveryPromptOnlyChecksYesterday() {
+        let yesterday = TestFactory.date(day: 19)
+        let reference = TestFactory.date(day: 20)
+        let habit = TestFactory.habit(
+            schedule: .timesPerWeek,
+            targetDaysPerWeek: 3,
+            createdAt: yesterday
+        )
+
+        let candidate = habit.recoveryPromptCandidate(before: reference)
+
+        XCTAssertNotNil(candidate)
+        XCTAssertTrue(AppCalendar.isSameDay(candidate?.date ?? reference, yesterday))
+        XCTAssertFalse(candidate?.isWeeklyFlexibleMiss ?? true)
     }
 }

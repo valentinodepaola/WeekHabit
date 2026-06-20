@@ -651,6 +651,7 @@ struct TodayView: View {
             reason: reason,
             modelContext: modelContext
         )
+        saveRecoveryPromptState()
         sheetRoute = nil
     }
 
@@ -664,8 +665,17 @@ struct TodayView: View {
             reason: nil,
             modelContext: modelContext
         )
+        saveRecoveryPromptState()
         sheetRoute = nil
         AppHaptics.play(.selection)
+    }
+
+    private func saveRecoveryPromptState() {
+        do {
+            try modelContext.save()
+        } catch {
+            print("WeekHabit recovery prompt save failed: \(error)")
+        }
     }
 
     private func transitionHabitBetweenSections(_ mutation: @escaping () -> Void) {
