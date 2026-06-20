@@ -6,8 +6,19 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXContainerItemProxy section */
+		B20000072F99AE8F00C47A6D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A91382222F99AE8F00C47A6D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A91382292F99AE8F00C47A6D;
+			remoteInfo = WeekHabit;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		A913822A2F99AE8F00C47A6D /* WeekHabit.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WeekHabit.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B20000012F99AE8F00C47A6D /* WeekHabitTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WeekHabitTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -16,10 +27,22 @@
 			path = WeekHabit;
 			sourceTree = "<group>";
 		};
+		B20000022F99AE8F00C47A6D /* WeekHabitTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = WeekHabitTests;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		A91382272F99AE8F00C47A6D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B20000042F99AE8F00C47A6D /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -33,6 +56,7 @@
 			isa = PBXGroup;
 			children = (
 				A913822C2F99AE8F00C47A6D /* WeekHabit */,
+				B20000022F99AE8F00C47A6D /* WeekHabitTests */,
 				A913822B2F99AE8F00C47A6D /* Products */,
 			);
 			sourceTree = "<group>";
@@ -41,6 +65,7 @@
 			isa = PBXGroup;
 			children = (
 				A913822A2F99AE8F00C47A6D /* WeekHabit.app */,
+				B20000012F99AE8F00C47A6D /* WeekHabitTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -70,6 +95,29 @@
 			productReference = A913822A2F99AE8F00C47A6D /* WeekHabit.app */;
 			productType = "com.apple.product-type.application";
 		};
+		B20000032F99AE8F00C47A6D /* WeekHabitTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B200000C2F99AE8F00C47A6D /* Build configuration list for PBXNativeTarget "WeekHabitTests" */;
+			buildPhases = (
+				B20000062F99AE8F00C47A6D /* Sources */,
+				B20000042F99AE8F00C47A6D /* Frameworks */,
+				B20000052F99AE8F00C47A6D /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				B20000082F99AE8F00C47A6D /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				B20000022F99AE8F00C47A6D /* WeekHabitTests */,
+			);
+			name = WeekHabitTests;
+			packageProductDependencies = (
+			);
+			productName = WeekHabitTests;
+			productReference = B20000012F99AE8F00C47A6D /* WeekHabitTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -82,6 +130,10 @@
 				TargetAttributes = {
 					A91382292F99AE8F00C47A6D = {
 						CreatedOnToolsVersion = 26.4.1;
+					};
+					B20000032F99AE8F00C47A6D = {
+						CreatedOnToolsVersion = 26.4.1;
+						TestTargetID = A91382292F99AE8F00C47A6D;
 					};
 				};
 			};
@@ -100,12 +152,20 @@
 			projectRoot = "";
 			targets = (
 				A91382292F99AE8F00C47A6D /* WeekHabit */,
+				B20000032F99AE8F00C47A6D /* WeekHabitTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		A91382282F99AE8F00C47A6D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B20000052F99AE8F00C47A6D /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -122,7 +182,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		B20000062F99AE8F00C47A6D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		B20000082F99AE8F00C47A6D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A91382292F99AE8F00C47A6D /* WeekHabit */;
+			targetProxy = B20000072F99AE8F00C47A6D /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		A91382332F99AE8F00C47A6D /* Debug */ = {
@@ -310,6 +385,46 @@
 			};
 			name = Release;
 		};
+		B20000092F99AE8F00C47A6D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = MG67XM4985;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				PRODUCT_BUNDLE_IDENTIFIER = com.valentino.WeekHabitTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/WeekHabit.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/WeekHabit";
+			};
+			name = Debug;
+		};
+		B200000A2F99AE8F00C47A6D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = MG67XM4985;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				PRODUCT_BUNDLE_IDENTIFIER = com.valentino.WeekHabitTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/WeekHabit.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/WeekHabit";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -327,6 +442,15 @@
 			buildConfigurations = (
 				A91382362F99AE8F00C47A6D /* Debug */,
 				A91382372F99AE8F00C47A6D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		B200000C2F99AE8F00C47A6D /* Build configuration list for PBXNativeTarget "WeekHabitTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B20000092F99AE8F00C47A6D /* Debug */,
+				B200000A2F99AE8F00C47A6D /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

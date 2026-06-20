@@ -2,6 +2,10 @@
 //  WeekGridRow.swift
 //  WeekHabit
 //
+//  Fila de la matriz semanal. Las celdas usan los insets de `WeekGridLayout`
+//  para quedar alineadas con las columnas del strip de días; las celdas SON
+//  el progreso de la semana (sin barra duplicada).
+//
 
 import SwiftUI
 
@@ -16,12 +20,11 @@ struct WeekGridRow: View {
 
     private var habitColor: Color { habit.habitColor }
     private var completedCount: Int { habit.completedDaysThisWeek(reference: referenceDate) }
-    private var progress: Double { habit.weekProgress(reference: referenceDate) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: AppSpacing.m) {
             Button(action: onSelectHabit) {
-                HStack(alignment: .top, spacing: AppSpacing.m) {
+                HStack(alignment: .center, spacing: AppSpacing.m) {
                     ZStack {
                         Circle()
                             .fill(habitColor.opacity(0.18))
@@ -31,32 +34,27 @@ struct WeekGridRow: View {
                             .foregroundStyle(habitColor)
                     }
 
-                    VStack(alignment: .leading, spacing: AppSpacing.s) {
-                        HStack(alignment: .firstTextBaseline, spacing: AppSpacing.s) {
-                            Text(habit.title)
-                                .font(AppFont.bodyEmphasis)
-                                .foregroundStyle(AppColor.textPrimary)
-                                .lineLimit(1)
-                            Spacer(minLength: AppSpacing.s)
-                            WeekProgressPill(
-                                completed: completedCount,
-                                target: habit.targetDaysPerWeek,
-                                color: habitColor
-                            )
-                        }
+                    VStack(alignment: .leading, spacing: AppSpacing.xs) {
+                        Text(habit.title)
+                            .font(AppFont.bodyEmphasis)
+                            .foregroundStyle(AppColor.textPrimary)
+                            .lineLimit(1)
 
                         Text(subtitle)
                             .font(AppFont.label)
                             .foregroundStyle(AppColor.textTertiary)
                             .lineLimit(1)
-
-                        WHProgressBar(
-                            progress: progress,
-                            progressColor: habitColor,
-                            height: 5
-                        )
                     }
+
+                    Spacer(minLength: AppSpacing.s)
+
+                    WeekProgressPill(
+                        completed: completedCount,
+                        target: habit.targetDaysPerWeek,
+                        color: habitColor
+                    )
                 }
+                .padding(.horizontal, AppSpacing.l)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -69,20 +67,24 @@ struct WeekGridRow: View {
                         onTap: { onToggle(date) },
                         onSkip: { onSkip(date) }
                     )
+                    .overlay {
+                        if AppCalendar.isSameDay(date, today) {
+                            todayRing
+                        }
+                    }
                 }
             }
-            .padding(AppSpacing.s)
+            .padding(WeekGridLayout.trayInnerPadding)
             .background(AppColor.bgSunken.opacity(0.6))
             .clipShape(RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous))
+            .padding(.horizontal, WeekGridLayout.trayOuterInset)
         }
-        .padding(.leading, AppSpacing.xl)
-        .padding(.trailing, AppSpacing.l)
         .padding(.vertical, AppSpacing.l)
         .background(AppColor.bgElevated)
         .overlay(alignment: .leading) {
             Rectangle()
                 .fill(habitColor)
-                .frame(width: 4)
+                .frame(width: WeekGridLayout.accentStripWidth)
         }
         .overlay {
             RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous)
@@ -91,6 +93,14 @@ struct WeekGridRow: View {
         .clipShape(RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous))
         .appElevation(.low)
         .padding(.vertical, 2)
+    }
+
+    /// Continúa la banda vertical de "hoy" que arranca en el strip de días.
+    private var todayRing: some View {
+        RoundedRectangle(cornerRadius: AppRadius.s + 2, style: .continuous)
+            .strokeBorder(AppColor.accent.opacity(0.45), lineWidth: 1.5)
+            .frame(width: WeekGridLayout.cellSize + 4, height: WeekGridLayout.cellSize + 4)
+            .allowsHitTesting(false)
     }
 
     private var subtitle: String {

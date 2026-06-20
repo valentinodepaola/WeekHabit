@@ -8,6 +8,8 @@ import SwiftData
 
 struct ContentView: View {
 
+    @Environment(\.modelContext) private var modelContext
+
     @State private var selectedTab: Int = 0
     @Query(sort: \Plan.endsAt) private var allPlans: [Plan]
     @Query(sort: \Habit.createdAt, order: .reverse) private var habits: [Habit]
@@ -15,6 +17,10 @@ struct ContentView: View {
 
     @AppStorage("weeklyReviewWeekdayRaw") private var weeklyReviewWeekdayRaw: Int = Weekday.sunday.rawValue
     @AppStorage("weeklyReviewAutoPresent") private var weeklyReviewAutoPresent: Bool = false
+    #if DEBUG
+    @AppStorage("debugSeedPerformanceDataOnLaunch") private var debugSeedPerformanceDataOnLaunch = false
+    @State private var didRunPerformanceSeed = false
+    #endif
 
     private var planPendingReview: Plan? {
         allPlans.first { $0.needsReview() }
@@ -58,6 +64,11 @@ struct ContentView: View {
                 .presentationDragIndicator(.visible)
                 .presentationBackground(AppColor.bgCanvas)
         }
+        #if DEBUG
+        .task {
+            seedPerformanceDataOnLaunchIfNeeded()
+        }
+        #endif
     }
 
     // SwiftUI requiere un Binding<Identifiable?> para .sheet(item:)
@@ -74,6 +85,27 @@ struct ContentView: View {
             set: { _ in }
         )
     }
+
+    #if DEBUG
+    private func seedPerformanceDataOnLaunchIfNeeded() {
+        guard debugSeedPerformanceDataOnLaunch, !didRunPerformanceSeed else { return }
+        didRunPerformanceSeed = true
+        do {
+            let result = try PerformanceSeedService.seedIfNeeded(
+                existingHabits: habits,
+                modelContext: modelContext
+            )
+            debugSeedPerformanceDataOnLaunch = false
+            if result.skippedBecauseSeedExists {
+                print("WeekHabit performance seed already exists.")
+            } else {
+                print("WeekHabit performance seed inserted \(result.insertedHabitCount) habits and \(result.insertedEntryCount) entries.")
+            }
+        } catch {
+            print("WeekHabit performance seed failed: \(error)")
+        }
+    }
+    #endif
 }
 
 private struct IdentifiablePlan: Identifiable {

@@ -20,7 +20,10 @@ struct OnboardingHabitDraft: Identifiable {
     }
 
     var frequencyText: String {
-        "\(daysPerWeek)d/sem"
+        if trackingKind == .quantity, measurementUnit != .none {
+            return "\(Habit.formattedQuantity(targetValuePerSession)) \(measurementUnit.shortTitle) · \(daysPerWeek)d/sem"
+        }
+        return "\(daysPerWeek)d/sem"
     }
 
     func makeHabit() -> Habit {
@@ -35,6 +38,24 @@ struct OnboardingHabitDraft: Identifiable {
             targetValuePerSession: targetValuePerSession,
             scheduleKind: .timesPerWeek
         )
+    }
+
+    init(
+        title: String,
+        iconName: String = HabitAppearance.defaultIconName,
+        colorHex: String = HabitAppearance.defaultColorHex,
+        daysPerWeek: Int = 5,
+        trackingKind: HabitTrackingKind = .check,
+        measurementUnit: HabitMeasurementUnit = .none,
+        targetValuePerSession: Double = 1
+    ) {
+        self.title = title
+        self.iconName = iconName
+        self.colorHex = colorHex
+        self.daysPerWeek = daysPerWeek
+        self.trackingKind = trackingKind
+        self.measurementUnit = measurementUnit
+        self.targetValuePerSession = targetValuePerSession
     }
 
     static func from(_ template: StarterHabitTemplate) -> OnboardingHabitDraft {

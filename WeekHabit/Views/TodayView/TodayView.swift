@@ -26,6 +26,8 @@ struct TodayView: View {
     private var weeklyReviews: [WeeklyReview]
 
     @AppStorage("weeklyReviewWeekdayRaw") private var weeklyReviewWeekdayRaw: Int = Weekday.sunday.rawValue
+    @AppStorage(OnceFlag.hasSeenFreezeExplainer.rawValue) private var hasSeenFreezeExplainer = false
+    @AppStorage(OnceFlag.hasSeenUrgeTooltip.rawValue) private var hasSeenUrgeTooltip = false
 
     @State private var coverRoute: TodayCoverRoute?
     @State private var milestoneCover: MilestoneCelebrationPayload?
@@ -36,8 +38,10 @@ struct TodayView: View {
     @State private var showDeleteHabitAlert = false
     @State private var planToDelete: Plan?
     @State private var showDeletePlanAlert = false
+    @State private var deleteFailure: TodayDeleteFailure?
     @State private var expandedPlans: Set<UUID> = []
     @State private var detailPlan: Plan?
+    @State private var latestFreezeExplainerMessage: String?
     @State private var didShowRecoveryPromptThisSession = false
     @Namespace private var habitSectionNamespace
 
@@ -47,85 +51,50 @@ struct TodayView: View {
         AppCalendar.weekday(of: referenceDate)
     }
 
-    private var currentDayTitle: String {
-        currentWeekday.displayName
-    }
-
-    private var currentDayNameForSentence: String {
-        currentDayTitle.lowercased(with: Locale(identifier: "es_MX"))
-    }
-
     private var currentDateTitle: String {
-        let locale = Locale(identifier: "es_MX")
-        let formatter = DateFormatter()
-        formatter.calendar = AppCalendar.current
-        formatter.locale = locale
-        formatter.dateFormat = "EEEE d 'DE' MMMM"
-        return formatter
-            .string(from: referenceDate)
-            .folding(options: .diacriticInsensitive, locale: locale)
-            .uppercased(with: locale)
+        AppFormatters.uppercasedString(
+            from: referenceDate,
+            format: "EEEE d 'DE' MMMM",
+            foldingDiacritics: true
+        )
     }
 
     private var todayHabits: [Habit] {
-        habits.filter { $0.isLoggable(on: referenceDate) }
+        habits.loggableToday(on: referenceDate)
     }
 
-    private var pendingHabits: [Habit] {
-        todayHabits.filter {
-            !isCompleteForTodayList($0)
-                && !$0.isSkipped(on: referenceDate)
-                && !$0.isSlip(on: referenceDate)
-        }
-    }
-
-    private var completedHabits: [Habit] {
-        todayHabits.filter {
-            isCompleteForTodayList($0)
-                && !$0.isSkipped(on: referenceDate)
-                && !$0.isSlip(on: referenceDate)
-        }
-    }
-
-    private var skippedHabits: [Habit] {
-        todayHabits.filter { $0.isSkipped(on: referenceDate) }
-    }
-
-    private var slippedHabits: [Habit] {
-        todayHabits.filter { $0.isSlip(on: referenceDate) }
-    }
+    private var pendingHabits: [Habit] { todayHabits.pendingToday(on: referenceDate) }
+    private var completedHabits: [Habit] { todayHabits.completedToday(on: referenceDate) }
+    private var skippedHabits: [Habit] { todayHabits.skippedToday(on: referenceDate) }
+    private var slippedHabits: [Habit] { todayHabits.slippedToday(on: referenceDate) }
 
     private var weeklyFreezes: [StreakFreeze] {
         let habitIDs = Set(todayHabits.filter { $0.allowsWeeklyFreeze }.map(\.id))
-        let weekStart = AppCalendar.weekRange(containing: referenceDate).lowerBound
-        return streakFreezes
-            .filter { habitIDs.contains($0.habitID) && AppCalendar.isSameDay($0.weekStartDate, weekStart) }
-            .sorted { $0.protectedDate < $1.protectedDate }
+        return streakFreezes.usedInWeek(of: referenceDate, habitIDs: habitIDs)
     }
 
-    private var tomorrowDate: Date {
-        AppCalendar.current.date(byAdding: .day, value: 1, to: referenceDate) ?? referenceDate
+    private var freezeExplainerMessage: String? {
+        guard !hasSeenFreezeExplainer else { return nil }
+        return latestFreezeExplainerMessage ?? weeklyFreezes.todayBannerMessage()
     }
 
     private var tomorrowHabitsCount: Int {
-        habits.filter { $0.isLoggable(on: tomorrowDate) }.count
+        let tomorrow = AppCalendar.current.date(byAdding: .day, value: 1, to: referenceDate) ?? referenceDate
+        return habits.loggableToday(on: tomorrow).count
     }
 
-    private var completedTodayCount: Int {
-        todayHabits.filter { isCompleteForTodayList($0) }.count
+    private var completedTodayCount: Int { todayHabits.completedCountToday(on: referenceDate) }
+    private var activeTodayCount: Int { todayHabits.activeCountToday(on: referenceDate) }
+    private var remainingTodayCount: Int { pendingHabits.count }
+    private var dailyProgress: Double { todayHabits.dailyProgress(on: referenceDate) }
+    private var focusCandidateHabits: [Habit] {
+        todayHabits.filter {
+            !$0.isSkipped(on: referenceDate) && !$0.isSlip(on: referenceDate)
+        }
     }
 
-    private var activeTodayCount: Int {
-        max(todayHabits.count - skippedHabits.count, 0)
-    }
-
-    private var remainingTodayCount: Int {
-        pendingHabits.count
-    }
-
-    private var dailyProgress: Double {
-        guard activeTodayCount > 0 else { return 0 }
-        return Double(completedTodayCount) / Double(activeTodayCount)
+    private var focusDisabledReason: String? {
+        focusCandidateHabits.isEmpty ? "No hay hábitos disponibles para hoy." : nil
     }
 
     private var weeklyReviewWeekStart: Date? {
@@ -141,10 +110,13 @@ struct TodayView: View {
         NavigationStack {
             AppBackground {
                 List {
-                    header
-                        .todayListRow(
-                            EdgeInsets(top: AppSpacing.l, leading: AppSpacing.l, bottom: 0, trailing: AppSpacing.l)
-                        )
+                    TodayHeaderSection(
+                        dateTitle: currentDateTitle,
+                        onCreateTap: { sheetRoute = .createMenu }
+                    )
+                    .todayListRow(
+                        EdgeInsets(top: AppSpacing.l, leading: AppSpacing.l, bottom: 0, trailing: AppSpacing.l)
+                    )
 
                     if let weeklyReviewWeekStart {
                         WeeklyReviewBanner(
@@ -157,14 +129,40 @@ struct TodayView: View {
                     }
 
                     if todayHabits.isEmpty {
-                        emptyTodayContent
-                            .todayListRow()
+                        emptyTodayContent.todayListRow()
                     } else {
-                        todayHabitsContent
+                        TodayHabitListSection(
+                            todayHabits: todayHabits,
+                            pendingHabits: pendingHabits,
+                            completedHabits: completedHabits,
+                            skippedHabits: skippedHabits,
+                            slippedHabits: slippedHabits,
+                            experiments: experiments,
+                            referenceDate: referenceDate,
+                            progress: dailyProgress,
+                            completedCount: completedTodayCount,
+                            activeCount: activeTodayCount,
+                            remainingCount: remainingTodayCount,
+                            slipCount: slippedHabits.count,
+                            freezeMessage: freezeExplainerMessage,
+                            showsUrgeExplainer: !hasSeenUrgeTooltip,
+                            namespace: habitSectionNamespace,
+                            reduceMotion: reduceMotion,
+                            onDismissFreezeExplainer: {
+                                latestFreezeExplainerMessage = nil
+                                hasSeenFreezeExplainer = true
+                            },
+                            onDismissUrgeExplainer: { hasSeenUrgeTooltip = true },
+                            actions: habitActions
+                        )
                     }
 
                     if !plans.isEmpty {
-                        plansSection
+                        TodayPlansSection(
+                            plans: plans,
+                            expandedPlans: $expandedPlans,
+                            actions: planActions
+                        )
                     }
                 }
                 .listStyle(.plain)
@@ -201,6 +199,13 @@ struct TodayView: View {
             } message: {
                 Text("Los hábitos del plan no serán eliminados.")
             }
+            .alert(item: $deleteFailure) { failure in
+                Alert(
+                    title: Text("No se pudo borrar"),
+                    message: Text(failure.message),
+                    dismissButton: .default(Text("Entendido"))
+                )
+            }
             .animation(
                 AppMotion.respectful(AppMotion.gentle, reduceMotion),
                 value: todayHabitSectionSignature
@@ -212,42 +217,9 @@ struct TodayView: View {
         }
     }
 
-    // MARK: - Header
-
-    private var header: some View {
-        HStack(alignment: .center, spacing: AppSpacing.m) {
-            VStack(alignment: .leading, spacing: AppSpacing.xs) {
-                Text(currentDateTitle)
-                    .font(AppFont.label)
-                    .foregroundStyle(AppColor.textTertiary)
-                    .tracking(0.6)
-
-                Text("Hoy")
-                    .font(AppFont.title.bold())
-                    .foregroundStyle(AppColor.textPrimary)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            Button {
-                sheetRoute = .createMenu
-            } label: {
-                Image(systemName: "plus")
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 42, height: 42)
-                    .background(AppColor.accent)
-                    .clipShape(Circle())
-                    .appElevation(.low)
-            }
-            .accessibilityLabel("Crear")
-        }
-    }
-
-    // MARK: - Empty / Habits
-
     private var emptyTodayContent: some View {
         TodayEmptyStateView(
-            weekdayName: currentDayNameForSentence,
+            weekdayName: AppFormatters.lowercased(currentWeekday.displayName),
             tomorrowHabitsCount: tomorrowHabitsCount
         ) {
             coverRoute = .habit(.create(prefill: HabitPrefill(
@@ -259,242 +231,6 @@ struct TodayView: View {
         .padding(.vertical, AppSpacing.xl)
     }
 
-    @ViewBuilder
-    private var todayHabitsContent: some View {
-        DailyProgressCard(
-            progress: dailyProgress,
-            completedCount: completedTodayCount,
-            totalCount: activeTodayCount,
-            remainingCount: remainingTodayCount,
-            slipCount: slippedHabits.count
-        )
-        .todayListRow(
-            EdgeInsets(top: AppSpacing.s, leading: AppSpacing.l, bottom: AppSpacing.s, trailing: AppSpacing.l)
-        )
-
-        if let freezeMessage = weeklyFreezeMessage {
-            TodayFreezeBanner(message: freezeMessage)
-                .todayListRow(
-                    EdgeInsets(top: 0, leading: AppSpacing.l, bottom: AppSpacing.s, trailing: AppSpacing.l)
-                )
-        }
-
-        sectionHeader(title: "Pendientes", count: pendingHabits.count)
-            .todayListRow(
-                EdgeInsets(top: AppSpacing.s, leading: AppSpacing.l, bottom: 0, trailing: AppSpacing.l)
-            )
-
-        ForEach(pendingHabits) { habit in
-            TodayHabitComponent(
-                habit: habit,
-                isCompleted: false,
-                isMinimumCompleted: habit.isMinimumCompleted(on: referenceDate),
-                activeExperiment: experiments.activeExperiment(
-                    for: habit.id,
-                    reference: referenceDate
-                ),
-                referenceDate: referenceDate,
-                onUrge: habit.isBreakHabit ? {
-                    sheetRoute = .urgeLog(habit: habit)
-                } : nil,
-                onSlip: habit.isBreakHabit ? {
-                    sheetRoute = .slipLog(habit: habit)
-                } : nil,
-                onMinimum: {
-                    markMinimumCompleted(for: habit, on: referenceDate)
-                }
-            ) {
-                toggleCompletion(for: habit)
-            }
-            .todayHabitSectionMotion(habit.id, in: habitSectionNamespace, reduceMotion: reduceMotion)
-            .todayListRow()
-            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                Button {
-                    toggleRest(for: habit)
-                } label: {
-                    Label("Hoy descanso", systemImage: "pause.circle")
-                }
-                .tint(habit.habitColor)
-
-                Button(role: .destructive) {
-                    habitToDelete = habit
-                    showDeleteHabitAlert = true
-                } label: {
-                    Label("Borrar", systemImage: "trash")
-                }
-                .tint(AppColor.destructiveAction)
-
-                Button {
-                    coverRoute = .habit(.edit(habit))
-                } label: {
-                    Label("Editar", systemImage: "pencil")
-                }
-                .tint(AppColor.editAction)
-            }
-        }
-
-        FocusSessionLauncherCard(
-            remainingCount: remainingTodayCount,
-            onStart: {
-                coverRoute = .focus(habits: todayHabits.filter {
-                    !$0.isSkipped(on: referenceDate) && !$0.isSlip(on: referenceDate)
-                })
-            }
-        )
-        .todayListRow()
-
-        if !completedHabits.isEmpty {
-            sectionHeader(title: "Completados", count: completedHabits.count)
-                .padding(.top, AppSpacing.xl)
-                .todayListRow()
-
-            ForEach(completedHabits) { habit in
-                TodayCompletedHabitRow(
-                    habit: habit,
-                    metadata: completionMetadata(for: habit),
-                    isMinimumCompleted: habit.isMinimumCompleted(on: referenceDate) && !habit.isCompleted(on: referenceDate)
-                ) {
-                    toggleCompletion(for: habit)
-                }
-                .todayHabitSectionMotion(habit.id, in: habitSectionNamespace, reduceMotion: reduceMotion)
-                .todayListRow()
-                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                    Button {
-                        toggleRest(for: habit)
-                    } label: {
-                        Label("Hoy descanso", systemImage: "pause.circle")
-                    }
-                    .tint(habit.habitColor)
-
-                    Button(role: .destructive) {
-                        habitToDelete = habit
-                        showDeleteHabitAlert = true
-                    } label: {
-                        Label("Borrar", systemImage: "trash")
-                    }
-                    .tint(AppColor.destructiveAction)
-
-                    Button {
-                        coverRoute = .habit(.edit(habit))
-                    } label: {
-                        Label("Editar", systemImage: "pencil")
-                    }
-                    .tint(AppColor.editAction)
-                }
-            }
-        }
-
-        if !slippedHabits.isEmpty {
-            sectionHeader(title: "Slips registrados", count: slippedHabits.count)
-                .padding(.top, AppSpacing.xl)
-                .todayListRow()
-
-            ForEach(slippedHabits) { habit in
-                TodaySlipHabitRow(
-                    habit: habit,
-                    metadata: slipMetadata(for: habit),
-                    onEdit: {
-                        sheetRoute = .slipLog(habit: habit)
-                    },
-                    onUndo: {
-                        undoSlip(for: habit)
-                    }
-                )
-                .todayHabitSectionMotion(habit.id, in: habitSectionNamespace, reduceMotion: reduceMotion)
-                .todayListRow()
-                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                    Button {
-                        undoSlip(for: habit)
-                    } label: {
-                        Label("Deshacer slip", systemImage: "arrow.uturn.backward.circle")
-                    }
-                    .tint(AppColor.warning)
-
-                    Button {
-                        sheetRoute = .slipLog(habit: habit)
-                    } label: {
-                        Label("Editar contexto", systemImage: "pencil")
-                    }
-                    .tint(AppColor.editAction)
-                }
-            }
-        }
-
-        if !skippedHabits.isEmpty {
-            sectionHeader(title: "Descansos", count: skippedHabits.count)
-                .padding(.top, AppSpacing.xl)
-                .todayListRow()
-
-            ForEach(skippedHabits) { habit in
-                TodayHabitComponent(
-                    habit: habit,
-                    isCompleted: false,
-                    isSkipped: true,
-                    activeExperiment: experiments.activeExperiment(
-                        for: habit.id,
-                        reference: referenceDate
-                    ),
-                    referenceDate: referenceDate
-                ) {
-                    toggleCompletion(for: habit)
-                }
-                .todayHabitSectionMotion(habit.id, in: habitSectionNamespace, reduceMotion: reduceMotion)
-                .todayListRow()
-                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                    Button {
-                        toggleRest(for: habit)
-                    } label: {
-                        Label("Quitar descanso", systemImage: "arrow.uturn.backward.circle")
-                    }
-                    .tint(habit.habitColor)
-
-                    Button(role: .destructive) {
-                        habitToDelete = habit
-                        showDeleteHabitAlert = true
-                    } label: {
-                        Label("Borrar", systemImage: "trash")
-                    }
-                    .tint(AppColor.destructiveAction)
-
-                    Button {
-                        coverRoute = .habit(.edit(habit))
-                    } label: {
-                        Label("Editar", systemImage: "pencil")
-                    }
-                    .tint(AppColor.editAction)
-                }
-            }
-        }
-
-        if let top = todayHabits.topStreakHabit(reference: referenceDate) {
-            let allSameStreak = todayHabits.allShareSameCurrentStreak(reference: referenceDate)
-            LongestStreakBanner(
-                habit: allSameStreak ? nil : top.habit,
-                streakDays: top.streak,
-                allSameStreak: allSameStreak
-            )
-            .todayListRow()
-        }
-    }
-
-    private func sectionHeader(title: String, count: Int) -> some View {
-        HStack(alignment: .firstTextBaseline) {
-            Text(title)
-                .font(AppFont.bodyEmphasis)
-                .foregroundStyle(AppColor.textPrimary)
-
-            Spacer()
-
-            Text(habitCountText(count))
-                .font(AppFont.label)
-                .foregroundStyle(AppColor.textSecondary)
-        }
-    }
-
-    private func habitCountText(_ count: Int) -> String {
-        count == 1 ? "1 hábito" : "\(count) hábitos"
-    }
-
     private var todayHabitSectionSignature: String {
         let pending = pendingHabits.map { "p:\($0.id.uuidString)" }
         let completed = completedHabits.map { "c:\($0.id.uuidString)" }
@@ -504,67 +240,42 @@ struct TodayView: View {
         return (pending + completed + skipped + slipped + freezes).joined(separator: "|")
     }
 
-    private var weeklyFreezeMessage: String? {
-        guard let freeze = weeklyFreezes.first else { return nil }
-        let weekday = weekdayName(for: freeze.protectedDate)
+    // MARK: - Action bindings
 
-        if weeklyFreezes.count == 1 {
-            return "Comodín usado el \(weekday). Tu racha sigue viva."
-        }
-
-        return "\(weeklyFreezes.count) comodines usados esta semana. Tu racha sigue viva."
-    }
-
-    @ViewBuilder
-    private var plansSection: some View {
-        Text("Planes")
-            .font(AppFont.headline)
-            .foregroundStyle(AppColor.textPrimary)
-            .padding(.top, AppSpacing.s)
-            .todayListRow()
-
-        ForEach(plans) { plan in
-            planRow(plan)
-        }
-    }
-
-    private func planRow(_ plan: Plan) -> some View {
-        PlanAccordion(
-            plan: plan,
-            isExpanded: expandedPlans.contains(plan.id),
-            onToggle: {
-                withAnimation(AppMotion.smooth) {
-                    if expandedPlans.contains(plan.id) {
-                        expandedPlans.remove(plan.id)
-                    } else {
-                        expandedPlans.insert(plan.id)
-                    }
-                }
+    private var habitActions: TodayHabitActions {
+        TodayHabitActions(
+            toggleCompletion: { toggleCompletion(for: $0) },
+            markMinimum: { markMinimumCompleted(for: $0, on: referenceDate) },
+            openDetail: { selectedHabit = $0 },
+            openUrgeLog: { habit in
+                hasSeenUrgeTooltip = true
+                sheetRoute = .urgeLog(habit: habit)
             },
-            onHabitTap: { habit in
-                selectedHabit = habit
+            openSlipLog: { sheetRoute = .slipLog(habit: $0) },
+            toggleRest: { toggleRest(for: $0) },
+            requestDelete: { habit in
+                habitToDelete = habit
+                showDeleteHabitAlert = true
             },
-            onOpenDetail: {
-                detailPlan = plan
+            openEdit: { coverRoute = .habit(.edit($0)) },
+            openSlipContext: { sheetRoute = .slipLog(habit: $0) },
+            undoSlip: { undoSlip(for: $0) },
+            startFocus: {
+                coverRoute = .focus(habits: focusCandidateHabits)
             }
         )
-        .todayListRow()
-        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-            Button(role: .destructive) {
+    }
+
+    private var planActions: TodayPlanActions {
+        TodayPlanActions(
+            onHabitTap: { selectedHabit = $0 },
+            onOpenDetail: { detailPlan = $0 },
+            onEdit: { coverRoute = .plan(.edit($0)) },
+            onDelete: { plan in
                 planToDelete = plan
                 showDeletePlanAlert = true
-            } label: {
-                Label("Borrar", systemImage: "trash")
             }
-            .tint(AppColor.destructiveAction)
-
-            Button {
-                coverRoute = .plan(.edit(plan))
-            } label: {
-                Label("Editar", systemImage: "pencil")
-            }
-            .tint(AppColor.editAction)
-        }
+        )
     }
 
     // MARK: - Routing
@@ -598,10 +309,10 @@ struct TodayView: View {
     private func routeSheet(_ route: TodaySheetRoute) -> some View {
         switch route {
         case .createMenu:
-            WHCreationSheet { option in
+            WHCreationSheet(focusDisabledReason: focusDisabledReason) { option in
                 handleCreationSelection(option)
             }
-            .presentationDetents([.height(380), .medium])
+            .presentationDetents([.height(420), .medium])
             .presentationDragIndicator(.visible)
             .presentationBackground(AppColor.bgCanvas)
         case .quantityLog(let habit, let date):
@@ -636,6 +347,9 @@ struct TodayView: View {
                 referenceDate: referenceDate,
                 onSave: { reason in
                     persistRecoveryMiss(candidate, reason: reason)
+                },
+                onCreateMinimum: { title in
+                    createMinimumVersion(for: candidate, title: title)
                 },
                 onSkip: {
                     persistRecoveryMiss(candidate, reason: nil)
@@ -672,7 +386,6 @@ struct TodayView: View {
 
     private func handleCreationSelection(_ option: WHCreationOption) {
         sheetRoute = nil
-        // Pequeña espera para que el sheet se cierre antes de presentar el cover
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
             switch option {
             case .habit:
@@ -680,9 +393,8 @@ struct TodayView: View {
             case .plan:
                 coverRoute = .plan(.create)
             case .focus:
-                coverRoute = .focus(habits: todayHabits.filter {
-                    !$0.isSkipped(on: referenceDate) && !$0.isSlip(on: referenceDate)
-                })
+                guard !focusCandidateHabits.isEmpty else { return }
+                coverRoute = .focus(habits: focusCandidateHabits)
             }
         }
     }
@@ -695,42 +407,28 @@ struct TodayView: View {
             return
         }
 
-        let entriesForToday = habit.entries.filter {
-            AppCalendar.isSameDay($0.date, referenceDate)
-        }
-        let stateEntriesForToday = entriesForToday.filter { $0.kind != .urge }
-        let completedEntriesForToday = entriesForToday.filter { $0.kind == .completed }
-
         let willComplete = !habit.isCompleted(on: referenceDate)
         let closesDay = willComplete && remainingTodayCount == 1
-        var insertedEntry: HabitEntry?
+        var result: HabitTrackingResult?
 
         transitionHabitBetweenSections {
-            if willComplete {
-                stateEntriesForToday.forEach { modelContext.delete($0) }
-                deleteFreeze(for: habit, on: referenceDate)
-                let entry = HabitEntry(
-                    date: referenceDate,
-                    completedAt: .now,
-                    source: .today,
-                    value: 1,
-                    habit: habit
-                )
-                modelContext.insert(entry)
-                insertedEntry = entry
-            } else {
-                completedEntriesForToday.forEach { modelContext.delete($0) }
-            }
+            result = HabitTrackingService.toggleCompletion(
+                for: habit,
+                on: referenceDate,
+                source: .today,
+                completedAt: .now,
+                modelContext: modelContext,
+                streakFreezes: streakFreezes
+            )
         }
 
         if closesDay {
-            // Era el último; cierre del día.
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
                 AppHaptics.play(.dayClosed)
             }
         }
 
-        if willComplete, let insertedEntry {
+        if willComplete, let insertedEntry = result?.entry {
             presentLiveMilestoneIfNeeded(
                 for: habit,
                 on: referenceDate,
@@ -743,25 +441,16 @@ struct TodayView: View {
     private func markMinimumCompleted(for habit: Habit, on date: Date) {
         guard !habit.isCompleted(on: date) else { return }
 
-        let entriesForDay = habit.entries.filter {
-            AppCalendar.isSameDay($0.date, date)
-        }
-        let stateEntriesForDay = entriesForDay.filter { $0.kind != .urge }
         let closesDay = AppCalendar.isSameDay(date, referenceDate) && remainingTodayCount == 1
 
         transitionHabitBetweenSections {
-            stateEntriesForDay.forEach { modelContext.delete($0) }
-            deleteFreeze(for: habit, on: date)
-            modelContext.insert(
-                HabitEntry(
-                    date: date,
-                    completedAt: .now,
-                    source: .today,
-                    kind: .minimum,
-                    completedCount: 0,
-                    value: 0,
-                    habit: habit
-                )
+            _ = HabitTrackingService.markMinimum(
+                for: habit,
+                on: date,
+                source: .today,
+                completedAt: .now,
+                modelContext: modelContext,
+                streakFreezes: streakFreezes
             )
         }
 
@@ -771,11 +460,7 @@ struct TodayView: View {
             }
         }
 
-        presentLiveMilestoneIfNeeded(
-            for: habit,
-            on: date,
-            afterDayClosed: closesDay
-        )
+        presentLiveMilestoneIfNeeded(for: habit, on: date, afterDayClosed: closesDay)
     }
 
     @discardableResult
@@ -826,13 +511,15 @@ struct TodayView: View {
     }
 
     private func applyWeeklyFreezes(reference: Date) {
-        for habit in habits where habit.allowsWeeklyFreeze {
-            guard let protectedDate = habit.weeklyFreezeCandidate(reference: reference),
-                  !streakFreezes.containsFreeze(for: habit, weekContaining: protectedDate) else {
-                continue
-            }
+        let insertedFreezes = HabitTrackingService.applyWeeklyFreezes(
+            to: habits,
+            existing: streakFreezes,
+            reference: reference,
+            modelContext: modelContext
+        )
 
-            modelContext.insert(StreakFreeze(habit: habit, protectedDate: protectedDate))
+        if !insertedFreezes.isEmpty && !hasSeenFreezeExplainer {
+            latestFreezeExplainerMessage = insertedFreezes.todayBannerMessage()
         }
     }
 
@@ -848,101 +535,9 @@ struct TodayView: View {
         sheetRoute = .recoveryPrompt(candidate)
     }
 
-    private func weekdayName(for date: Date) -> String {
-        AppCalendar.weekday(of: date)
-            .displayName
-            .lowercased(with: Locale(identifier: "es_MX"))
-    }
-
-    private func isCompleteForTodayList(_ habit: Habit) -> Bool {
-        if habit.isFlexibleSchedule && habit.completedDaysThisWeek(reference: referenceDate) >= habit.targetDaysPerWeek {
-            return true
-        }
-        return habit.isCompleted(on: referenceDate) || habit.isMinimumCompleted(on: referenceDate)
-    }
-
     private func weekRangeText(for weekStart: Date) -> String {
         let weekEnd = AppCalendar.current.date(byAdding: .day, value: 6, to: weekStart) ?? weekStart
-        let formatter = DateFormatter()
-        formatter.calendar = AppCalendar.current
-        formatter.locale = Locale(identifier: "es_MX")
-        formatter.dateFormat = "d MMM"
-        return "\(formatter.string(from: weekStart)) - \(formatter.string(from: weekEnd))"
-    }
-
-    private func completionMetadata(for habit: Habit) -> String {
-        let entriesForToday = habit.entries.filter {
-            AppCalendar.isSameDay($0.date, referenceDate)
-        }
-
-        let completedEntry = entriesForToday
-            .filter { $0.kind == .completed }
-            .sorted { lhs, rhs in
-                (lhs.completedAt ?? lhs.date) > (rhs.completedAt ?? rhs.date)
-            }
-            .first
-        let minimumEntry = entriesForToday
-            .filter { $0.kind == .minimum }
-            .sorted { lhs, rhs in
-                (lhs.completedAt ?? lhs.date) > (rhs.completedAt ?? rhs.date)
-            }
-            .first
-
-        guard let entry = completedEntry ?? minimumEntry else {
-            return "Meta semanal alcanzada"
-        }
-
-        if entry.kind == .minimum {
-            let title = habit.minimumViableTitle?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            return title.isEmpty ? "Versión mínima" : "Versión mínima · \(title)"
-        }
-
-        let sourceText: String
-        switch entry.source {
-        case .today:
-            sourceText = "marca confiable"
-        case .focusSession:
-            sourceText = "sesión de ritmo"
-        case .manual:
-            sourceText = "registrado después"
-        }
-
-        guard let completedAt = entry.completedAt else {
-            return sourceText
-        }
-
-        let formatter = DateFormatter()
-        formatter.calendar = AppCalendar.current
-        formatter.locale = Locale(identifier: "es_MX")
-        formatter.dateFormat = "HH:mm"
-        return "\(formatter.string(from: completedAt)) · \(sourceText)"
-    }
-
-    private func slipMetadata(for habit: Habit) -> String {
-        guard let entry = habit.slipEntry(on: referenceDate) else {
-            return "Slip registrado"
-        }
-
-        var parts: [String] = []
-
-        if let completedAt = entry.completedAt {
-            let formatter = DateFormatter()
-            formatter.calendar = AppCalendar.current
-            formatter.locale = Locale(identifier: "es_MX")
-            formatter.dateFormat = "HH:mm"
-            parts.append(formatter.string(from: completedAt))
-        }
-
-        if let trigger = entry.slipTrigger {
-            parts.append(trigger.title)
-        }
-
-        let trimmedContext = entry.slipContext?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        if !trimmedContext.isEmpty {
-            parts.append(trimmedContext)
-        }
-
-        return parts.isEmpty ? "Slip registrado" : parts.joined(separator: " · ")
+        return "\(AppFormatters.string(from: weekStart, format: "d MMM")) - \(AppFormatters.string(from: weekEnd, format: "d MMM"))"
     }
 
     private func upsertQuantityEntry(
@@ -951,49 +546,28 @@ struct TodayView: View {
         value: Double,
         source: HabitEntrySource
     ) {
-        let wasCompleted = habit.totalValue(on: date) >= habit.sessionTargetValue
+        let wasCompleted = habit.isCompleted(on: date)
         let closesDay = source == .today
             && AppCalendar.isSameDay(date, referenceDate)
             && !wasCompleted
             && remainingTodayCount == 1
-        let entriesForDay = habit.entries.filter {
-            AppCalendar.isSameDay($0.date, date)
-        }
-        let stateEntriesForDay = entriesForDay.filter { $0.kind != .urge }
+        var result: HabitTrackingResult?
 
         transitionHabitBetweenSections {
-            if value <= 0 {
-                entriesForDay
-                    .filter { $0.kind == .completed || $0.kind == .minimum }
-                    .forEach { modelContext.delete($0) }
-                return
-            }
-
-            if let entry = stateEntriesForDay.first {
-                entry.kind = .completed
-                entry.value = value
-                entry.completedCount = Int(value.rounded())
-                entry.completedAt = .now
-                entry.source = source
-                stateEntriesForDay.dropFirst().forEach { modelContext.delete($0) }
-            } else {
-                modelContext.insert(
-                    HabitEntry(
-                        date: date,
-                        completedAt: .now,
-                        source: source,
-                        completedCount: Int(value.rounded()),
-                        value: value,
-                        habit: habit
-                    )
-                )
-            }
+            result = HabitTrackingService.upsertQuantity(
+                for: habit,
+                on: date,
+                value: value,
+                source: source,
+                completedAt: source == .manual ? nil : .now,
+                modelContext: modelContext,
+                streakFreezes: streakFreezes
+            )
         }
 
         guard value > 0 else { return }
 
-        let isCompleted = habit.totalValue(on: date) >= habit.sessionTargetValue
-        if !wasCompleted && isCompleted {
+        if result?.becameCompleted == true {
             AppHaptics.play(.quantityCompleted)
             if closesDay {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
@@ -1001,116 +575,64 @@ struct TodayView: View {
                 }
             }
             if source == .today {
-                presentLiveMilestoneIfNeeded(
-                    for: habit,
-                    on: date,
-                    afterDayClosed: closesDay
-                )
+                presentLiveMilestoneIfNeeded(for: habit, on: date, afterDayClosed: closesDay)
             }
-        } else if !isCompleted {
+        } else if result?.isCompleted == false {
             AppHaptics.play(.quantityLogged)
         }
     }
 
     private func toggleRest(for habit: Habit) {
-        let entriesForToday = habit.entries.filter {
-            AppCalendar.isSameDay($0.date, referenceDate)
-        }
-        let stateEntriesForToday = entriesForToday.filter { $0.kind != .urge }
-        let willSkip = !habit.isSkipped(on: referenceDate)
-
         transitionHabitBetweenSections {
-            stateEntriesForToday.forEach { modelContext.delete($0) }
-
-            if willSkip {
-                modelContext.insert(
-                    HabitEntry(
-                        date: referenceDate,
-                        completedAt: nil,
-                        source: .today,
-                        kind: .skipped,
-                        completedCount: 0,
-                        value: 0,
-                        habit: habit
-                    )
-                )
-            }
+            HabitTrackingService.toggleRest(
+                for: habit,
+                on: referenceDate,
+                source: .today,
+                modelContext: modelContext,
+                streakFreezes: streakFreezes
+            )
         }
 
         AppHaptics.play(.skipToggled)
     }
 
     private func persistSlip(for habit: Habit, trigger: SlipTrigger?, context: String?) {
-        guard habit.isBreakHabit else { return }
-
-        let hadSlipBefore = habit.isSlip(on: referenceDate)
-        let entriesForToday = habit.entries.filter {
-            AppCalendar.isSameDay($0.date, referenceDate)
-        }
-        let stateEntriesForToday = entriesForToday.filter { $0.kind != .urge }
+        var didCreateSlip = false
 
         transitionHabitBetweenSections {
-            if let existingSlip = stateEntriesForToday.first(where: { $0.kind == .slip }) {
-                existingSlip.completedAt = existingSlip.completedAt ?? .now
-                existingSlip.source = .today
-                existingSlip.completedCount = 0
-                existingSlip.value = 0
-                existingSlip.slipTrigger = trigger
-                existingSlip.slipContext = context
-                stateEntriesForToday
-                    .filter { $0.id != existingSlip.id }
-                    .forEach { modelContext.delete($0) }
-            } else {
-                stateEntriesForToday.forEach { modelContext.delete($0) }
-                modelContext.insert(
-                    HabitEntry(
-                        date: referenceDate,
-                        completedAt: .now,
-                        source: .today,
-                        kind: .slip,
-                        completedCount: 0,
-                        value: 0,
-                        slipTrigger: trigger,
-                        slipContext: context,
-                        habit: habit
-                    )
-                )
-            }
-
-            deleteFreeze(for: habit, on: referenceDate)
+            didCreateSlip = HabitTrackingService.recordSlip(
+                for: habit,
+                on: referenceDate,
+                trigger: trigger,
+                context: context,
+                modelContext: modelContext,
+                streakFreezes: streakFreezes
+            )
         }
 
-        if !hadSlipBefore {
+        if didCreateSlip {
             presentReplacementPromptAfterCurrentSheet(for: habit)
         }
     }
 
     private func persistUrge(for habit: Habit, trigger: SlipTrigger?) {
-        guard habit.isBreakHabit else { return }
-
-        modelContext.insert(
-            HabitEntry(
-                date: referenceDate,
-                completedAt: .now,
-                source: .today,
-                kind: .urge,
-                completedCount: 0,
-                value: 0,
-                slipTrigger: trigger,
-                habit: habit
-            )
+        HabitTrackingService.recordUrge(
+            for: habit,
+            on: referenceDate,
+            trigger: trigger,
+            modelContext: modelContext
         )
 
         presentReplacementPromptAfterCurrentSheet(for: habit)
     }
 
     private func undoSlip(for habit: Habit) {
-        let entriesForToday = habit.entries.filter {
-            AppCalendar.isSameDay($0.date, referenceDate) && $0.kind == .slip
-        }
-
         transitionHabitBetweenSections {
-            entriesForToday.forEach { modelContext.delete($0) }
+            HabitTrackingService.undoSlip(
+                for: habit,
+                on: referenceDate,
+                modelContext: modelContext
+            )
         }
     }
 
@@ -1123,45 +645,37 @@ struct TodayView: View {
         }
     }
 
-    private func deleteFreeze(for habit: Habit, on date: Date) {
-        streakFreezes
-            .filter { $0.habitID == habit.id && AppCalendar.isSameDay($0.protectedDate, date) }
-            .forEach { modelContext.delete($0) }
+    private func persistRecoveryMiss(_ candidate: RecoveryPromptCandidate, reason: HabitFailureReason?) {
+        HabitTrackingService.recordRecoveryMiss(
+            candidate,
+            reason: reason,
+            modelContext: modelContext
+        )
+        saveRecoveryPromptState()
+        sheetRoute = nil
     }
 
-    private func persistRecoveryMiss(_ candidate: RecoveryPromptCandidate, reason: HabitFailureReason?) {
-        let entriesForDay = candidate.habit.entries.filter {
-            AppCalendar.isSameDay($0.date, candidate.date)
-        }
-        let stateEntriesForDay = entriesForDay.filter { $0.kind != .urge }
+    private func createMinimumVersion(for candidate: RecoveryPromptCandidate, title: String) {
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
 
-        if let existingMiss = stateEntriesForDay.first(where: { $0.kind == .missed }) {
-            existingMiss.failureReasonKind = reason
-            stateEntriesForDay
-                .filter { $0.kind == .missed && $0.id != existingMiss.id }
-                .forEach { modelContext.delete($0) }
-            sheetRoute = nil
-            return
-        }
-
-        guard stateEntriesForDay.isEmpty else {
-            sheetRoute = nil
-            return
-        }
-
-        modelContext.insert(
-            HabitEntry(
-                date: candidate.date,
-                completedAt: nil,
-                source: .today,
-                kind: .missed,
-                completedCount: 0,
-                value: 0,
-                failureReason: reason,
-                habit: candidate.habit
-            )
+        candidate.habit.minimumViableTitle = trimmed
+        HabitTrackingService.recordRecoveryMiss(
+            candidate,
+            reason: nil,
+            modelContext: modelContext
         )
+        saveRecoveryPromptState()
         sheetRoute = nil
+        AppHaptics.play(.selection)
+    }
+
+    private func saveRecoveryPromptState() {
+        do {
+            try modelContext.save()
+        } catch {
+            print("WeekHabit recovery prompt save failed: \(error)")
+        }
     }
 
     private func transitionHabitBetweenSections(_ mutation: @escaping () -> Void) {
@@ -1187,8 +701,13 @@ struct TodayView: View {
         guard let habitToDelete else { return }
         let habitID = habitToDelete.id
 
-        withAnimation(AppMotion.smooth) {
-            modelContext.delete(habitToDelete)
+        do {
+            try withAnimation(AppMotion.smooth) {
+                try HabitLifecycleService.delete(habitToDelete, modelContext: modelContext)
+            }
+        } catch {
+            deleteFailure = TodayDeleteFailure(message: error.localizedDescription)
+            return
         }
 
         Task {
@@ -1201,260 +720,16 @@ struct TodayView: View {
     private func deleteSelectedPlan() {
         guard let planToDelete else { return }
 
-        withAnimation(AppMotion.smooth) {
-            modelContext.delete(planToDelete)
+        do {
+            try withAnimation(AppMotion.smooth) {
+                try PlanLifecycleService.delete(planToDelete, modelContext: modelContext)
+            }
+        } catch {
+            deleteFailure = TodayDeleteFailure(message: error.localizedDescription)
+            return
         }
 
         self.planToDelete = nil
-    }
-}
-
-// MARK: - Routes
-
-private enum TodayCoverRoute: Identifiable {
-    case habit(HabitRoute)
-    case plan(PlanRoute)
-    case focus(habits: [Habit])
-
-    var id: String {
-        switch self {
-        case .habit(let route): return "habit-\(route.id)"
-        case .plan(let route): return "plan-\(route.id)"
-        case .focus(let habits): return "focus-\(habits.map { $0.id.uuidString }.joined(separator: ","))"
-        }
-    }
-}
-
-private enum TodaySheetRoute: Identifiable {
-    case createMenu
-    case quantityLog(habit: Habit, date: Date)
-    case slipLog(habit: Habit)
-    case urgeLog(habit: Habit)
-    case recoveryPrompt(RecoveryPromptCandidate)
-    case replacementPrompt(breakHabit: Habit, replacementHabit: Habit)
-    case weeklyReview(weekStart: Date)
-    case noteEntry(entry: HabitEntry)
-
-    var id: String {
-        switch self {
-        case .createMenu: return "createMenu"
-        case .quantityLog(let habit, _): return "quantityLog-\(habit.id)"
-        case .slipLog(let habit): return "slipLog-\(habit.id)"
-        case .urgeLog(let habit): return "urgeLog-\(habit.id)"
-        case .recoveryPrompt(let candidate): return "recoveryPrompt-\(candidate.id)"
-        case .replacementPrompt(let breakHabit, let replacementHabit):
-            return "replacementPrompt-\(breakHabit.id)-\(replacementHabit.id)"
-        case .weeklyReview(let weekStart):
-            return "weeklyReview-\(weekStart.timeIntervalSinceReferenceDate)"
-        case .noteEntry(let entry): return "noteEntry-\(entry.id)"
-        }
-    }
-}
-
-// MARK: - Helpers
-
-private extension View {
-    func todayListRow(
-        _ insets: EdgeInsets = EdgeInsets(top: 0, leading: AppSpacing.l, bottom: 0, trailing: AppSpacing.l)
-    ) -> some View {
-        listRowBackground(Color.clear)
-            .listRowSeparator(.hidden)
-            .listRowInsets(insets)
-    }
-
-    @ViewBuilder
-    func todayHabitSectionMotion(
-        _ habitID: UUID,
-        in namespace: Namespace.ID,
-        reduceMotion: Bool
-    ) -> some View {
-        if reduceMotion {
-            self
-        } else {
-            matchedGeometryEffect(
-                id: "today-habit-\(habitID.uuidString)",
-                in: namespace,
-                properties: .frame,
-                anchor: .center
-            )
-            .transition(
-                .asymmetric(
-                    insertion: .move(edge: .top)
-                        .combined(with: .opacity)
-                        .combined(with: .scale(scale: 0.985, anchor: .center)),
-                    removal: .opacity
-                        .combined(with: .scale(scale: 0.985, anchor: .center))
-                )
-            )
-            .zIndex(1)
-        }
-    }
-}
-
-private struct TodayCompletedHabitRow: View {
-    let habit: Habit
-    let metadata: String
-    var isMinimumCompleted: Bool = false
-    let onToggle: () -> Void
-
-    var body: some View {
-        HStack(alignment: .center, spacing: AppSpacing.m) {
-            Button(action: onToggle) {
-                Image(systemName: "checkmark")
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(.white)
-                    .frame(width: 32, height: 32)
-                    .background(isMinimumCompleted ? habit.habitColor.opacity(0.55) : habit.habitColor)
-                    .clipShape(RoundedRectangle(cornerRadius: AppRadius.s, style: .continuous))
-                    .overlay {
-                        RoundedRectangle(cornerRadius: AppRadius.s, style: .continuous)
-                            .strokeBorder(isMinimumCompleted ? habit.habitColor : Color.clear, lineWidth: 1)
-                    }
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(isMinimumCompleted ? "Marcar completo \(habit.title)" : "Desmarcar \(habit.title)")
-
-            VStack(alignment: .leading, spacing: AppSpacing.xxs) {
-                Text(habit.title)
-                    .font(AppFont.bodyEmphasis)
-                    .foregroundStyle(isMinimumCompleted ? AppColor.textPrimary.opacity(0.72) : AppColor.textSecondary)
-                    .strikethrough(!isMinimumCompleted, color: AppColor.textSecondary)
-                    .lineLimit(1)
-
-                Text(metadata)
-                    .font(AppFont.label)
-                    .foregroundStyle(AppColor.textTertiary)
-                    .lineLimit(1)
-            }
-
-            Spacer(minLength: 0)
-
-            completedIconBadge
-        }
-        .padding(.horizontal, AppSpacing.l)
-        .padding(.vertical, AppSpacing.m)
-        .frame(maxWidth: .infinity, minHeight: 68, alignment: .leading)
-        .background(isMinimumCompleted ? AppColor.bgElevated.opacity(0.88) : AppColor.bgElevated.opacity(0.72))
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous)
-                .strokeBorder(
-                    isMinimumCompleted ? habit.habitColor.opacity(0.28) : AppColor.divider.opacity(0.7),
-                    lineWidth: 1
-                )
-        }
-    }
-
-    private var completedIconBadge: some View {
-        ZStack {
-            Circle()
-                .fill(habit.habitColor.opacity(0.14))
-
-            Image(systemName: habit.iconName)
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(habit.habitColor)
-        }
-        .frame(width: 38, height: 38)
-        .accessibilityHidden(true)
-    }
-}
-
-private struct TodaySlipHabitRow: View {
-    let habit: Habit
-    let metadata: String
-    let onEdit: () -> Void
-    let onUndo: () -> Void
-
-    var body: some View {
-        HStack(alignment: .center, spacing: AppSpacing.m) {
-            Image(systemName: "arrow.counterclockwise")
-                .font(.system(size: 14, weight: .bold))
-                .foregroundStyle(AppColor.warning)
-                .frame(width: 32, height: 32)
-                .background(AppColor.warning.opacity(0.13))
-                .clipShape(RoundedRectangle(cornerRadius: AppRadius.s, style: .continuous))
-                .overlay {
-                    RoundedRectangle(cornerRadius: AppRadius.s, style: .continuous)
-                        .strokeBorder(AppColor.warning.opacity(0.34), lineWidth: 1)
-                }
-
-            VStack(alignment: .leading, spacing: AppSpacing.xxs) {
-                Text(habit.title)
-                    .font(AppFont.bodyEmphasis)
-                    .foregroundStyle(AppColor.textPrimary)
-                    .lineLimit(1)
-
-                Text(metadata)
-                    .font(AppFont.label)
-                    .foregroundStyle(AppColor.textSecondary)
-                    .lineLimit(2)
-            }
-
-            Spacer(minLength: 0)
-
-            HStack(spacing: AppSpacing.xs) {
-                Button(action: onEdit) {
-                    Image(systemName: "pencil")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(AppColor.editAction)
-                        .frame(width: 32, height: 32)
-                        .background(AppColor.editAction.opacity(0.12))
-                        .clipShape(Circle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Editar contexto de \(habit.title)")
-
-                Button(action: onUndo) {
-                    Image(systemName: "arrow.uturn.backward")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(AppColor.warning)
-                        .frame(width: 32, height: 32)
-                        .background(AppColor.warning.opacity(0.12))
-                        .clipShape(Circle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Deshacer slip de \(habit.title)")
-            }
-        }
-        .padding(.horizontal, AppSpacing.l)
-        .padding(.vertical, AppSpacing.m)
-        .frame(maxWidth: .infinity, minHeight: 76, alignment: .leading)
-        .background(AppColor.bgElevated)
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous)
-                .strokeBorder(AppColor.warning.opacity(0.20), lineWidth: 1)
-        }
-    }
-}
-
-private struct TodayFreezeBanner: View {
-    let message: String
-
-    var body: some View {
-        HStack(alignment: .top, spacing: AppSpacing.m) {
-            Image(systemName: "shield.fill")
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(AppColor.info)
-                .frame(width: 30, height: 30)
-                .background(AppColor.info.opacity(0.14))
-                .clipShape(Circle())
-
-            Text(message)
-                .font(AppFont.label)
-                .foregroundStyle(AppColor.textSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal, AppSpacing.m)
-        .padding(.vertical, AppSpacing.s)
-        .background(AppColor.info.opacity(0.08))
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.m, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: AppRadius.m, style: .continuous)
-                .strokeBorder(AppColor.info.opacity(0.22), lineWidth: 1)
-        }
     }
 }
 

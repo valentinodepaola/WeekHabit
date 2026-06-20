@@ -13,7 +13,7 @@ struct OnboardingIntroScreen: View {
         VStack(spacing: 0) {
             Spacer()
 
-            RippleLogoView()
+            WeekRhythmHero()
                 .padding(.bottom, AppSpacing.l)
 
             VStack(spacing: AppSpacing.s) {
@@ -35,7 +35,7 @@ struct OnboardingIntroScreen: View {
                 .padding(.horizontal, AppSpacing.xl)
                 .padding(.bottom, AppSpacing.l)
 
-            Button("Saltar introducción", action: onSkip)
+            Button("Omitir introducción", action: onSkip)
                 .font(AppFont.label)
                 .foregroundStyle(AppColor.textTertiary)
                 .padding(.bottom, AppSpacing.xxl)
@@ -43,13 +43,13 @@ struct OnboardingIntroScreen: View {
     }
 
     private var headlineText: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: AppSpacing.xs) {
             Text("Una semana.")
-                .font(.system(size: 38, weight: .regular, design: .serif))
+                .font(AppFont.display)
                 .foregroundStyle(AppColor.textPrimary)
 
             Text("Un ritmo.")
-                .font(.system(size: 38, weight: .regular, design: .serif))
+                .font(AppFont.display)
                 .italic()
                 .foregroundStyle(AppColor.accent)
         }

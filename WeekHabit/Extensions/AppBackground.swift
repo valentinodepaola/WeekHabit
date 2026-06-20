@@ -21,5 +21,6 @@ struct AppBackground<Content: View>: View {
 
             content
         }
+        .whKeyboardDoneToolbar()
     }
 }

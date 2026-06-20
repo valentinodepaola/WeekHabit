@@ -67,7 +67,7 @@ struct CurrentStreakHeroCard: View {
                 .offset(x: 22, y: 10)
 
             VStack(alignment: .leading, spacing: AppSpacing.m) {
-                Text(caption.uppercased(with: Locale(identifier: "es")))
+                Text(AppFormatters.uppercased(caption))
                     .font(AppFont.label)
                     .tracking(0.8)
                     .foregroundStyle(captionColor)

@@ -16,7 +16,10 @@ struct StarterHabitTemplate: Identifiable, Equatable {
     let targetValuePerSession: Double
 
     var subtitle: String {
-        "\(daysPerWeek)d/sem"
+        if trackingKind == .quantity, measurementUnit != .none {
+            return "\(Habit.formattedQuantity(targetValuePerSession)) \(measurementUnit.shortTitle) · \(daysPerWeek)d/sem"
+        }
+        return "\(daysPerWeek)d/sem"
     }
 
     var icon: String {
@@ -27,36 +30,22 @@ struct StarterHabitTemplate: Identifiable, Equatable {
         HabitAppearance.color(for: colorHex)
     }
 
-    func makeHabit() -> Habit {
-        Habit(
-            title: title,
-            iconName: iconName,
-            colorHex: colorHex,
-            targetDaysPerWeek: daysPerWeek,
-            activeDaysOfWeek: Set(Weekday.ordered),
-            trackingKind: trackingKind,
-            measurementUnit: measurementUnit,
-            targetValuePerSession: targetValuePerSession,
-            scheduleKind: .timesPerWeek
-        )
-    }
-
     static let defaultID = "meditate"
 
     static let all: [StarterHabitTemplate] = [
         StarterHabitTemplate(
-            id: "water",
-            title: "Beber 2L de agua",
-            iconName: "drop.fill",
+            id: "stretch",
+            title: "Estirar",
+            iconName: "leaf.fill",
             colorHex: "#7fa774",
-            daysPerWeek: 7,
-            trackingKind: .check,
-            measurementUnit: .none,
-            targetValuePerSession: 1
+            daysPerWeek: 5,
+            trackingKind: .quantity,
+            measurementUnit: .minutes,
+            targetValuePerSession: 5
         ),
         StarterHabitTemplate(
             id: "meditate",
-            title: "Meditar 10 min",
+            title: "Meditar",
             iconName: "brain.head.profile",
             colorHex: "#8b7fb0",
             daysPerWeek: 7,
@@ -66,7 +55,7 @@ struct StarterHabitTemplate: Identifiable, Equatable {
         ),
         StarterHabitTemplate(
             id: "read",
-            title: "Leer antes de dormir",
+            title: "Leer",
             iconName: "book.fill",
             colorHex: "#5c89a8",
             daysPerWeek: 6,
@@ -76,7 +65,7 @@ struct StarterHabitTemplate: Identifiable, Equatable {
         ),
         StarterHabitTemplate(
             id: "walk",
-            title: "Caminar 30 min",
+            title: "Caminar",
             iconName: "figure.walk",
             colorHex: "#7fa774",
             daysPerWeek: 5,

@@ -6,7 +6,7 @@
 import SwiftUI
 
 struct WeekGridCell: View {
-    enum State: Equatable {
+    enum State: Equatable, CaseIterable {
         case completed
         /// Marca registrada retroactivamente (todos los entries del día son `.manual`).
         case completedRetro
@@ -22,10 +22,60 @@ struct WeekGridCell: View {
         case pending
         case inactive
         case future
+
+        var legendTitle: String {
+            switch self {
+            case .completed: return "Completado"
+            case .completedRetro: return "Completado retroactivo"
+            case .minimum: return "Versión mínima"
+            case .skipped: return "Descanso"
+            case .frozen: return "Comodín"
+            case .missed: return "Sin marcar"
+            case .slip: return "Slip"
+            case .urge: return "Impulso"
+            case .partial: return "Parcial"
+            case .partialRetro: return "Parcial retroactivo"
+            case .pending: return "Pendiente"
+            case .inactive: return "Inactivo"
+            case .future: return "Futuro"
+            }
+        }
+
+        var legendDescription: String {
+            switch self {
+            case .completed: return "Cuenta como avance completo."
+            case .completedRetro: return "Se marcó después del día original."
+            case .minimum: return "Cuenta como mantener la racha en pequeño."
+            case .skipped: return "Pausa elegida sin tratarla como fallo."
+            case .frozen: return "Un comodín protegió la racha."
+            case .missed: return "El día cerró sin evidencia suficiente."
+            case .slip: return "Se registró una caída o repetición."
+            case .urge: return "Hubo impulso, aunque no necesariamente slip."
+            case .partial: return "Hay avance, pero no llegó a la meta."
+            case .partialRetro: return "Avance parcial registrado después."
+            case .pending: return "Todavía se puede marcar."
+            case .inactive: return "El hábito no tocaba ese día."
+            case .future: return "Día que aún no llega."
+            }
+        }
+
+        var visualFamily: WeekGridCellFamily {
+            switch self {
+            case .completed, .completedRetro, .minimum, .partial, .partialRetro:
+                return .done
+            case .skipped, .frozen:
+                return .intentionalPause
+            case .missed, .slip, .urge:
+                return .usefulSignal
+            case .pending, .inactive, .future:
+                return .empty
+            }
+        }
     }
 
     let state: State
     let habitColor: Color
+    var isInteractive: Bool = true
     let onTap: () -> Void
     let onSkip: () -> Void
 
@@ -90,9 +140,10 @@ struct WeekGridCell: View {
             .contentShape(RoundedRectangle(cornerRadius: AppRadius.s, style: .continuous))
         }
         .buttonStyle(WeekGridCellButtonStyle())
-        .disabled(state == .inactive || state == .future)
+        .disabled(isInteractive && (state == .inactive || state == .future))
+        .allowsHitTesting(isInteractive)
         .contextMenu {
-            if state != .inactive && state != .future {
+            if isInteractive && state != .inactive && state != .future {
                 Button {
                     onSkip()
                 } label: {
@@ -106,6 +157,9 @@ struct WeekGridCell: View {
 
     @ViewBuilder
     private var shape: some View {
+        // Gramática visual de Week:
+        // Hecho = color del hábito; Pausa con intención = tono calmo/punteado;
+        // Señal útil = alerta suave sin rojo destructivo; Vacío = neutros.
         switch state {
         case .completed:
             RoundedRectangle(cornerRadius: AppRadius.s)
@@ -211,6 +265,37 @@ struct WeekGridCell: View {
         case .inactive: return "Día inactivo"
         case .future: return "Día futuro"
         }
+    }
+}
+
+enum WeekGridCellFamily: CaseIterable, Identifiable {
+    case done
+    case intentionalPause
+    case usefulSignal
+    case empty
+
+    var id: String { title }
+
+    var title: String {
+        switch self {
+        case .done: return "Hecho"
+        case .intentionalPause: return "Pausa con intención"
+        case .usefulSignal: return "Señal útil"
+        case .empty: return "Vacío"
+        }
+    }
+
+    var description: String {
+        switch self {
+        case .done: return "Relleno o punto del color del hábito: hubo avance."
+        case .intentionalPause: return "Pausa válida, sin leerla como fracaso."
+        case .usefulSignal: return "Datos para aprender del patrón, no castigos."
+        case .empty: return "Días pendientes, inactivos o futuros."
+        }
+    }
+
+    var states: [WeekGridCell.State] {
+        WeekGridCell.State.allCases.filter { $0.visualFamily == self }
     }
 }
 

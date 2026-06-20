@@ -39,7 +39,7 @@ struct LongestStreakBanner: View {
             .frame(width: 52, height: 52)
 
             VStack(alignment: .leading, spacing: AppSpacing.xxs) {
-                Text(caption.uppercased(with: Locale(identifier: "es")))
+                Text(AppFormatters.uppercased(caption))
                     .font(AppFont.label)
                     .foregroundStyle(.white)
                     .tracking(0.8)

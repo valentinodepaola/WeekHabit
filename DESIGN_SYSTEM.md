@@ -24,16 +24,16 @@ Todos los colores son **adaptativos** (cambian según `userInterfaceStyle`). Nun
 
 | Token | Light | Dark | Uso |
 |---|---|---|---|
-| `AppColor.bgCanvas` | `#f5efe3` | `#1a1410` | Fondo principal de pantalla. Siempre vía `AppBackground { … }`. |
-| `AppColor.bgElevated` | `#fffaf0` | `#221a14` | Cards principales (default `WHCard`), filas, sheets. |
-| `AppColor.bgSunken` | `#ebe3d3` | `#14100c` | Inputs, áreas que reciben contenido, contenedor de la cuadrícula semanal. |
-| `AppColor.divider` | `#e5dccb` | `#2e2620` | Bordes 1pt entre superficies del mismo nivel. |
+| `AppColor.bgCanvas` | `#f5efe3` | `#101113` | Fondo principal de pantalla. Siempre vía `AppBackground { … }`. |
+| `AppColor.bgElevated` | `#fffaf0` | `#1a1c20` | Cards principales (default `WHCard`), filas, sheets. |
+| `AppColor.bgSunken` | `#ebe3d3` | `#0a0b0d` | Inputs, áreas que reciben contenido, contenedor de la cuadrícula semanal. |
+| `AppColor.divider` | `#e5dccb` | `#2a2d33` | Bordes 1pt entre superficies del mismo nivel. |
 
 ### 2.2 Texto
 
 | Token | Light | Dark | Uso |
 |---|---|---|---|
-| `AppColor.textPrimary` | `#2a1f15` | `#f3e9d8` | Títulos, body principal, valores. |
+| `AppColor.textPrimary` | `#2a1f15` | `#f0eee9` | Títulos, body principal, valores. |
 | `AppColor.textSecondary` | `#6b5d4a` | `#bcae97` | Captions, subtítulos, metadata. |
 | `AppColor.textTertiary` | `#9c8e7c` | `#7d7263` | Eyebrow labels, helpers, conteos auxiliares. |
 
@@ -41,7 +41,7 @@ Todos los colores son **adaptativos** (cambian según `userInterfaceStyle`). Nun
 
 | Token | Light | Dark | Uso |
 |---|---|---|---|
-| `AppColor.accent` | `#b54d2d` | `#e07a4d` | Botón primary, FAB "+", iconografía activa, tab seleccionado, tint del NavigationStack. |
+| `AppColor.accent` | `#b54d2d` | `#e4784f` | Botón primary, FAB "+", iconografía activa, tab seleccionado, tint del NavigationStack. |
 | `AppColor.accentMuted` | `#f3d9cf` | `#3a201a` | Fondo de chip seleccionado, badge circular de icono accent, tab seleccionado. |
 | `AppColor.accentSubtle` | `#e6c2b3` | `#4d2b22` | Pressed/hover. |
 

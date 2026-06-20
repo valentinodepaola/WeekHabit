@@ -24,13 +24,12 @@ struct RhythmExperimentCard: View {
         VStack(alignment: .leading, spacing: AppSpacing.l) {
             HStack(spacing: AppSpacing.s) {
                 Image(systemName: "sparkle.magnifyingglass")
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(AppFont.iconMedium)
                     .foregroundStyle(AppColor.info)
 
                 Text("ESTOS PATRONES SUGIEREN UNA PRUEBA")
                     .font(AppFont.label)
                     .foregroundStyle(AppColor.textTertiary)
-                    .tracking(0.8)
                     .lineLimit(1)
                     .minimumScaleFactor(0.85)
             }
@@ -54,10 +53,7 @@ struct RhythmExperimentCard: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(AppSpacing.l)
-        .background(AppColor.bgElevated)
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous))
-        .appElevation(.low)
+        .insightCard()
     }
 
     private func suggestionContent(_ rankedSuggestion: RankedRhythmSuggestion, isPrimary: Bool) -> some View {
@@ -134,7 +130,7 @@ private struct RhythmChip: View {
             .foregroundStyle(AppColor.textSecondary)
             .lineLimit(1)
             .padding(.horizontal, AppSpacing.s)
-            .padding(.vertical, 7)
+            .padding(.vertical, AppSpacing.s)
             .background(AppColor.bgSunken)
             .clipShape(Capsule())
     }

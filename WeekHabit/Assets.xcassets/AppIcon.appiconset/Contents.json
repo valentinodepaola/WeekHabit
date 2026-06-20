@@ -1,7 +1,7 @@
 {
   "images" : [
     {
-      "filename" : "WeekHabit_03_Editorial_W.png",
+      "filename" : "WeekHabit_06_Stack.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
@@ -13,7 +13,7 @@
           "value" : "dark"
         }
       ],
-      "filename" : "WeekHabit_03_Editorial_W 1.png",
+      "filename" : "WeekHabit_06_Stack 1.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
@@ -25,7 +25,7 @@
           "value" : "tinted"
         }
       ],
-      "filename" : "WeekHabit_03_Editorial_W 2.png",
+      "filename" : "WeekHabit_06_Stack 2.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"

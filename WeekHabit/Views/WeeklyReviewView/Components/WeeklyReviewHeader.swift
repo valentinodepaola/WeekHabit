@@ -12,7 +12,7 @@ struct WeeklyReviewHeader: View {
     var body: some View {
         HStack(alignment: .top, spacing: AppSpacing.m) {
             VStack(alignment: .leading, spacing: AppSpacing.xs) {
-                Text(weekRangeText.uppercased(with: Locale(identifier: "es_MX")))
+                Text(AppFormatters.uppercased(weekRangeText))
                     .font(AppFont.label)
                     .foregroundStyle(AppColor.textTertiary)
                     .tracking(0.8)

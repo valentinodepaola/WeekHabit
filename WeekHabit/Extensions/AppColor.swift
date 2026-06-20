@@ -16,22 +16,22 @@ enum AppColor {
 
     // MARK: - Backgrounds
 
-    /// Fondo principal de pantalla. Café-tinta profundo en oscuro, papel manila en claro.
-    static let bgCanvas = adaptive(light: "#f5efe3", dark: "#1a1410")
+    /// Fondo principal de pantalla. Grafito neutro en oscuro, papel manila en claro.
+    static let bgCanvas = adaptive(light: "#FAF0E4", dark: "#101113")
     /// Superficies elevadas: cards, paneles. Un escalón arriba del canvas.
-    static let bgElevated = adaptive(light: "#fffaf0", dark: "#221a14")
+    static let bgElevated = adaptive(light: "#fffaf0", dark: "#242220")
     /// Superficies hundidas: inputs, áreas que reciben contenido.
-    static let bgSunken = adaptive(light: "#ebe3d3", dark: "#14100c")
+    static let bgSunken = adaptive(light: "#ebe3d3", dark: "#191817")
 
     // MARK: - Text
 
-    static let textPrimary = adaptive(light: "#2a1f15", dark: "#f3e9d8")
+    static let textPrimary = adaptive(light: "#2a1f15", dark: "#f0eee9")
     static let textSecondary = adaptive(light: "#6b5d4a", dark: "#bcae97")
     static let textTertiary = adaptive(light: "#9c8e7c", dark: "#7d7263")
 
     // MARK: - Accent (terracotta)
 
-    static let accent = adaptive(light: "#b54d2d", dark: "#e07a4d")
+    static let accent = adaptive(light: "#b54d2d", dark: "#e4784f")
     /// Fondo de chip o estado seleccionado.
     static let accentMuted = adaptive(light: "#f3d9cf", dark: "#3a201a")
     /// Variante intermedia para hover/pressed.
@@ -49,7 +49,7 @@ enum AppColor {
 
     // MARK: - Structure
 
-    static let divider = adaptive(light: "#e5dccb", dark: "#2e2620")
+    static let divider = adaptive(light: "#e5dccb", dark: "#3a3630")
 
     // MARK: - Row actions
 

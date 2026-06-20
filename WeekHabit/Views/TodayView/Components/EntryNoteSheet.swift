@@ -16,6 +16,8 @@ struct EntryNoteSheet: View {
     @Environment(\.modelContext) private var modelContext
 
     @State private var noteText: String
+    @State private var saveFailure: EntryNoteSaveFailure?
+    @State private var didAttemptCommit = false
     @FocusState private var isFocused: Bool
 
     init(entry: HabitEntry) {
@@ -59,28 +61,50 @@ struct EntryNoteSheet: View {
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Listo") {
-                        dismiss()
+                        commitAndDismiss()
                     }
                     .tint(AppColor.accent)
                 }
             }
         }
+        .alert(item: $saveFailure) { failure in
+            Alert(
+                title: Text("No se pudo guardar"),
+                message: Text(failure.message),
+                dismissButton: .default(Text("Entendido"))
+            )
+        }
+        .whKeyboardDoneToolbar()
         .presentationDetents([.height(260)])
         .presentationDragIndicator(.visible)
         .presentationBackground(AppColor.bgElevated)
-        .onAppear {
-            isFocused = true
-        }
         .onDisappear {
-            commit()
+            commitIfNeeded()
         }
     }
 
-    private func commit() {
-        let trimmed = noteText.trimmingCharacters(in: .whitespacesAndNewlines)
-        let newValue = trimmed.isEmpty ? nil : trimmed
-        guard entry.note != newValue else { return }
-        entry.note = newValue
-        try? modelContext.save()
+    private func commitAndDismiss() {
+        guard commitIfNeeded() else { return }
+        dismiss()
     }
+
+    @discardableResult
+    private func commitIfNeeded() -> Bool {
+        guard !didAttemptCommit else { return true }
+        didAttemptCommit = true
+
+        do {
+            try EntryNoteService.saveNote(noteText, for: entry, modelContext: modelContext)
+            return true
+        } catch {
+            didAttemptCommit = false
+            saveFailure = EntryNoteSaveFailure(message: error.localizedDescription)
+            return false
+        }
+    }
+}
+
+private struct EntryNoteSaveFailure: Identifiable {
+    let id = UUID()
+    let message: String
 }

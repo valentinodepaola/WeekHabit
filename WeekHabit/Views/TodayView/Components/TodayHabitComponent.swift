@@ -15,6 +15,9 @@ struct TodayHabitComponent: View {
     var onUrge: (() -> Void)? = nil
     var onSlip: (() -> Void)? = nil
     var onMinimum: (() -> Void)? = nil
+    var onOpenDetail: (() -> Void)? = nil
+    var showsUrgeExplainer: Bool = false
+    var onDismissUrgeExplainer: (() -> Void)? = nil
     let onToggle: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -25,16 +28,36 @@ struct TodayHabitComponent: View {
             HStack(alignment: .center, spacing: AppSpacing.m) {
                 completeToggle
 
-                textContent
+                HStack(spacing: AppSpacing.m) {
+                    textContent
 
-                Spacer(minLength: AppSpacing.s)
+                    Spacer(minLength: AppSpacing.s)
 
-                iconColumn
+                    iconColumn
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    onOpenDetail?()
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityAddTraits(.isButton)
+                .accessibilityHint("Ver detalle")
+            }
+
+            if hasMinimumAction {
+                minimumAction
+                    .padding(.leading, secondaryActionLeadingPadding)
             }
 
             if shouldShowBreakActions {
+                if showsUrgeExplainer {
+                    urgeExplainer
+                        .padding(.leading, secondaryActionLeadingPadding)
+                }
+
                 breakActions
-                    .padding(.leading, 34 + AppSpacing.m)
+                    .padding(.leading, secondaryActionLeadingPadding)
             }
         }
         .padding(.horizontal, AppSpacing.l)
@@ -139,33 +162,14 @@ struct TodayHabitComponent: View {
         .opacity(streakCount == 0 ? 0.5 : 1)
     }
 
-    @ViewBuilder
     private var completeToggle: some View {
-        if hasMinimumAction {
-            Menu {
-                Button {
-                    handleMinimum()
-                } label: {
-                    Label("Hice la mínima", systemImage: "checkmark.circle")
-                }
-            } label: {
-                toggleVisual
-            } primaryAction: {
-                handleToggle()
-            }
-            .buttonStyle(.plain)
-            .simultaneousGesture(pressGesture)
-            .animation(AppMotion.respectful(AppMotion.celebration, reduceMotion), value: isCompleted || isMinimumCompleted || isSkipped)
-            .accessibilityLabel(toggleAccessibilityLabel)
-        } else {
-            Button(action: handleToggle) {
-                toggleVisual
-            }
-            .buttonStyle(.plain)
-            .simultaneousGesture(pressGesture)
-            .animation(AppMotion.respectful(AppMotion.celebration, reduceMotion), value: isCompleted || isMinimumCompleted || isSkipped)
-            .accessibilityLabel(toggleAccessibilityLabel)
+        Button(action: handleToggle) {
+            toggleVisual
         }
+        .buttonStyle(.plain)
+        .simultaneousGesture(pressGesture)
+        .animation(AppMotion.respectful(AppMotion.celebration, reduceMotion), value: isCompleted || isMinimumCompleted || isSkipped)
+        .accessibilityLabel(toggleAccessibilityLabel)
     }
 
     private var toggleVisual: some View {
@@ -197,6 +201,18 @@ struct TodayHabitComponent: View {
         .scaleEffect(toggleScale)
     }
 
+    private var minimumAction: some View {
+        Button(action: handleMinimum) {
+            actionPill(
+                title: "Hice la mínima",
+                icon: "checkmark.circle",
+                color: habit.habitColor
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Marcar versión mínima de \(habit.title)")
+    }
+
     private var pressGesture: some Gesture {
         DragGesture(minimumDistance: 0)
             .onChanged { _ in
@@ -225,6 +241,42 @@ struct TodayHabitComponent: View {
             VStack(alignment: .leading, spacing: AppSpacing.s) {
                 breakActionButtons
             }
+        }
+    }
+
+    private var urgeExplainer: some View {
+        HStack(alignment: .top, spacing: AppSpacing.s) {
+            Image(systemName: "waveform.path.ecg")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(habit.habitColor)
+                .frame(width: 24, height: 24)
+                .background(habit.habitColor.opacity(0.12))
+                .clipShape(Circle())
+
+            Text("Registra un impulso cuando aparezcan ganas de hacerlo. Eso ayuda a encontrar patrones sin contarlo como slip.")
+                .font(AppFont.micro)
+                .foregroundStyle(AppColor.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Spacer(minLength: 0)
+
+            if let onDismissUrgeExplainer {
+                Button(action: onDismissUrgeExplainer) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(AppColor.textTertiary)
+                        .frame(width: 24, height: 24)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Ocultar explicación de impulso")
+            }
+        }
+        .padding(AppSpacing.s)
+        .background(habit.habitColor.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.m, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: AppRadius.m, style: .continuous)
+                .strokeBorder(habit.habitColor.opacity(0.20), lineWidth: 1)
         }
     }
 
@@ -319,6 +371,10 @@ struct TodayHabitComponent: View {
 
     private var shouldShowBreakActions: Bool {
         habit.isBreakHabit && !isCompleted && !isSkipped && (onSlip != nil || onUrge != nil)
+    }
+
+    private var secondaryActionLeadingPadding: CGFloat {
+        34 + AppSpacing.m
     }
 
     private var scheduleFallbackText: String {
