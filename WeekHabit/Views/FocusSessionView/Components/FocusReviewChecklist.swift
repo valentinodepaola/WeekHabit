@@ -30,9 +30,9 @@ struct FocusReviewChecklist: View {
                                 .font(AppFont.bodyEmphasis)
                                 .foregroundStyle(AppColor.textPrimary)
                                 .lineLimit(1)
-                            Text("Completado durante la sesión")
+                            Text(completedHabitIDs.contains(habit.id) ? "Lo completé" : "Quedó pendiente")
                                 .font(AppFont.label)
-                                .foregroundStyle(AppColor.textSecondary)
+                                .foregroundStyle(completedHabitIDs.contains(habit.id) ? AppColor.textSecondary : AppColor.textTertiary)
                         }
 
                         Spacer()
