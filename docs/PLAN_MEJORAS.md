@@ -26,16 +26,20 @@ xcodebuild -project WeekHabit.xcodeproj \
   test
 ```
 
-## Estado actual — 2026-07-26
+## Estado actual — 2026-07-27
 
-- **Ninguna fase de este plan está empezada.** Documento recién creado.
+- **Fase 1 implementada.** Ya no quedan escrituras directas a `modelContext` en `Views/`.
+  Se agregó `OnboardingSetupService` y `HabitTrackingService.commitRecoveryMiss`, y los
+  errores de guardado se muestran en una alerta en vez de tragarse o mandarse a `print`.
+  Validación: **70 tests passed** en `iPhone 17 Pro` y recorrido manual del onboarding
+  completo en simulador limpio, con persistencia confirmada tras reiniciar la app.
 - Corrección respecto a `REFACTOR_HANDOFF.md`: ese documento todavía lista **A4 como
   siguiente paso recomendado**, pero A4 ya está implementado según
   `PLAN_SIMPLIFICACION.md` y se verifica en el código (`AppPerformance.measure` en 13
   puntos de Insights/Week, `PerformanceSeedService`, `scripts/seed_performance_data.sh`).
   Lo que quedó pendiente de A4 es **ejecutar la medición y decidir si cachear**, no
   construir el instrumental. La Fase 2 de este plan cierra eso.
-- **Siguiente paso recomendado:** Fase 1.
+- **Siguiente paso recomendado:** Fase 2.
 
 ---
 
@@ -127,6 +131,24 @@ grep -rn --include='*.swift' 'modelContext\.\(insert\|delete\|save\)' WeekHabit/
 ```
 
 **Costo estimado:** medio día.
+
+### Implementada — 2026-07-27
+
+- `Services/OnboardingSetupService.swift`: `ensurePlan`, `addHabit`, `removeHabit` y
+  `commit`. Solo `commit` lanza, porque `insert` y `delete` no pueden fallar; el guardado
+  sigue siendo diferido, como hoy.
+- `HabitTrackingService.commitRecoveryMiss(_:reason:minimumTitle:modelContext:)`: envuelve
+  al `recordRecoveryMiss` existente, aplica la versión mínima y guarda. `recordRecoveryMiss`
+  quedó intacto.
+- `TodayDeleteFailure` se generalizó a `TodayFailure` con constructores `.deleting(_:)` y
+  `.saving(_:)`, para que el título de la alerta corresponda a la operación.
+- Tests: `OnboardingSetupServiceTests` (6) y
+  `HabitTrackingServiceTests.testCommitRecoveryMissAppliesMinimumTitleAndPersists`.
+
+**Quirk conocido, no arreglado:** el guardado no es estrictamente "solo al final". Si el
+usuario abre `CreateHabitView` desde el paso de hábitos, `HabitEditorService.save()`
+descarga el contexto entero y de paso persiste el plan pendiente. Es el comportamiento
+previo y se conservó tal cual.
 
 ---
 

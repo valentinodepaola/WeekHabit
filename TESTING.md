@@ -15,7 +15,7 @@ xcodebuild -project WeekHabit.xcodeproj \
 
 ## Estado actual de la suite
 
-Última validación conocida (2026-06-16): **43 tests passed** en
+Última validación conocida (2026-07-27): **70 tests passed** en
 `platform=iOS Simulator,name=iPhone 17 Pro`.
 
 Además de la cobertura inicial, la suite ya cubre:
@@ -34,6 +34,13 @@ Además de la cobertura inicial, la suite ya cubre:
   - `attentionHabit`;
   - `urgePeakHourInsight`;
   - sugerencias de experimentos y orden por prioridad.
+- `OnboardingSetupService`, agregado en la Fase 1 de `docs/PLAN_MEJORAS.md`:
+  - título de respaldo y motivación nula cuando el texto viene vacío;
+  - normalización de espacios y fecha de fin a 30 días en start-of-day;
+  - reutilización del plan existente en vez de crear un segundo;
+  - alta y baja de hábitos de plantilla ligados al plan;
+  - guardado diferido: las mutaciones quedan pendientes hasta `commit`.
+- `HabitTrackingService.commitRecoveryMiss`: aplica la versión mínima y persiste.
 
 ## Cobertura inicial
 

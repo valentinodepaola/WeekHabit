@@ -38,7 +38,7 @@ struct TodayView: View {
     @State private var showDeleteHabitAlert = false
     @State private var planToDelete: Plan?
     @State private var showDeletePlanAlert = false
-    @State private var deleteFailure: TodayDeleteFailure?
+    @State private var failure: TodayFailure?
     @State private var expandedPlans: Set<UUID> = []
     @State private var detailPlan: Plan?
     @State private var latestFreezeExplainerMessage: String?
@@ -199,9 +199,9 @@ struct TodayView: View {
             } message: {
                 Text("Los hábitos del plan no serán eliminados.")
             }
-            .alert(item: $deleteFailure) { failure in
+            .alert(item: $failure) { failure in
                 Alert(
-                    title: Text("No se pudo borrar"),
+                    title: Text(failure.title),
                     message: Text(failure.message),
                     dismissButton: .default(Text("Entendido"))
                 )
@@ -646,35 +646,37 @@ struct TodayView: View {
     }
 
     private func persistRecoveryMiss(_ candidate: RecoveryPromptCandidate, reason: HabitFailureReason?) {
-        HabitTrackingService.recordRecoveryMiss(
-            candidate,
-            reason: reason,
-            modelContext: modelContext
-        )
-        saveRecoveryPromptState()
+        guard commitRecoveryMiss(candidate, reason: reason) else { return }
+
         sheetRoute = nil
     }
 
     private func createMinimumVersion(for candidate: RecoveryPromptCandidate, title: String) {
-        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
+        let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedTitle.isEmpty else { return }
+        guard commitRecoveryMiss(candidate, reason: nil, minimumTitle: trimmedTitle) else { return }
 
-        candidate.habit.minimumViableTitle = trimmed
-        HabitTrackingService.recordRecoveryMiss(
-            candidate,
-            reason: nil,
-            modelContext: modelContext
-        )
-        saveRecoveryPromptState()
         sheetRoute = nil
         AppHaptics.play(.selection)
     }
 
-    private func saveRecoveryPromptState() {
+    /// Devuelve `false` y muestra la alerta si el guardado falla.
+    private func commitRecoveryMiss(
+        _ candidate: RecoveryPromptCandidate,
+        reason: HabitFailureReason?,
+        minimumTitle: String? = nil
+    ) -> Bool {
         do {
-            try modelContext.save()
+            try HabitTrackingService.commitRecoveryMiss(
+                candidate,
+                reason: reason,
+                minimumTitle: minimumTitle,
+                modelContext: modelContext
+            )
+            return true
         } catch {
-            print("WeekHabit recovery prompt save failed: \(error)")
+            failure = .saving(error)
+            return false
         }
     }
 
@@ -706,7 +708,7 @@ struct TodayView: View {
                 try HabitLifecycleService.delete(habitToDelete, modelContext: modelContext)
             }
         } catch {
-            deleteFailure = TodayDeleteFailure(message: error.localizedDescription)
+            failure = .deleting(error)
             return
         }
 
@@ -725,7 +727,7 @@ struct TodayView: View {
                 try PlanLifecycleService.delete(planToDelete, modelContext: modelContext)
             }
         } catch {
-            deleteFailure = TodayDeleteFailure(message: error.localizedDescription)
+            failure = .deleting(error)
             return
         }
 

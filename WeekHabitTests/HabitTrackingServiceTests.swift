@@ -95,6 +95,25 @@ final class HabitTrackingServiceTests: XCTestCase {
         XCTAssertEqual(primaryEntries(for: habit, on: date).map(\.id), [completed.id])
     }
 
+    func testCommitRecoveryMissAppliesMinimumTitleAndPersists() throws {
+        let store = try TestStore()
+        let date = TestFactory.date(day: 3)
+        let habit = TestFactory.habit()
+        store.insert(habit)
+        let candidate = RecoveryPromptCandidate(habit: habit, date: date, isWeeklyFlexibleMiss: false)
+
+        try HabitTrackingService.commitRecoveryMiss(
+            candidate,
+            reason: nil,
+            minimumTitle: "Dos minutos",
+            modelContext: store.context
+        )
+
+        XCTAssertEqual(habit.minimumViableTitle, "Dos minutos")
+        XCTAssertEqual(primaryEntries(for: habit, on: date).map(\.kind), [.missed])
+        XCTAssertFalse(store.context.hasChanges)
+    }
+
     func testSlipReplacesPrimaryStateAndPreservesUrge() throws {
         let store = try TestStore()
         let date = TestFactory.date(day: 3)

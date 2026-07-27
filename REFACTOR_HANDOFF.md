@@ -38,12 +38,19 @@ Este bloque resume el estado real después de avanzar el plan de simplificación
 ### Decisiones de producto tomadas
 
 - **No tocar onboarding por ahora.** El plan proponía B1 (pasar de 6 pasos a 3), pero el
-  onboarding de 6 pasos se conserva por decisión explícita. Por eso las escrituras directas
-  que quedan en onboarding son una excepción documentada, no un descuido.
+  onboarding de 6 pasos se conserva por decisión explícita.
 - **A2 está implementado.** El commit anterior (`ea43836 "Implementamos A2 y actualizamos
   handoff"`) en realidad cerró A3 (Insights); el nombre quedó como error de naming.
 - El siguiente paso recomendado es **A4** (medir rendimiento antes de cachear) o **A5**
   (higiene de tokens oportunística).
+
+> **Desactualizado — leer `docs/PLAN_MEJORAS.md`.** Este bloque quedó viejo en dos puntos:
+>
+> - **A4 y A5 ya están implementados.** De A4 falta ejecutar la medición y decidir si
+>   cachear; eso es la Fase 2 del plan nuevo.
+> - **La excepción de onboarding está cerrada.** La Fase 1 del plan nuevo extrajo esas
+>   escrituras a `OnboardingSetupService`. Ya no quedan escrituras directas a
+>   `modelContext` en `Views/`, así que la auditoría de más abajo ahora debe salir vacía.
 
 ### A1 completado con excepción documentada
 

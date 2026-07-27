@@ -276,6 +276,26 @@ enum HabitTrackingService {
         )
     }
 
+    /// Registra el miss de recuperación y lo escribe a disco de inmediato.
+    ///
+    /// El prompt de recuperación se muestra una sola vez al día, así que su respuesta no
+    /// puede quedar dependiendo del autosave. `minimumTitle` guarda, en el mismo paso, la
+    /// versión mínima que el usuario define desde el prompt.
+    static func commitRecoveryMiss(
+        _ candidate: RecoveryPromptCandidate,
+        reason: HabitFailureReason?,
+        minimumTitle: String? = nil,
+        modelContext: ModelContext
+    ) throws {
+        if let minimumTitle, !minimumTitle.isEmpty {
+            candidate.habit.minimumViableTitle = minimumTitle
+        }
+
+        recordRecoveryMiss(candidate, reason: reason, modelContext: modelContext)
+
+        try modelContext.save()
+    }
+
     @discardableResult
     static func applyWeeklyFreezes(
         to habits: [Habit],

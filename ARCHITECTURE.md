@@ -58,8 +58,10 @@ implementan las transacciones de SwiftData.
 
 ## Próximas extracciones
 
-- Auditar las mutaciones SwiftData restantes en vistas de onboarding, detalle y revisión.
-- El plan detallado de las fases 5 y 6 está en `REFACTOR_HANDOFF.md`.
+- Las vistas ya no escriben a `modelContext`. Onboarding delega en `OnboardingSetupService`
+  y el prompt de recuperación en `HabitTrackingService.commitRecoveryMiss`.
+- El plan detallado de las fases 5 y 6 está en `REFACTOR_HANDOFF.md`. Lo que sigue está en
+  `docs/PLAN_MEJORAS.md`.
 
 ## Dominio de hábitos
 
