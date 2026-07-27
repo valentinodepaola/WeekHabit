@@ -40,6 +40,8 @@ xcodebuild -project WeekHabit.xcodeproj \
   Lo que quedó pendiente de A4 es **ejecutar la medición y decidir si cachear**, no
   construir el instrumental. La Fase 2 de este plan cierra eso.
 - **Siguiente paso recomendado:** Fase 2.
+- **Pendiente aparte, sin empezar:** blindar el seed de rendimiento. Ver la sección
+  "Pendiente aparte" más abajo. No bloquea ninguna fase.
 
 ---
 
@@ -233,6 +235,70 @@ simulador.
 **Costo estimado:** 3–5 días.
 
 ---
+
+## Pendiente aparte — Blindar el seed de rendimiento
+
+No es una fase del plan: es un arreglo chico e independiente, detectado el 2026-07-27
+usando la app. Se puede hacer en cualquier momento.
+
+### Qué pasó
+
+Estando en Insights con datos reales, un toque en el ícono `speedometer` de la barra
+superior ([InsightsView.swift:159](../WeekHabit/Views/InsightsView/InsightsView.swift))
+disparó `PerformanceSeedService` y la app se congeló. Números exactos, leídos del store del
+simulador:
+
+| | |
+|---|---|
+| Hábitos `[Perf]` insertados | 5 |
+| Entradas insertadas | **1 480** |
+| Datos reales que había | 2 hábitos, 8 entradas |
+
+Las 1 480 inserciones ocurren en una sola transacción síncrona en el hilo principal, seguidas
+de un `save()`. De ahí el congelamiento.
+
+### Lo que NO es un problema
+
+El seed **no puede llegar a producción**. Verificado empíricamente, no solo leyendo los
+`#if DEBUG`: se compiló en Release y se buscaron los rastros en el binario.
+
+| String | Debug | Release |
+|---|---|---|
+| `[Perf]` | sí | no |
+| `speedometer` | sí | no |
+| `Crear datos de performance` | sí | no |
+| `No se pudo borrar` (control) | sí | sí |
+
+El control aparece en ambos, así que la extracción funciona; el seed simplemente no existe
+en Release. Nota para reproducirlo: en Debug el código vive en `WeekHabit.debug.dylib`, no
+en el binario principal, así que hay que correr `strings` sobre el dylib.
+
+### Lo que SÍ es un problema
+
+1. **No hay forma de deshacerlo.** No existe ningún camino en el código que borre los
+   hábitos `[Perf]`. La única salida es borrarlos a mano o reinstalar la app.
+2. **No pide confirmación.** Un toque, 1 480 filas, irreversible.
+3. **Está en el toolbar principal de una pantalla real**, fácil de picar sin querer. Si
+   alguna vez se corre un build Debug desde Xcode en un dispositivo con datos reales, mete
+   1 480 entradas sintéticas entre ellos y ensucia Insights.
+
+### Arreglo propuesto
+
+- Confirmación previa que diga cuántos hábitos y entradas va a crear.
+- Método `PerformanceSeedService.removeSeed(modelContext:)` que borre los hábitos con
+  prefijo `[Perf]` — el borrado de `Habit` ya cascadea entradas y freezes, así que alcanza
+  con borrar los 5 hábitos — más su botón en la UI.
+- Sacar el botón del toolbar principal a un lugar menos accidental.
+
+Archivos: `WeekHabit/Services/PerformanceSeedService.swift`,
+`WeekHabit/Views/InsightsView/InsightsView.swift` (toolbar en 157-168, función en 354-370),
+`WeekHabit/ContentView.swift` (seed en arranque por `AppStorage`, líneas 67-71 y 89-107).
+
+### Relación con la Fase 2
+
+La lentitud posterior al seed no fue solo la inserción: es exactamente lo que la Fase 2
+quiere medir. Insights recalcula todas sus métricas en cada render sin caché, y con ~1 488
+entradas se nota. Este incidente es evidencia de que la medición de la Fase 2 vale la pena.
 
 ## Archivos
 
