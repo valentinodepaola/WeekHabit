@@ -15,8 +15,8 @@ xcodebuild -project WeekHabit.xcodeproj \
 
 ## Estado actual de la suite
 
-Última validación conocida (2026-07-27): **70 tests passed** en
-`platform=iOS Simulator,name=iPhone 17 Pro`.
+Última validación conocida (2026-07-27): **71 tests passed** en
+`platform=iOS Simulator,name=iPhone 17 Pro`, sin fallos.
 
 Además de la cobertura inicial, la suite ya cubre:
 
@@ -41,6 +41,60 @@ Además de la cobertura inicial, la suite ya cubre:
   - alta y baja de hábitos de plantilla ligados al plan;
   - guardado diferido: las mutaciones quedan pendientes hasta `commit`.
 - `HabitTrackingService.commitRecoveryMiss`: aplica la versión mínima y persiste.
+- `PerformanceBaselineTests`, agregado en la Fase 2 de `docs/PLAN_MEJORAS.md`. Ver abajo.
+
+## Línea base de rendimiento
+
+`PerformanceBaselineTests` mide cada métrica del dominio sobre dos tamaños de dataset y
+reporta el factor de crecimiento entre ambos. El dataset lo genera `TestHistoryFactory` en
+`TestSupport.swift`, con la misma forma que `PerformanceSeedService` pero parametrizado.
+
+Medición del **2026-07-27**, iPhone 17 Pro simulador, promedio de 3 corridas descartando el
+calentamiento:
+
+### Métricas de colección — escalan con la cantidad de hábitos
+
+| Métrica | 5 hábitos | 15 hábitos | Factor |
+|---|---:|---:|---:|
+| Insights snapshot | 541,37 ms | **1 610,30 ms** | 3,0× |
+| Sugerencias de experimentos | 818,64 ms | **2 524,21 ms** | 3,1× |
+| Agregados de Week | 37,68 ms | 108,60 ms | 2,9× |
+| Colecciones de Today | 17,55 ms | 52,05 ms | 3,0× |
+| Insights readiness + confianza | 0,77 ms | 2,22 ms | 2,9× |
+| Insights de urges | 0,60 ms | 1,79 ms | 3,0× |
+
+### Métricas por hábito — escalan con el largo del historial
+
+| Métrica | 365 días | 1 095 días | Factor |
+|---|---:|---:|---:|
+| `bestStreak` | 294,19 ms | **2 665,18 ms** | **9,1×** |
+| `completionMatrix` (10 semanas) | 64,22 ms | 201,57 ms | 3,1× |
+| `currentStreakBreakdown` | 1,33 ms | 6,83 ms | 5,1× |
+
+### Cómo leer los números
+
+Un factor de 3× frente a una entrada 3× mayor es crecimiento proporcional. `bestStreak` da
+**9,1×**, o sea cuadrático: es la confirmación de que `Habit+Completion` resuelve cada
+consulta por día escaneando linealmente todas las entradas del hábito.
+
+`currentStreakBreakdown` crece 5,1× pero queda en 6,83 ms porque corta en el primer día roto
+y escanea pocos días. `bestStreak` recorre todo el rango, y por eso paga el costo completo.
+
+La decisión que salió de estos números está en `docs/PLAN_MEJORAS.md`.
+
+### Cómo volver a medirlos
+
+Los `print` solo se ven corriendo desde Xcode. Desde consola, cada medición queda además
+como attachment dentro del `.xcresult`:
+
+```bash
+R=$(ls -td ~/Library/Developer/Xcode/DerivedData/WeekHabit-*/Logs/Test/*.xcresult | head -1)
+xcrun xcresulttool export attachments --path "$R" --output-path /tmp/perf
+cat /tmp/perf/*.txt
+```
+
+Los techos de `Ceiling` están en ~5× lo medido y son **provisionales**: 5× de una línea base
+mala no protege mucho. Hay que apretarlos cuando se implemente el índice por día.
 
 ## Cobertura inicial
 

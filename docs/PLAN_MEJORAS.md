@@ -39,7 +39,15 @@ xcodebuild -project WeekHabit.xcodeproj \
   puntos de Insights/Week, `PerformanceSeedService`, `scripts/seed_performance_data.sh`).
   Lo que quedó pendiente de A4 es **ejecutar la medición y decidir si cachear**, no
   construir el instrumental. La Fase 2 de este plan cierra eso.
-- **Siguiente paso recomendado:** Fase 2.
+- **Fase 2 implementada.** La medición existe y dio un veredicto claro: **cachear no
+  alcanza, hay que indexar las entradas por día.** `bestStreak` crece 9,1× ante una entrada
+  3× mayor, y el snapshot de Insights cuesta 1 610 ms con 15 hábitos. Los números están en
+  `TESTING.md`. Validación: **71 tests passed**, sin fallos.
+- **Nuevo pendiente que abre la Fase 2:** implementar el índice por día en
+  `Habit+Completion`. Es el arreglo que las mediciones justifican y todavía no está hecho.
+- **Siguiente paso recomendado:** el índice por día, antes que la Fase 3. `TodayView` tarda
+  52 ms solo en armar sus colecciones, y la Fase 3 reescribe justo eso: conviene arreglar el
+  acceso a datos primero para no optimizar dos veces.
 - **Pendiente aparte, sin empezar:** blindar el seed de rendimiento. Ver la sección
   "Pendiente aparte" más abajo. No bloquea ninguna fase.
 
@@ -183,6 +191,40 @@ Trabajo:
 existe una decisión explícita y escrita de cachear o no cachear.
 
 **Costo estimado:** 1–2 días.
+
+### Implementada — 2026-07-27
+
+`WeekHabitTests/PerformanceBaselineTests.swift` mide 9 métricas sobre dos tamaños de dataset
+y reporta el factor de crecimiento. El dataset lo genera `TestHistoryFactory` en
+`TestSupport.swift`. Los números completos están en `TESTING.md`.
+
+**Resultado: cachear no alcanza. El arreglo es indexar las entradas por día.**
+
+Las dos evidencias:
+
+1. **`bestStreak` crece 9,1× ante una entrada 3× mayor** — 294 ms con 365 días de historial,
+   **2 665 ms con 1 095**. Eso es cuadrático, y confirma la hipótesis: cada consulta por día
+   escanea linealmente todas las entradas del hábito.
+2. **Las métricas de colección crecen proporcional pero parten de un absoluto inaceptable.**
+   El snapshot de Insights cuesta **1 610 ms** con 15 hábitos y las sugerencias de
+   experimentos **2 524 ms**. Son ~108 ms *por hábito*, y ese costo por hábito es el mismo
+   escaneo día × entradas.
+
+Por eso cachear no resuelve: guardar el resultado de un cálculo de 1,6 s sigue costando 1,6 s
+en el primer render y en cada invalidación — y en `TodayView` se invalida con cada hábito que
+el usuario marca.
+
+**Arreglo pendiente (fase propia, no incluida acá):** construir una vez por hábito un
+`[Date: [HabitEntry]]` con las entradas agrupadas por día normalizado, y que
+`Habit+Completion` consulte ese índice en vez de escanear. Eso lleva
+`entries.contains { isSameDay(...) }` de O(entradas) a O(1), y `bestStreak` de
+O(días × entradas) a O(días). Cachear encima queda opcional y probablemente innecesario.
+
+Los techos de `Ceiling` quedaron en ~5× lo medido y son **provisionales**: 5× de una línea
+base mala no protege gran cosa. Apretarlos cuando el índice esté implementado.
+
+**Costo en la suite:** los dos tests agregan ~50 s. La suite completa pasó de ~23 s a ~68 s.
+Si molesta, la palanca es bajar `iterations` o sacarlos del test plan por defecto.
 
 ---
 
