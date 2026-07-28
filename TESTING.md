@@ -15,7 +15,7 @@ xcodebuild -project WeekHabit.xcodeproj \
 
 ## Estado actual de la suite
 
-Última validación conocida (2026-07-27): **77 tests passed** en
+Última validación conocida (2026-07-27): **81 tests passed** en
 `platform=iOS Simulator,name=iPhone 17 Pro`, sin fallos.
 
 Además de la cobertura inicial, la suite ya cubre:
@@ -45,6 +45,9 @@ Además de la cobertura inicial, la suite ya cubre:
 - `AppCalendarTests`, agregado en la Fase 2.5: el calendario se cachea, y estas pruebas
   fijan que cachearlo no cambie lo que devuelven `startOfDay`, `weekday`, `weekRange` ni
   `isSameDay`, y que invalidar el caché lo reconstruya bien.
+- `HabitDayIndexTests`: pruebas de **equivalencia** del índice por día. Recorren día por día
+  un historial completo y comparan cada predicado del índice contra su equivalente en
+  `Habit`. Son la red que protege ese refactor: si el índice difiere en un solo día, fallan.
 
 ## Línea base de rendimiento
 
@@ -111,6 +114,40 @@ El corolario para el índice por día es directo: **no alcanza con hacer menos l
 `isSameDay`, hay que dejar de llamarla**. El índice tiene que agrupar por fecha ya
 normalizada y comparar `Date` directo.
 
+## Tercera medición — con el índice por día
+
+Después de introducir `HabitDayIndex` y usarlo en los recorridos por día del dominio. La
+comparación es contra la segunda medición:
+
+| Métrica | Antes | Después | Mejora | Factor antes | Factor después |
+|---|---:|---:|---:|---:|---:|
+| `bestStreak` | 2 478,11 ms | **8,11 ms** | **306×** | **9,0×** | **3,0×** |
+| `completionMatrix` | 194,24 ms | **1,89 ms** | **103×** | 3,1× | 1,9× |
+| Sugerencias de experimentos | 2 293,79 ms | **43,67 ms** | **53×** | 3,0× | 3,0× |
+| Insights snapshot | 1 494,30 ms | **125,89 ms** | **12×** | 3,0× | 3,0× |
+| `currentStreakBreakdown` | 6,31 ms | 1,42 ms | 4,4× | 5,1× | 3,0× |
+| Agregados de Week | 101,84 ms | 56,72 ms | 1,8× | 2,9× | 3,0× |
+| Colecciones de Today | 48,53 ms | 47,66 ms | — | 2,9× | 3,0× |
+
+La suite completa pasó de ~64 s a ~28 s.
+
+### Lo importante no es solo el absoluto
+
+**`bestStreak` pasó de crecer 9,0× a crecer 3,0×** ante una entrada 3× mayor. Eso es lo que
+importa: el costo dejó de ser cuadrático y pasó a ser proporcional. El problema no quedó
+disimulado por una constante más chica, quedó resuelto.
+
+`completionMatrix` incluso baja a 1,9× porque su ventana está acotada a 70 días: ahora que
+consultar un día es O(1), agrandar el historial casi no la afecta.
+
+### Lo que no mejoró, y por qué
+
+**Las colecciones de Today siguen en ~48 ms.** Estaba previsto: cada partición
+(`pendingToday`, `completedToday`, `skippedToday`, `slippedToday`) hace **una sola** consulta
+por hábito, así que construir un índice por función cuesta más o menos lo mismo que escanear.
+Bajarlo exige compartir un índice entre las cuatro particiones, que es una decisión abierta
+en `docs/PLAN_MEJORAS.md`.
+
 ### Cómo volver a medirlos
 
 Los `print` solo se ven corriendo desde Xcode. Desde consola, cada medición queda además
@@ -122,8 +159,9 @@ xcrun xcresulttool export attachments --path "$R" --output-path /tmp/perf
 cat /tmp/perf/*.txt
 ```
 
-Los techos de `Ceiling` están en ~5× lo medido y son **provisionales**: 5× de una línea base
-mala no protege mucho. Hay que apretarlos cuando se implemente el índice por día.
+Los techos de `Ceiling` están en ~5× de la tercera medición. A diferencia de la primera
+versión, ahora sí protegen: el margen cubre la varianza entre máquinas, pero cualquier
+regresión que devuelva un escaneo por día al dominio los rompe por orden de magnitud.
 
 ## Cobertura inicial
 

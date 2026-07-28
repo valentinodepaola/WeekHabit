@@ -21,8 +21,14 @@ enum AppCalendar {
     static var current: Calendar {
         _ = invalidationObserver
 
+        // Cinturón además de los tirantes: la notificación puede no llegar, pero un
+        // calendario con la zona horaria vieja siempre se detecta acá. Solo se compara la
+        // zona horaria porque es de lo único que dependen los límites de día; el
+        // `firstWeekday` está forzado y el idioma lo cubre la notificación.
+        let systemTimeZone = TimeZone.current
+
         return cachedCalendar.withLock { cached in
-            if let cached { return cached }
+            if let cached, cached.timeZone == systemTimeZone { return cached }
 
             let calendar = makeCalendar()
             cached = calendar

@@ -89,18 +89,20 @@ extension Habit {
 
     /// Distinct weekdays with at least one completion within the calendar week.
     func completedWeekdays(reference: Date = .now) -> Set<Weekday> {
+        let index = HabitDayIndex(self)
         let week = AppCalendar.weekRange(containing: reference)
         return Set(
             weekDays(in: week)
-                .filter { isCompleted(on: $0) }
+                .filter { index.isCompleted(on: $0) }
                 .map { AppCalendar.weekday(of: $0) }
         )
     }
 
     func completedDaysThisWeek(reference: Date = .now) -> Int {
+        let index = HabitDayIndex(self)
         let week = AppCalendar.weekRange(containing: reference)
         return weekDays(in: week)
-            .filter { isCompleted(on: $0) }
+            .filter { index.isCompleted(on: $0) }
             .count
     }
 
@@ -116,11 +118,12 @@ extension Habit {
         let end = AppCalendar.startOfDay(for: reference)
         guard start <= end else { return 0 }
 
+        let index = HabitDayIndex(self)
         var count = 0
         var cursor = start
         var scanned = 0
         while cursor <= end && scanned < 365 * 5 {
-            if isCompleted(on: cursor) { count += 1 }
+            if index.isCompleted(on: cursor) { count += 1 }
             guard let next = calendar.date(byAdding: .day, value: 1, to: cursor) else { break }
             cursor = next
             scanned += 1
@@ -134,11 +137,12 @@ extension Habit {
         let end = AppCalendar.startOfDay(for: reference)
         guard start <= end else { return 0 }
 
+        let index = HabitDayIndex(self)
         var count = 0
         var cursor = start
         var scanned = 0
         while cursor <= end && scanned < 365 * 5 {
-            if isLoggable(on: cursor), !preservesStreakWithoutCompletion(on: cursor) { count += 1 }
+            if isLoggable(on: cursor), !index.preservesStreakWithoutCompletion(on: cursor) { count += 1 }
             guard let next = calendar.date(byAdding: .day, value: 1, to: cursor) else { break }
             cursor = next
             scanned += 1

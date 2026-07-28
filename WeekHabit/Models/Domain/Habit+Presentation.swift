@@ -68,6 +68,7 @@ extension Habit {
         guard weeks > 0 else { return [] }
 
         let calendar = AppCalendar.current
+        let index = HabitDayIndex(self)
         let referenceDay = AppCalendar.startOfDay(for: reference)
         let creationDay = AppCalendar.startOfDay(for: createdAt)
         let currentWeekStart = AppCalendar.weekRange(containing: referenceDay).lowerBound
@@ -90,35 +91,35 @@ extension Habit {
                     return .inactive
                 }
 
-                if isCompleted(on: day) {
+                if index.isCompleted(on: day) {
                     return .completed
                 }
 
-                if isMinimumCompleted(on: day) {
+                if index.isMinimumCompleted(on: day) {
                     return .minimum
                 }
 
-                if isSkipped(on: day) {
+                if index.isSkipped(on: day) {
                     return .skipped
                 }
 
-                if isFreezeProtected(on: day) {
+                if index.isFreezeProtected(on: day) {
                     return .frozen
                 }
 
-                if isSlip(on: day) {
+                if index.isSlip(on: day) {
                     return .slip
                 }
 
-                if isMissed(on: day) {
+                if index.isMissed(on: day) {
                     return .missed
                 }
 
-                if hasUrge(on: day) {
+                if index.hasUrge(on: day) {
                     return .urge
                 }
 
-                if isFlexibleSchedule && !isCompleted(on: day) {
+                if isFlexibleSchedule && !index.isCompleted(on: day) {
                     return .inactive
                 }
 

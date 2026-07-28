@@ -48,11 +48,15 @@ xcodebuild -project WeekHabit.xcodeproj \
   era construir el `Calendar` sino `Calendar.isDate(_:inSameDayAs:)` en sí. Se conserva
   porque es gratis y seguro, pero **el índice por día sigue haciendo falta**. Validación:
   **77 tests passed**, sin fallos.
-- **Siguiente paso recomendado:** el índice por día en `Habit+Completion`, antes que la
-  Fase 3. Debe agrupar por fecha normalizada y comparar `Date` directo, sin pasar por
-  `isSameDay`. Además `TodayView` tarda 48 ms solo en armar sus colecciones y la Fase 3
-  reescribe justo eso: conviene arreglar el acceso a datos primero para no optimizar dos
-  veces.
+- **Índice por día implementado.** `HabitDayIndex` baja cada consulta por día de
+  O(entradas) a O(1). `bestStreak` pasó de 2 478 ms a **8,11 ms** y, más importante, dejó de
+  crecer 9,0× para crecer 3,0×: el problema cuadrático quedó resuelto. Insights bajó 12× y
+  las sugerencias 53×. Se incluyó el cinturón de `AppCalendar` que quedaba de la Fase 2.5.
+  Validación: **81 tests passed**, con pruebas de equivalencia día por día.
+- **Siguiente paso recomendado:** la **Fase 3**, resolviendo de paso la decisión abierta de
+  si compartir índices a nivel colección. Las colecciones de Today siguen en ~48 ms porque
+  cada partición hace una sola consulta por hábito; arreglarlo exige tocar firmas, y la
+  Fase 3 reescribe justamente esas colecciones.
 - **Pendiente aparte, sin empezar:** blindar el seed de rendimiento. Ver la sección
   "Pendiente aparte" más abajo. No bloquea ninguna fase.
 
@@ -353,6 +357,66 @@ después, así que comparar `Date` directo es correcto — salvo si el usuario c
 horarias entre que se escribió la entrada y se la consulta. Por eso el índice debe
 **renormalizar cada entrada al construirse**, con el calendario vigente: es O(entradas) una
 sola vez, y queda correcto ante cambios de zona horaria.
+
+## Índice por día — el arreglo que justificaron las mediciones
+
+### Implementado — 2026-07-27
+
+`Models/Domain/HabitDayIndex.swift`: agrupa entradas y comodines de un hábito por día
+normalizado. Se construye al entrar a cada función que recorre muchos días y baja cada
+consulta de O(entradas) a O(1).
+
+Dos detalles del diseño:
+
+- **Renormaliza cada fecha al construirse**, con el calendario vigente capturado una sola
+  vez. Es lo que lo hace correcto si el usuario cruzó zonas horarias: comparar las fechas
+  guardadas directamente habría sido igual de rápido pero habría dejado días históricos
+  vacíos.
+- **Ninguna firma pública cambió.** Las consultas de un solo día que usan las vistas siguen
+  igual; construir un índice para una sola búsqueda saldría más caro que escanear.
+
+Convertidas: `currentStreak`, `currentStreakBreakdown`, `bestStreak`, `completedDaysSince`,
+`expectedDaysSince`, `completedWeekdays`, `completedDaysThisWeek`, `completionMatrix`,
+`completionStats`, `weekdayPerformance`, `trustedMinimumDays`, `attentionFailureType`,
+`daysSinceLastCompletion`, `weeklyFreezeCandidate`.
+
+También se agregó el cinturón pendiente de la Fase 2.5: `AppCalendar.current` ahora valida
+en cada acceso que el `timeZone` cacheado siga coincidiendo con `TimeZone.current`. Eso
+cierra el riesgo que había quedado sin verificar, y su costo dejó de importar porque los
+recorridos calientes ahora capturan el calendario una vez.
+
+### Resultado
+
+| Métrica | Antes | Después | Mejora | Factor antes | Factor después |
+|---|---:|---:|---:|---:|---:|
+| `bestStreak` | 2 478 ms | **8,11 ms** | **306×** | **9,0×** | **3,0×** |
+| `completionMatrix` | 194 ms | **1,89 ms** | **103×** | 3,1× | 1,9× |
+| Sugerencias de experimentos | 2 294 ms | **43,67 ms** | **53×** | 3,0× | 3,0× |
+| Insights snapshot | 1 494 ms | **125,89 ms** | **12×** | 3,0× | 3,0× |
+| Agregados de Week | 102 ms | 56,72 ms | 1,8× | 2,9× | 3,0× |
+| Colecciones de Today | 48,53 ms | 47,66 ms | — | 2,9× | 3,0× |
+
+El criterio de éxito se cumplió: **`bestStreak` dejó de crecer 9,0× y pasa a crecer 3,0×**.
+El problema cuadrático está resuelto, no disimulado. La suite completa bajó de ~64 s a ~28 s.
+
+Validación: **81 tests passed**, incluidas las pruebas de equivalencia día por día en
+`HabitDayIndexTests`, más recorrido manual en simulador sobre el dataset de 1 488 entradas —
+detalle de hábito con racha, mejor racha, desglose y heatmap, e Insights completo.
+
+### Lo que queda abierto
+
+**Las colecciones de Today siguen en ~48 ms**, tal como se había previsto. Cada partición
+hace una sola consulta por hábito, así que un índice por función no ayuda. Bajarlo exige
+compartir un índice entre las cuatro particiones de `HabitCollection+Today`, lo que implica
+tocar firmas.
+
+Lo mismo aplica, en menor medida, al snapshot de Insights: 126 ms con 15 hábitos siguen
+siendo ~8 frames. Compartir un índice por hábito entre las métricas de colección lo bajaría
+más.
+
+Esa es la decisión pendiente, y ahora tiene número: **¿vale ensuciar firmas del dominio para
+ganar esos 48 ms de Today y bajar Insights de 126 ms?** Conviene resolverla junto con la
+Fase 3, que reescribe justamente las colecciones de Today.
 
 ## Pendiente aparte — Blindar el seed de rendimiento
 

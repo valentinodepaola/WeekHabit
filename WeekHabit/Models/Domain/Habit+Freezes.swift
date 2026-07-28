@@ -28,18 +28,24 @@ extension Habit {
         let week = AppCalendar.weekRange(containing: referenceDay)
         guard weeklyFreeze(containing: referenceDay) == nil else { return nil }
 
+        let index = HabitDayIndex(self)
+
         if isFlexibleSchedule {
-            return flexibleWeeklyFreezeCandidate(in: week, referenceDay: referenceDay)
+            return flexibleWeeklyFreezeCandidate(in: week, referenceDay: referenceDay, index: index)
         }
 
         return weekDays(in: week)
             .filter { $0 < referenceDay }
-            .first { isMissedFreezeCandidate(on: $0) }
+            .first { isMissedFreezeCandidate(on: $0, index: index) }
     }
 
-    private func flexibleWeeklyFreezeCandidate(in week: Range<Date>, referenceDay: Date) -> Date? {
+    private func flexibleWeeklyFreezeCandidate(
+        in week: Range<Date>,
+        referenceDay: Date,
+        index: HabitDayIndex
+    ) -> Date? {
         let weekDays = weekDays(in: week)
-        let completed = weekDays.filter { isCompleted(on: $0) }.count
+        let completed = weekDays.filter { index.isCompleted(on: $0) }.count
         guard completed < targetDaysPerWeek else { return nil }
 
         let remainingPossible = weekDays
@@ -51,15 +57,15 @@ extension Habit {
 
         return weekDays
             .filter { $0 < referenceDay }
-            .first { isMissedFreezeCandidate(on: $0) }
+            .first { isMissedFreezeCandidate(on: $0, index: index) }
     }
 
-    private func isMissedFreezeCandidate(on date: Date) -> Bool {
+    private func isMissedFreezeCandidate(on date: Date, index: HabitDayIndex) -> Bool {
         isLoggable(on: date)
-            && !isCompleted(on: date)
-            && !isMinimumCompleted(on: date)
-            && !isSkipped(on: date)
-            && !isMissed(on: date)
-            && !isFreezeProtected(on: date)
+            && !index.isCompleted(on: date)
+            && !index.isMinimumCompleted(on: date)
+            && !index.isSkipped(on: date)
+            && !index.isMissed(on: date)
+            && !index.isFreezeProtected(on: date)
     }
 }

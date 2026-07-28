@@ -23,23 +23,22 @@ final class PerformanceBaselineTests: XCTestCase {
         static let longHistoryDays = 1_095
     }
 
-    /// Techo por medición, aplicado al tamaño grande. Fijados en ~5× lo medido el
-    /// 2026-07-27; los números observados están en `TESTING.md`.
+    /// Techo por medición, aplicado al tamaño grande. Fijados en ~5× lo medido con el
+    /// índice por día; los números observados están en `TESTING.md`.
     ///
-    /// Son deliberadamente flojos y **provisionales**: la línea base actual es mala, así
-    /// que 5× de un número malo no protege gran cosa. Solo atrapan una regresión
-    /// catastrófica. Hay que apretarlos cuando se implemente el índice por día, que es lo
-    /// que estas mediciones justifican.
+    /// A diferencia de la primera versión, estos sí protegen: el margen de 5× cubre la
+    /// varianza entre máquinas, pero cualquier regresión que devuelva un escaneo por día
+    /// al dominio los rompe por orden de magnitud.
     private enum Ceiling {
-        static let insightSnapshot = Duration.seconds(8)
+        static let insightSnapshot = Duration.milliseconds(650)
         static let insightReadinessAndConfidence = Duration.milliseconds(15)
-        static let experimentSuggestions = Duration.seconds(13)
+        static let experimentSuggestions = Duration.milliseconds(250)
         static let urgeInsights = Duration.milliseconds(10)
-        static let weekAggregates = Duration.milliseconds(600)
-        static let todayCollections = Duration.milliseconds(300)
-        static let bestStreak = Duration.seconds(14)
-        static let currentStreakBreakdown = Duration.milliseconds(40)
-        static let completionMatrix = Duration.seconds(1)
+        static let weekAggregates = Duration.milliseconds(300)
+        static let todayCollections = Duration.milliseconds(250)
+        static let bestStreak = Duration.milliseconds(50)
+        static let currentStreakBreakdown = Duration.milliseconds(10)
+        static let completionMatrix = Duration.milliseconds(15)
     }
 
     private let reference = TestFactory.date(day: 15)
