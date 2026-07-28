@@ -42,12 +42,17 @@ xcodebuild -project WeekHabit.xcodeproj \
 - **Fase 2 implementada.** La medición existe y dio un veredicto claro: **cachear no
   alcanza, hay que indexar las entradas por día.** `bestStreak` crece 9,1× ante una entrada
   3× mayor, y el snapshot de Insights cuesta 1 610 ms con 15 hábitos. Los números están en
-  `TESTING.md`. Validación: **71 tests passed**, sin fallos.
-- **Nuevo pendiente que abre la Fase 2:** implementar el índice por día en
-  `Habit+Completion`. Es el arreglo que las mediciones justifican y todavía no está hecho.
-- **Siguiente paso recomendado:** el índice por día, antes que la Fase 3. `TodayView` tarda
-  52 ms solo en armar sus colecciones, y la Fase 3 reescribe justo eso: conviene arreglar el
-  acceso a datos primero para no optimizar dos veces.
+  `TESTING.md`.
+- **Fase 2.5 implementada.** Se cacheó `AppCalendar.current`, que se reconstruía en cada
+  acceso. Dio solo **~7 %** y no movió los factores de crecimiento: el cuello de botella no
+  era construir el `Calendar` sino `Calendar.isDate(_:inSameDayAs:)` en sí. Se conserva
+  porque es gratis y seguro, pero **el índice por día sigue haciendo falta**. Validación:
+  **77 tests passed**, sin fallos.
+- **Siguiente paso recomendado:** el índice por día en `Habit+Completion`, antes que la
+  Fase 3. Debe agrupar por fecha normalizada y comparar `Date` directo, sin pasar por
+  `isSameDay`. Además `TodayView` tarda 48 ms solo en armar sus colecciones y la Fase 3
+  reescribe justo eso: conviene arreglar el acceso a datos primero para no optimizar dos
+  veces.
 - **Pendiente aparte, sin empezar:** blindar el seed de rendimiento. Ver la sección
   "Pendiente aparte" más abajo. No bloquea ninguna fase.
 
@@ -277,6 +282,77 @@ simulador.
 **Costo estimado:** 3–5 días.
 
 ---
+
+## Fase 2.5 — Cachear el `Calendar`
+
+Fase corta abierta al planear el índice por día, cuando se encontró que
+`AppCalendar.current` era una propiedad computada que construía un `Calendar` nuevo en cada
+acceso — incluyendo `TimeZone.current` y `Locale.current` — y que hay 222 llamadas a
+`AppCalendar` en el código. Un `bestStreak` sobre 1 095 días construía del orden de 400 000
+calendarios.
+
+Se hizo primero justamente para saber si el índice seguía siendo necesario.
+
+### Implementada — 2026-07-27
+
+`AppCalendar.current` ahora lee de un caché protegido por `OSAllocatedUnfairLock`, que se
+descarta al recibir `NSLocale.currentLocaleDidChangeNotification` o
+`.NSSystemTimeZoneDidChange`. Así los límites de día siguen siendo correctos si el usuario
+viaja con la app abierta. `invalidateCache()` quedó `internal` para darle al caché una
+costura verificable. Ningún call site cambió.
+
+### Resultado: la hipótesis era incorrecta, y el índice sigue haciendo falta
+
+La mejora fue de solo **~7 %** parejo en todas las métricas, y los factores de crecimiento
+no se movieron: `bestStreak` sigue en 9,0×. La tabla comparativa completa está en
+`TESTING.md`.
+
+Construir el `Calendar` no era el cuello de botella. El costo real está **dentro** de
+`Calendar.isDate(_:inSameDayAs:)`, que descompone ambas fechas en componentes bajo la zona
+horaria vigente: del orden de 6 µs por llamada, y `bestStreak` la invoca unas 400 000 veces.
+
+**Corolario para el índice:** no alcanza con reducir la cantidad de llamadas a `isSameDay`.
+Hay que **dejar de llamarla**. El índice tiene que agrupar las entradas por fecha ya
+normalizada y comparar `Date` directo, que es una comparación de dos enteros.
+
+Eso vuelve al índice más valioso de lo que parecía, no menos: ataca el orden cuadrático y el
+costo por comparación a la vez.
+
+### Riesgo abierto: la invalidación por zona horaria no está verificada de punta a punta
+
+Antes del cacheo, `current` se reconstruía en cada acceso, así que un cambio de zona horaria
+se reflejaba solo. Ahora la corrección depende de que llegue la notificación.
+
+Lo que sí está verificado: el observador se registra, se suscribe a las dos notificaciones,
+y publicarlas a mano no rompe ni deja el caché en mal estado
+(`AppCalendarTests.testCalendarStaysUsableAfterInvalidationNotifications`).
+
+Lo que **no** está verificado: que iOS efectivamente publique
+`.NSSystemTimeZoneDidChange` y que la app muestre los días nuevos, con la app abierta y el
+usuario cruzando zonas horarias. No se pudo comprobar porque el simulador no expone "Fecha y
+hora" en Configuración — hereda la zona horaria del Mac anfitrión — y cambiarla en el
+anfitrión requiere privilegios de administrador.
+
+Formas de cerrarlo, si preocupa:
+
+- probarlo a mano en un dispositivo real, cambiando la zona horaria con la app abierta;
+- o agregar un cinturón además de los tirantes: validar en cada acceso que el `timeZone` del
+  calendario cacheado siga coincidiendo con `TimeZone.current`. Es una comparación barata
+  comparada con construir el calendario, y vuelve la corrección independiente de la
+  notificación. Se descartó al planear para no pagar una búsqueda por acceso, pero a la luz
+  de que el cacheo solo dio un 7 %, ese ahorro vale menos de lo que parecía.
+
+### Lo que queda del cacheo
+
+Se conserva: es un 7 % gratis, seguro y ya probado. Pero **no es la solución**, y los techos
+de `Ceiling` no se apretaron porque los números casi no se movieron.
+
+**Detalle de diseño a tener en cuenta al implementar el índice:** `HabitEntry.date` y
+`StreakFreeze.protectedDate` se normalizan a start-of-day en sus inits y nada los muta
+después, así que comparar `Date` directo es correcto — salvo si el usuario cruzó zonas
+horarias entre que se escribió la entrada y se la consulta. Por eso el índice debe
+**renormalizar cada entrada al construirse**, con el calendario vigente: es O(entradas) una
+sola vez, y queda correcto ante cambios de zona horaria.
 
 ## Pendiente aparte — Blindar el seed de rendimiento
 

@@ -7,16 +7,35 @@
 //
 
 import Foundation
+import os
 
 enum AppCalendar {
     /// Locale-aware calendar with the user's current timezone.
     /// Force Monday as first weekday — the app's week is L–D regardless of locale.
+    ///
+    /// El valor se cachea a propósito. Construir un `Calendar` obliga a resolver
+    /// `TimeZone.current` y `Locale.current`, que son búsquedas del sistema, y el dominio
+    /// pasa por acá cientos de miles de veces al recorrer rachas o historial. El caché se
+    /// descarta cuando iOS avisa que cambió la zona horaria o el idioma, así que los
+    /// límites de día siguen siendo correctos si el usuario viaja con la app abierta.
     static var current: Calendar {
-        var cal = Calendar(identifier: .gregorian)
-        cal.timeZone = .current
-        cal.locale = .current
-        cal.firstWeekday = Weekday.monday.rawValue
-        return cal
+        _ = invalidationObserver
+
+        return cachedCalendar.withLock { cached in
+            if let cached { return cached }
+
+            let calendar = makeCalendar()
+            cached = calendar
+            return calendar
+        }
+    }
+
+    /// Descarta el calendario cacheado.
+    ///
+    /// La usa el observador de notificaciones. Es `internal` en vez de `private` para que
+    /// el caché tenga una costura verificable desde las pruebas.
+    static func invalidateCache() {
+        cachedCalendar.withLock { $0 = nil }
     }
 
     /// Strip the time component, returning the start of the given day.
@@ -42,5 +61,38 @@ enum AppCalendar {
     /// True iff the two dates fall on the same calendar day.
     static func isSameDay(_ a: Date, _ b: Date) -> Bool {
         current.isDate(a, inSameDayAs: b)
+    }
+
+    // MARK: - Caché
+
+    /// `AppCalendar` se usa desde cualquier contexto y no está aislado a ningún actor, así
+    /// que el caché necesita su propio lock.
+    private static let cachedCalendar = OSAllocatedUnfairLock<Calendar?>(initialState: nil)
+
+    /// Se toca desde `current` para suscribirse una sola vez: los `static let` de Swift son
+    /// lazy y thread-safe, así que alcanza con referenciarlo.
+    private static let invalidationObserver: Void = {
+        let notificationNames: [Notification.Name] = [
+            NSLocale.currentLocaleDidChangeNotification,
+            .NSSystemTimeZoneDidChange
+        ]
+
+        for name in notificationNames {
+            NotificationCenter.default.addObserver(
+                forName: name,
+                object: nil,
+                queue: nil
+            ) { _ in
+                invalidateCache()
+            }
+        }
+    }()
+
+    private static func makeCalendar() -> Calendar {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = .current
+        calendar.locale = .current
+        calendar.firstWeekday = Weekday.monday.rawValue
+        return calendar
     }
 }

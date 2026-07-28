@@ -15,7 +15,7 @@ xcodebuild -project WeekHabit.xcodeproj \
 
 ## Estado actual de la suite
 
-Última validación conocida (2026-07-27): **71 tests passed** en
+Última validación conocida (2026-07-27): **77 tests passed** en
 `platform=iOS Simulator,name=iPhone 17 Pro`, sin fallos.
 
 Además de la cobertura inicial, la suite ya cubre:
@@ -42,6 +42,9 @@ Además de la cobertura inicial, la suite ya cubre:
   - guardado diferido: las mutaciones quedan pendientes hasta `commit`.
 - `HabitTrackingService.commitRecoveryMiss`: aplica la versión mínima y persiste.
 - `PerformanceBaselineTests`, agregado en la Fase 2 de `docs/PLAN_MEJORAS.md`. Ver abajo.
+- `AppCalendarTests`, agregado en la Fase 2.5: el calendario se cachea, y estas pruebas
+  fijan que cachearlo no cambie lo que devuelven `startOfDay`, `weekday`, `weekRange` ni
+  `isSameDay`, y que invalidar el caché lo reconstruya bien.
 
 ## Línea base de rendimiento
 
@@ -81,6 +84,32 @@ consulta por día escaneando linealmente todas las entradas del hábito.
 y escanea pocos días. `bestStreak` recorre todo el rango, y por eso paga el costo completo.
 
 La decisión que salió de estos números está en `docs/PLAN_MEJORAS.md`.
+
+## Segunda medición — con el `Calendar` cacheado
+
+Misma máquina y mismo método, después de cachear `AppCalendar.current` (Fase 2.5). La
+comparación es contra la tabla de arriba, columna del tamaño grande:
+
+| Métrica | Antes | Después | Cambio |
+|---|---:|---:|---:|
+| Insights snapshot | 1 610,30 ms | 1 494,30 ms | −7,2 % |
+| Sugerencias de experimentos | 2 524,21 ms | 2 293,79 ms | −9,1 % |
+| Agregados de Week | 108,60 ms | 101,84 ms | −6,2 % |
+| Colecciones de Today | 52,05 ms | 48,53 ms | −6,8 % |
+| `bestStreak` | 2 665,18 ms | 2 478,11 ms | −7,0 % |
+| `completionMatrix` | 201,57 ms | 194,24 ms | −3,6 % |
+| `currentStreakBreakdown` | 6,83 ms | 6,31 ms | −7,6 % |
+
+Los factores de crecimiento no se movieron: `bestStreak` sigue en 9,0×.
+
+**Lo que enseña este resultado:** construir el `Calendar` no era el cuello de botella. El
+costo real está dentro de `Calendar.isDate(_:inSameDayAs:)`, que tiene que descomponer
+ambas fechas en componentes bajo la zona horaria vigente — del orden de 6 µs por llamada, y
+`bestStreak` la invoca unas 400 000 veces.
+
+El corolario para el índice por día es directo: **no alcanza con hacer menos llamadas a
+`isSameDay`, hay que dejar de llamarla**. El índice tiene que agrupar por fecha ya
+normalizada y comparar `Date` directo.
 
 ### Cómo volver a medirlos
 
