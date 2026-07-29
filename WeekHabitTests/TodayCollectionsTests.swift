@@ -153,4 +153,114 @@ final class TodayCollectionsTests: XCTestCase {
         let todayHabits = [completed, skipped].loggableToday(on: day)
         XCTAssertEqual(todayHabits.dailyProgress(on: day), 1)
     }
+
+    // MARK: - todayPartition
+
+    /// El contrato de `todayPartition` es ser indistinguible de llamar a las siete funciones
+    /// sueltas. Si alguna vez difieren, la vista muestra algo distinto de lo que dicen los
+    /// tests de arriba, que es justo lo que este test evita.
+    private func assertPartitionMatchesIndividualFunctions(
+        _ habits: [Habit],
+        on date: Date,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        let partition = habits.todayPartition(on: date)
+
+        XCTAssertEqual(
+            partition.pending.map(\.id), habits.pendingToday(on: date).map(\.id),
+            "pending", file: file, line: line
+        )
+        XCTAssertEqual(
+            partition.completed.map(\.id), habits.completedToday(on: date).map(\.id),
+            "completed", file: file, line: line
+        )
+        XCTAssertEqual(
+            partition.skipped.map(\.id), habits.skippedToday(on: date).map(\.id),
+            "skipped", file: file, line: line
+        )
+        XCTAssertEqual(
+            partition.slipped.map(\.id), habits.slippedToday(on: date).map(\.id),
+            "slipped", file: file, line: line
+        )
+        XCTAssertEqual(
+            partition.completedCount, habits.completedCountToday(on: date),
+            "completedCount", file: file, line: line
+        )
+        XCTAssertEqual(
+            partition.activeCount, habits.activeCountToday(on: date),
+            "activeCount", file: file, line: line
+        )
+        XCTAssertEqual(
+            partition.progress, habits.dailyProgress(on: date),
+            accuracy: 0.0001, "progress", file: file, line: line
+        )
+    }
+
+    func testTodayPartitionMatchesIndividualFunctionsAcrossStates() throws {
+        let day = TestFactory.date(day: 1)
+
+        let pending = TestFactory.habit()
+        let completed = TestFactory.habit()
+        let minimum = TestFactory.habit()
+        let skipped = TestFactory.habit()
+        let slipped = TestFactory.habit()
+        TestFactory.entry(.completed, habit: completed, date: day, value: 1)
+        TestFactory.entry(.minimum, habit: minimum, date: day)
+        TestFactory.entry(.skipped, habit: skipped, date: day)
+        TestFactory.entry(.slip, habit: slipped, date: day)
+
+        let todayHabits = [pending, completed, minimum, skipped, slipped]
+            .loggableToday(on: day)
+
+        assertPartitionMatchesIndividualFunctions(todayHabits, on: day)
+        XCTAssertEqual(todayHabits.todayPartition(on: day).pending.count, 1)
+        XCTAssertEqual(todayHabits.todayPartition(on: day).completed.count, 2)
+    }
+
+    /// La agenda flexible es el caso que obliga a compartir el índice: su regla de sección
+    /// mira la semana entera, no el día.
+    func testTodayPartitionMatchesIndividualFunctionsForFlexibleSchedule() throws {
+        let monday = TestFactory.date(day: 1)
+        let wednesday = TestFactory.date(day: 3)
+
+        let metWeeklyGoal = TestFactory.habit(schedule: .timesPerWeek, targetDaysPerWeek: 2)
+        TestFactory.entry(.completed, habit: metWeeklyGoal, date: monday, value: 1)
+        TestFactory.entry(.completed, habit: metWeeklyGoal, date: wednesday, value: 1)
+
+        let belowWeeklyGoal = TestFactory.habit(schedule: .timesPerWeek, targetDaysPerWeek: 3)
+        TestFactory.entry(.completed, habit: belowWeeklyGoal, date: monday, value: 1)
+
+        let reference = TestFactory.date(day: 4)
+        let todayHabits = [metWeeklyGoal, belowWeeklyGoal].loggableToday(on: reference)
+
+        assertPartitionMatchesIndividualFunctions(todayHabits, on: reference)
+
+        // La meta semanal cumplida cuenta como hecho aunque hoy no haya entrada.
+        let partition = todayHabits.todayPartition(on: reference)
+        XCTAssertEqual(partition.completed.map(\.id), [metWeeklyGoal.id])
+        XCTAssertEqual(partition.pending.map(\.id), [belowWeeklyGoal.id])
+    }
+
+    /// Descanso y slip son filtros independientes, no excluyentes: un hábito con ambos
+    /// aparece en las dos secciones. Es raro, pero el comportamiento previo era ese y la
+    /// partición no debe cambiarlo por su cuenta.
+    func testTodayPartitionMatchesIndividualFunctionsWhenSkippedAndSlippedOverlap() throws {
+        let day = TestFactory.date(day: 1)
+        let both = TestFactory.habit()
+        TestFactory.entry(.skipped, habit: both, date: day)
+        TestFactory.entry(.slip, habit: both, date: day)
+
+        let todayHabits = [both, TestFactory.habit()].loggableToday(on: day)
+
+        assertPartitionMatchesIndividualFunctions(todayHabits, on: day)
+    }
+
+    func testTodayPartitionOnEmptyCollectionMatchesIndividualFunctions() throws {
+        let day = TestFactory.date(day: 1)
+        let empty: [Habit] = []
+
+        assertPartitionMatchesIndividualFunctions(empty, on: day)
+        XCTAssertEqual(empty.todayPartition(on: day).progress, 0)
+    }
 }

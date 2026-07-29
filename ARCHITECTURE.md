@@ -32,6 +32,8 @@ SwiftData Models
 - Los errores de persistencia no deben silenciarse con `try?`.
 - Las entradas `.urge` son evidencia independiente. Cambiar el estado principal de un
   día no debe eliminarlas ni convertirlas.
+- Los datos derivados de un render se calculan **una sola vez**, no en propiedades
+  computadas que se invocan entre sí. Ver "Estado de pantalla" más abajo.
 
 ## Tracking
 
@@ -56,6 +58,32 @@ formularios. `HabitEditorService` y `PlanEditorService` crean o actualizan las e
 relaciones. Las vistas coordinan permisos, errores, recordatorios y navegación, pero no
 implementan las transacciones de SwiftData.
 
+## Estado de pantalla
+
+`TodayView` es la referencia del patrón, introducido en la Fase 3 de `docs/PLAN_MEJORAS.md`
+como prueba de concepto. **Todavía no se replicó en las otras vistas**; hacerlo es una
+decisión abierta.
+
+Son dos tipos con responsabilidades distintas, y se pueden adoptar por separado:
+
+- **`TodayViewData`** — struct de valor con todos los datos derivados del render, construida
+  una sola vez en `body` desde los resultados de `@Query`. Antes eran nueve propiedades
+  computadas que se invocaban entre sí, y el resultado eran ~15 pasadas por render.
+- **`TodayScreenModel`** — clase `@Observable` con las rutas, las confirmaciones y el estado
+  de sección, sostenida por un solo `@State`. Reemplaza a 13 `@State` sueltos con reglas
+  implícitas entre ellos.
+
+La vista conserva `@Query` y `@Environment(\.modelContext)`, y sigue delegando las mutaciones
+a los servicios. No hay repositorios, use cases ni DTOs: el descarte de Clean Architecture
+está argumentado en `docs/PLAN_MEJORAS.md`.
+
+Lo que este patrón habilita, además de la claridad: **el estado de coordinación se vuelve
+testeable**. Las secuencias de presentación diferida vivían dentro de la `View` y por eso no
+se probaban; ahora sí (`TodayScreenModelTests`).
+
+Cuando una vista se parta en varios archivos, sus miembros pasan de `private` a `internal`:
+`private` en Swift no cruza archivos. Es aceptable dentro del módulo de la app.
+
 ## Próximas extracciones
 
 - Las vistas ya no escriben a `modelContext`. Onboarding delega en `OnboardingSetupService`
@@ -76,6 +104,21 @@ La lógica de solo lectura de `Habit` se organiza por responsabilidad:
 
 La fase 3 eliminó el archivo monolítico `Habit+Domain.swift` sin cambiar sus APIs ni
 comportamiento observable.
+
+### Consultas por día
+
+`HabitDayIndex` agrupa las entradas y comodines de un hábito por día normalizado, y baja cada
+consulta de O(entradas) a O(1). **Cualquier recorrido que consulte muchos días seguidos debe
+construirlo una vez y reutilizarlo**, no llamar a las funciones de un solo día en bucle: ese
+patrón es cuadrático y fue el causante de un `bestStreak` de 2 478 ms.
+
+Para una consulta aislada, seguir usando la API de `Habit`: construir un índice para una sola
+búsqueda sale más caro que escanear.
+
+Cuando varias funciones necesitan compartir el índice, la forma preferida es un tipo nuevo
+que lo construya y derive todo de él —como `TodayPartition` en `HabitCollection+Today`— con
+una sobrecarga `…(on:index:)` para la regla que se reutiliza. Las firmas existentes no se
+tocan.
 
 ## Pruebas
 

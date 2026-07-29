@@ -99,7 +99,11 @@ extension Habit {
     }
 
     func completedDaysThisWeek(reference: Date = .now) -> Int {
-        let index = HabitDayIndex(self)
+        completedDaysThisWeek(reference: reference, index: HabitDayIndex(self))
+    }
+
+    /// Misma cuenta, resolviendo las consultas contra un índice ya construido.
+    func completedDaysThisWeek(reference: Date, index: HabitDayIndex) -> Int {
         let week = AppCalendar.weekRange(containing: reference)
         return weekDays(in: week)
             .filter { index.isCompleted(on: $0) }

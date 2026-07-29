@@ -35,7 +35,8 @@ final class PerformanceBaselineTests: XCTestCase {
         static let experimentSuggestions = Duration.milliseconds(250)
         static let urgeInsights = Duration.milliseconds(10)
         static let weekAggregates = Duration.milliseconds(300)
-        static let todayCollections = Duration.milliseconds(250)
+        // Apretado en la Fase 3, cuando `todayPartition` bajó la métrica de 47,66 a 7,97 ms.
+        static let todayCollections = Duration.milliseconds(40)
         static let bestStreak = Duration.milliseconds(50)
         static let currentStreakBreakdown = Duration.milliseconds(10)
         static let completionMatrix = Duration.milliseconds(15)
@@ -202,14 +203,14 @@ final class PerformanceBaselineTests: XCTestCase {
         }
     }
 
-    /// Equivale a `todayHabits` y sus cuatro particiones en `TodayView`, que es
-    /// exactamente lo que la Fase 3 va a reescribir.
+    /// Lo que `TodayView` calcula por render: los hábitos de hoy y sus particiones.
+    ///
+    /// Desde la Fase 3 pasa por `todayPartition(on:)`, que comparte un `HabitDayIndex` por
+    /// hábito entre las cuatro secciones y los contadores. Antes eran llamadas sueltas, y
+    /// cada una reconstruía el índice.
     private func computeTodayCollections(for habits: [Habit]) {
         let todayHabits = habits.loggableToday(on: reference)
-        _ = todayHabits.pendingToday(on: reference)
-        _ = todayHabits.completedToday(on: reference)
-        _ = todayHabits.skippedToday(on: reference)
-        _ = todayHabits.slippedToday(on: reference)
+        _ = todayHabits.todayPartition(on: reference)
     }
 
     // MARK: - Medición

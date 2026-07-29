@@ -26,7 +26,7 @@ xcodebuild -project WeekHabit.xcodeproj \
   test
 ```
 
-## Estado actual — 2026-07-27
+## Estado actual — 2026-07-28
 
 - **Fase 1 implementada.** Ya no quedan escrituras directas a `modelContext` en `Views/`.
   Se agregó `OnboardingSetupService` y `HabitTrackingService.commitRecoveryMiss`, y los
@@ -53,10 +53,14 @@ xcodebuild -project WeekHabit.xcodeproj \
   crecer 9,0× para crecer 3,0×: el problema cuadrático quedó resuelto. Insights bajó 12× y
   las sugerencias 53×. Se incluyó el cinturón de `AppCalendar` que quedaba de la Fase 2.5.
   Validación: **81 tests passed**, con pruebas de equivalencia día por día.
-- **Siguiente paso recomendado:** la **Fase 3**, resolviendo de paso la decisión abierta de
-  si compartir índices a nivel colección. Las colecciones de Today siguen en ~48 ms porque
-  cada partición hace una sola consulta por hábito; arreglarlo exige tocar firmas, y la
-  Fase 3 reescribe justamente esas colecciones.
+- **Fase 3 implementada.** `TodayView` pasó de 740 líneas y 13 `@State` a 204 líneas y 1, con
+  los datos derivados calculados una vez por render en vez de ~15. La decisión abierta sobre
+  compartir índices se cerró con un tipo nuevo (`TodayPartition`) y **sin tocar ninguna firma
+  existente**: las colecciones de Today bajaron de 47,66 a **7,97 ms**. Validación: **103
+  tests passed** y recorrido manual completo en simulador.
+- **Siguiente paso recomendado:** decidir si el patrón de la Fase 3 se replica en `WeekView`,
+  `FocusSessionView`, `WeeklyReviewView` e `InsightsView`. Era explícitamente la pregunta que
+  la prueba de concepto tenía que responder. Ver "Qué dejó la prueba de concepto" más abajo.
 - **Pendiente aparte, sin empezar:** blindar el seed de rendimiento. Ver la sección
   "Pendiente aparte" más abajo. No bloquea ninguna fase.
 
@@ -285,6 +289,58 @@ simulador.
 
 **Costo estimado:** 3–5 días.
 
+### Implementada — 2026-07-28
+
+Los tres criterios se cumplieron: **204 líneas**, **1 `@State`**, y las colecciones de Today
+de 47,66 a **7,97 ms**.
+
+Cuatro piezas:
+
+- **`Models/Domain/HabitCollection+Today.swift`: `TodayPartition`.** Construye un solo
+  `HabitDayIndex` por hábito y deriva de él las cuatro secciones y los tres contadores.
+  Resuelve la decisión abierta **sin tocar ninguna firma existente**: se agregaron las
+  sobrecargas `meetsTodaySectionTarget(on:index:)` y `completedDaysThisWeek(reference:index:)`,
+  y las funciones públicas de antes ahora delegan en ellas. Las siete funciones sueltas
+  siguen siendo la forma correcta de responder una pregunta aislada.
+- **`Views/TodayView/TodayViewData.swift`.** Value type con todos los derivados del render.
+  Reemplaza las nueve propiedades computadas que se llamaban entre sí.
+- **`Views/TodayView/TodayScreenModel.swift`.** Clase `@Observable` con las rutas, las
+  confirmaciones y el estado de sección.
+- **Partición del archivo.** `TodayViewActions.swift` (mutaciones) y
+  `Components/TodayRouteViews.swift` (ruteo y enlaces de acción), sobre los `MARK` que ya
+  existían.
+
+**Dos simplificaciones de comportamiento, no solo de forma:**
+
+- **La secuencia hito → nota dejó de ser un reintento temporizado.** Antes
+  `scheduleDeferredNotePresentation` consultaba `sheetRoute` hasta seis veces cada 0,4 s y,
+  si no lo lograba, **descartaba la nota en silencio**. Ahora la nota queda en cola en el
+  modelo y la consumen los `onDismiss` del cover y del sheet, que es cuando la pantalla
+  realmente se liberó. Verificado en simulador de punta a punta con `[Perf] Sin redes tarde`.
+- **Las alertas de borrado perdieron su `Bool`.** `habitToDelete` + `showDeleteHabitAlert`
+  eran dos estados para una sola condición; ahora la alerta se abre desde un binding derivado
+  del opcional y no pueden desincronizarse.
+
+**Costo del split en encapsulamiento:** al mover las extensiones a otros archivos hubo que
+pasar de `private` a `internal` los miembros de `TodayView`, porque `private` en Swift no
+cruza archivos. Es el precio de la partición y queda acotado al módulo de la app.
+
+### Qué dejó la prueba de concepto
+
+El patrón se comportó como se esperaba, y aparecieron dos cosas que el plan no había
+anticipado:
+
+1. **Testabilidad.** `TodayViewData` y `TodayScreenModel` sumaron 22 tests sobre lógica que
+   antes vivía dentro de una `View` y por lo tanto no se testeaba. La secuencia hito → nota,
+   el punto más frágil de la pantalla, hoy tiene cobertura determinista.
+2. **La partición del dominio y la del estado son separables.** `TodayPartition` es útil por
+   sí solo, sin `@Observable`. Si el patrón no se replicara, esa parte igual conviene.
+
+**La decisión sobre las otras cuatro vistas sigue abierta y es lo que toca resolver.** El
+costo por vista no es uniforme: `TodayView` era la más cargada, y en varias de las otras el
+problema puede ser solo el recálculo y no el estado disperso. Conviene medir antes de asumir
+que hace falta el paquete completo.
+
 ---
 
 ## Fase 2.5 — Cachear el `Calendar`
@@ -403,20 +459,23 @@ Validación: **81 tests passed**, incluidas las pruebas de equivalencia día por
 `HabitDayIndexTests`, más recorrido manual en simulador sobre el dataset de 1 488 entradas —
 detalle de hábito con racha, mejor racha, desglose y heatmap, e Insights completo.
 
-### Lo que queda abierto
+### Lo que quedó abierto, y cómo se cerró
 
 **Las colecciones de Today siguen en ~48 ms**, tal como se había previsto. Cada partición
 hace una sola consulta por hábito, así que un índice por función no ayuda. Bajarlo exige
-compartir un índice entre las cuatro particiones de `HabitCollection+Today`, lo que implica
-tocar firmas.
+compartir un índice entre las cuatro particiones de `HabitCollection+Today`.
 
 Lo mismo aplica, en menor medida, al snapshot de Insights: 126 ms con 15 hábitos siguen
 siendo ~8 frames. Compartir un índice por hábito entre las métricas de colección lo bajaría
 más.
 
-Esa es la decisión pendiente, y ahora tiene número: **¿vale ensuciar firmas del dominio para
-ganar esos 48 ms de Today y bajar Insights de 126 ms?** Conviene resolverla junto con la
-Fase 3, que reescribe justamente las colecciones de Today.
+**Resuelto en la Fase 3, y la premisa de la pregunta era falsa.** Se preguntaba si valía
+"ensuciar firmas del dominio"; no hizo falta ensuciar ninguna. Un tipo nuevo
+(`TodayPartition`) más dos sobrecargas que reciben el índice alcanzaron para bajar Today de
+47,66 a 7,97 ms dejando intactas las siete funciones existentes.
+
+**Insights sigue pendiente**: 137 ms con 15 hábitos. La misma técnica aplica y ahora está
+probada, pero no se hizo — la Fase 3 era prueba de concepto sobre `TodayView`.
 
 ## Pendiente aparte — Blindar el seed de rendimiento
 
@@ -487,14 +546,21 @@ entradas se nota. Este incidente es evidencia de que la medición de la Fase 2 v
 Nuevos:
 
 - `Services/OnboardingSetupService.swift`
+- `Models/Domain/HabitDayIndex.swift`
 - `Views/TodayView/TodayScreenModel.swift`
 - `Views/TodayView/TodayViewData.swift`
+- `Views/TodayView/TodayViewActions.swift`
+- `Views/TodayView/Components/TodayRouteViews.swift`
 - `WeekHabitTests/OnboardingSetupServiceTests.swift`
 - `WeekHabitTests/PerformanceBaselineTests.swift`
+- `WeekHabitTests/HabitDayIndexTests.swift`
+- `WeekHabitTests/TodayViewDataTests.swift`
+- `WeekHabitTests/TodayScreenModelTests.swift`
 
 Modificados:
 
 - `Views/TodayView/TodayView.swift`
+- `Models/Domain/HabitCollection+Today.swift`, `Models/Domain/Habit+Completion.swift`
 - `Views/OnboardingView/OnboardingView.swift`
 - `Views/OnboardingView/Components/OnboardingHabitsScreen.swift`
 - `WeekHabitTests/TodayCollectionsTests.swift`, `WeekHabitTests/TestSupport.swift`

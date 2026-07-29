@@ -15,7 +15,7 @@ xcodebuild -project WeekHabit.xcodeproj \
 
 ## Estado actual de la suite
 
-Última validación conocida (2026-07-27): **81 tests passed** en
+Última validación conocida (2026-07-28): **103 tests passed** en
 `platform=iOS Simulator,name=iPhone 17 Pro`, sin fallos.
 
 Además de la cobertura inicial, la suite ya cubre:
@@ -48,6 +48,19 @@ Además de la cobertura inicial, la suite ya cubre:
 - `HabitDayIndexTests`: pruebas de **equivalencia** del índice por día. Recorren día por día
   un historial completo y comparan cada predicado del índice contra su equivalente en
   `Habit`. Son la red que protege ese refactor: si el índice difiere en un solo día, fallan.
+- `TodayViewDataTests` y `TodayScreenModelTests`, agregados en la Fase 3. Son cobertura que
+  **antes no podía existir**: ese código vivía dentro de `TodayView` como propiedades
+  computadas y `@State`, y las vistas no se testean por decisión de `ARCHITECTURE.md`.
+  - `TodayViewDataTests`: particiones y contadores del día, exclusión de descansos y slips
+    de los candidatos a sesión de enfoque conservando el orden, y estabilidad de la firma
+    de sección.
+  - `TodayScreenModelTests`: la secuencia hito → nota diferida, que antes era un reintento
+    temporizado que descartaba la nota en silencio si no lograba presentarla en seis
+    intentos. También el prompt de recuperación una vez por sesión y las confirmaciones de
+    borrado derivadas de su opcional.
+- `TodayCollectionsTests` suma pruebas de **equivalencia** de `todayPartition(on:)` contra
+  las siete funciones sueltas que reemplaza, incluido el caso de agenda flexible y el
+  solapamiento de descanso con slip.
 
 ## Línea base de rendimiento
 
@@ -146,7 +159,31 @@ consultar un día es O(1), agrandar el historial casi no la afecta.
 (`pendingToday`, `completedToday`, `skippedToday`, `slippedToday`) hace **una sola** consulta
 por hábito, así que construir un índice por función cuesta más o menos lo mismo que escanear.
 Bajarlo exige compartir un índice entre las cuatro particiones, que es una decisión abierta
-en `docs/PLAN_MEJORAS.md`.
+en `docs/PLAN_MEJORAS.md`. La Fase 3 la cerró; ver la cuarta medición.
+
+## Cuarta medición — con el índice compartido entre particiones (Fase 3)
+
+`todayPartition(on:)` construye un solo `HabitDayIndex` por hábito y deriva de él las cuatro
+secciones y los tres contadores. La comparación es contra la tercera medición:
+
+| Métrica | Antes | Después | Mejora |
+|---|---:|---:|---:|
+| Colecciones de Today | 47,66 ms | **7,97 ms** | **6,0×** |
+| Insights snapshot | 125,89 ms | 137,48 ms | — |
+| Agregados de Week | 56,72 ms | 62,90 ms | — |
+| `bestStreak` | 8,11 ms | 8,84 ms | — |
+
+Solo cambió la métrica que la Fase 3 tocó; el resto se mueve dentro del ruido de medición
+entre corridas. El techo de `Ceiling.todayCollections` bajó de 250 ms a **40 ms**.
+
+**Este número mide una sola pasada.** La ganancia real en la app es mayor: `TodayView`
+recalculaba las particiones unas 15 veces por render, porque `todayHabits` era una propiedad
+computada que invocaban nueve derivados más la firma de animación. Ahora `TodayViewData` se
+construye una vez por render.
+
+Lo mismo que se hizo acá bajaría el snapshot de Insights, que sigue en ~137 ms con 15
+hábitos: sus métricas de colección también consultan hábito por hábito sin compartir índice.
+Queda anotado como candidato, no hecho.
 
 ### Cómo volver a medirlos
 
