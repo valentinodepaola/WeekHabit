@@ -153,6 +153,10 @@ Trabajo:
 grep -rn --include='*.swift' 'modelContext\.\(insert\|delete\|save\)' WeekHabit/Views
 ```
 
+> **Ese criterio resultó incompleto.** Ver "Escritura implícita en `PlanWrapUpView`" al
+> final: el grep solo ve escrituras **explícitas**, y una mutación puede persistir sin
+> nombrar `insert`, `delete` ni `save`.
+
 **Costo estimado:** medio día.
 
 ### Implementada — 2026-07-27
@@ -476,6 +480,54 @@ más.
 
 **Insights sigue pendiente**: 137 ms con 15 hábitos. La misma técnica aplica y ahora está
 probada, pero no se hizo — la Fase 3 era prueba de concepto sobre `TodayView`.
+
+## Escritura implícita en `PlanWrapUpView` — el cabo que dejó la Fase 1
+
+### Encontrado y corregido — 2026-07-29
+
+Detectado al auditar si quedaba algo pendiente después de la Fase 3. `PlanWrapUpView.confirmWrapUp()`
+archivaba los hábitos del plan y lo marcaba como revisado **desde la vista**, sin servicio,
+sin `save()` y sin manejo de error:
+
+```swift
+for habit in plan.habits where !retain { habit.endsAt = AppCalendar.startOfDay(for: .now) }
+plan.reviewedAt = .now
+```
+
+**Por qué el grep de la Fase 1 no lo vio:** ese grep busca `modelContext.insert|delete|save`,
+y acá no se llama a ninguno. Se asignan propiedades de un `@Model`, que SwiftData rastrea de
+forma implícita y persiste por autosave. La auditoría estaba construida alrededor de
+escrituras **explícitas**; esta es implícita.
+
+**Por qué importaba más que un autosave cualquiera:** el modo de falla se realimenta.
+`reviewedAt == nil` es exactamente la condición con la que `ContentView` decide mostrar la
+hoja de cierre. Si la escritura no aterrizaba, el usuario volvía a cerrar el mismo plan — y
+como `endsAt` y `reviewedAt` son escrituras independientes, podía quedar viendo hábitos que
+ya había archivado. Es una decisión que se toma **una sola vez** por plan, sin segunda
+oportunidad natural de reescribirse. Es el mismo razonamiento que ya estaba escrito en
+`HabitTrackingService.commitRecoveryMiss`, de la Fase 1.
+
+**Arreglo:**
+
+- `PlanLifecycleService.completeWrapUp(_:archiving:reference:modelContext:)`, que hace las
+  dos escrituras y guarda en la misma transacción.
+- La vista muestra el error en una alerta y **no se cierra** si falla, siguiendo el patrón
+  `<Feature>SaveFailure` que ya usan `CreateHabitView`, `WeeklyReviewView` y `FocusSessionView`.
+- Se cancelan los recordatorios de los hábitos archivados. Antes no se hacía: archivar fija
+  `endsAt` a hoy, así que el hábito **sigue** cumpliendo `shouldScheduleReminder` durante el
+  resto del día y su recordatorio seguía vivo hasta el próximo refresco de `RootView` — o
+  para siempre, si el usuario no volvía a abrir la app.
+- 4 tests en `LifecycleServiceTests`, incluido uno que asierta `hasChanges == false`.
+
+**Barrido del resto de `Views/`** con un patrón más amplio que el original:
+
+```bash
+grep -rnE '\b(habit|plan|entry|experiment|session|review)[A-Za-z]*\.[a-zA-Z]+ = ' \
+  WeekHabit/Views --include='*.swift' | grep -vE 'Draft\.swift|self\.|== '
+```
+
+Los únicos resultados restantes están dentro de bloques `#Preview`, que no persisten nada.
+Los `Draft` quedan excluidos a propósito: asignar sus propios campos es el patrón previsto.
 
 ## Pendiente aparte — Blindar el seed de rendimiento
 

@@ -30,6 +30,12 @@ SwiftData Models
 - Los efectos visuales, haptics y navegación permanecen en la vista.
 - Los formularios complejos agrupan sus campos y validación en un `Draft`.
 - Los errores de persistencia no deben silenciarse con `try?`.
+- **Asignar una propiedad de un `@Model` desde una vista también es una escritura**, aunque
+  no se nombre `insert`, `delete` ni `save`: SwiftData la persiste por autosave. Cuenta como
+  mutación y va a un servicio. Auditar solo `modelContext.(insert|delete|save)` no alcanza.
+- Una decisión que se toma **una sola vez** —cierre de plan, prompt de recuperación— guarda
+  de inmediato. El autosave no da garantía de cuándo, y estos flujos no tienen una segunda
+  oportunidad natural de reescribirse.
 - Las entradas `.urge` son evidencia independiente. Cambiar el estado principal de un
   día no debe eliminarlas ni convertirlas.
 - Los datos derivados de un render se calculan **una sola vez**, no en propiedades
@@ -88,6 +94,9 @@ Cuando una vista se parta en varios archivos, sus miembros pasan de `private` a 
 
 - Las vistas ya no escriben a `modelContext`. Onboarding delega en `OnboardingSetupService`
   y el prompt de recuperación en `HabitTrackingService.commitRecoveryMiss`.
+- El cierre de plan delega en `PlanLifecycleService.completeWrapUp`. Era la última escritura
+  implícita —asignaba `endsAt` y `reviewedAt` sin pasar por `modelContext`— y por eso no la
+  detectaba la auditoría original. Detalle en `docs/PLAN_MEJORAS.md`.
 - El plan detallado de las fases 5 y 6 está en `REFACTOR_HANDOFF.md`. Lo que sigue está en
   `docs/PLAN_MEJORAS.md`.
 

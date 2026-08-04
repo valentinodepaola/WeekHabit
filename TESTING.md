@@ -15,7 +15,7 @@ xcodebuild -project WeekHabit.xcodeproj \
 
 ## Estado actual de la suite
 
-Última validación conocida (2026-07-28): **103 tests passed** en
+Última validación conocida (2026-07-29): **106 tests passed** en
 `platform=iOS Simulator,name=iPhone 17 Pro`, sin fallos.
 
 Además de la cobertura inicial, la suite ya cubre:
@@ -61,6 +61,10 @@ Además de la cobertura inicial, la suite ya cubre:
 - `TodayCollectionsTests` suma pruebas de **equivalencia** de `todayPartition(on:)` contra
   las siete funciones sueltas que reemplaza, incluido el caso de agenda flexible y el
   solapamiento de descanso con slip.
+- `LifecycleServiceTests` cubre `PlanLifecycleService.completeWrapUp`: qué hábitos se
+  archivan y cuáles no, que el plan quede marcado como revisado, y que **el cierre quede
+  escrito y no pendiente** (`hasChanges == false`). Esa última es la que importa: mientras
+  `reviewedAt` sea nil, `ContentView` vuelve a abrir la hoja de cierre.
 
 ## Línea base de rendimiento
 

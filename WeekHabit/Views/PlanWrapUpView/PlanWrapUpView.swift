@@ -18,6 +18,7 @@ struct PlanWrapUpView: View {
 
     /// true = mantener, false = archivar.
     @State private var retainHabits: [UUID: Bool] = [:]
+    @State private var saveFailure: PlanWrapUpSaveFailure?
 
     private var progress: Double { plan.progress() }
     private var meetsGoal: Bool { plan.meetsGoal() }
@@ -54,6 +55,13 @@ struct PlanWrapUpView: View {
                 .padding(AppSpacing.l)
                 .padding(.bottom, AppSpacing.xxl)
             }
+        }
+        .alert(item: $saveFailure) { failure in
+            Alert(
+                title: Text("No se pudo guardar"),
+                message: Text(failure.message),
+                dismissButton: .default(Text("Entendido"))
+            )
         }
     }
 
@@ -189,16 +197,45 @@ struct PlanWrapUpView: View {
     }
 
     private func confirmWrapUp() {
-        for habit in plan.habits {
-            let retain = retainHabits[habit.id] ?? true
-            if !retain {
-                habit.endsAt = AppCalendar.startOfDay(for: .now)
-            }
+        // Por defecto se conserva: solo se archiva lo que el usuario desmarcó explícitamente.
+        let archivedHabits = plan.habits.filter { retainHabits[$0.id] == false }
+
+        do {
+            try PlanLifecycleService.completeWrapUp(
+                plan,
+                archiving: archivedHabits,
+                modelContext: modelContext
+            )
+        } catch {
+            saveFailure = PlanWrapUpSaveFailure(message: error.localizedDescription)
+            return
         }
-        plan.reviewedAt = .now
+
+        cancelReminders(for: archivedHabits)
         AppHaptics.play(.experimentApplied)
         dismiss()
     }
+
+    /// Un hábito archivado sigue siendo registrable hoy, así que su recordatorio todavía
+    /// cumpliría `shouldScheduleReminder` y seguiría sonando. Se cancela acá porque el
+    /// usuario acaba de decidir cerrarlo: esperar al refresco de `RootView` deja el
+    /// recordatorio vivo hasta la próxima vez que la app pase a activa, y para siempre si
+    /// no vuelve a abrirla.
+    private func cancelReminders(for habits: [Habit]) {
+        let habitIDs = habits.map(\.id)
+        guard !habitIDs.isEmpty else { return }
+
+        Task {
+            for habitID in habitIDs {
+                await HabitReminderService.cancelReminder(forHabitID: habitID)
+            }
+        }
+    }
+}
+
+private struct PlanWrapUpSaveFailure: Identifiable {
+    let id = UUID()
+    let message: String
 }
 
 private struct HabitRetentionRow: View {
