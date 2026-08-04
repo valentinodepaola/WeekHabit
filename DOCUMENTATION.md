@@ -354,7 +354,7 @@ Calcula estado y progreso de planes:
 
 ### Navegación principal
 
-`ContentView` usa un `ZStack` con `selectedTab` y `CustomTabBar`.
+`ContentView` usa un `TabView(selection: $selectedTab)` nativo. El título y el ícono de cada tab salen del enum `TabItems` (`Views/Components/TabItems.swift`), y cada tab se selecciona por `.tag(0/1/2)`.
 
 Tabs actuales:
 
@@ -564,7 +564,7 @@ Reglas prácticas:
 1. Crear `Views/<NombreView>/<NombreView>.swift`.
 2. Crear `Components/` si hay piezas locales.
 3. Usar `AppBackground`.
-4. Si es tab, actualizar `ContentView` y `CustomTabBar`.
+4. Si es tab, actualizar `ContentView` (agregar el tab al `TabView` con su `.tag`) y el enum `TabItems`.
 5. Si es modal, seguir el patrón de `fullScreenCover`.
 6. Si es push, usar `NavigationStack` / `navigationDestination` desde la vista dueña.
 

@@ -290,15 +290,11 @@ Icon badge = círculo 88×88 con fondo `accentMuted`, icono `36pt light` `accent
 
 [WeeklyReviewBanner.swift](WeekHabit/Views/Components/WeeklyReviewBanner.swift). Banner CTA tinted accent (8%) con border accent 22% — patrón para llamados a acción semanal/contextuales no destructivos.
 
-### 10.14 `CustomTabBar` / `TabBarItem`
-
-[CustomTabBar.swift](WeekHabit/Views/Components/CustomTabBar.swift) — **referencia visual**. El shell actual ([ContentView.swift](WeekHabit/ContentView.swift)) usa el `TabView` nativo de SwiftUI con `.tint(AppColor.accent)`. `CustomTabBar` queda disponible si se reactiva un shell custom; conviene mantener su API alineada (`TabItems` enum, `selectedTab` Binding).
-
-### 10.15 `IconButton` (legacy)
+### 10.14 `IconButton` (legacy)
 
 [IconButton.swift](WeekHabit/Views/Components/IconButton.swift). FAB circular o pill ancha — usado en `HabitDetailView` topBar. **Para nuevos botones usa `WHButton`**; este componente queda por compatibilidad.
 
-### 10.16 Componentes específicos de feature
+### 10.15 Componentes específicos de feature
 
 Cuando un componente sólo aplica a un feature, vive bajo `Views/<Feature>View/Components/`. Catálogo destacado:
 
@@ -362,7 +358,7 @@ struct FeatureView: View {
 
 ## 12. Navegación
 
-- **Shell:** `TabView` nativo en [ContentView.swift](WeekHabit/ContentView.swift) con tres tabs sincronizados con `TabItems` enum en [CustomTabBar.swift](WeekHabit/Views/Components/CustomTabBar.swift): `Hoy / Semana / Insights`. Tint global = `AppColor.accent`. **Mantén el orden sincronizado** entre `ContentView` y `TabItems`.
+- **Shell:** `TabView` nativo en [ContentView.swift](WeekHabit/ContentView.swift) con tres tabs (`.tag(0/1/2)`) cuyos títulos e íconos salen del `TabItems` enum en [TabItems.swift](WeekHabit/Views/Components/TabItems.swift): `Hoy / Semana / Insights`. Tint global = `AppColor.accent`. **Mantén el orden sincronizado** entre `ContentView` y `TabItems`.
 - **Detalle:** se navega con `NavigationStack` + `navigationDestination(item:)`. `HabitDetailView` oculta la nav bar nativa (`.toolbar(.hidden, for: .navigationBar)`) y dibuja su propio top bar con `IconButton` (chevron / pencil).
 - **Creación / edición:** **siempre `fullScreenCover`** (no sheet). Las rutas se modelan con enums `Identifiable` privadas (`TodayCoverRoute`, `WeekCoverRoute`, `HabitRoute`, `PlanRoute`). Esto evita modal-on-modal flaky.
 - **Acciones de captura (logs, prompts, menús):** `sheet` con `presentationDetents` específicos, `presentationDragIndicator(.visible)`, `presentationBackground(AppColor.bgCanvas)`. Detents típicos: `.height(310)` (quantity), `.height(380)` (creation menu), `.height(420)` (urge), `.height(560)` (slip), `.height(570)` (recovery prompt).

@@ -79,7 +79,7 @@ Use `AppCalendar` for date math instead of `Calendar.current` directly.
 
 ## Navigation
 
-`ContentView` uses a manual `ZStack` tab shell with `selectedTab` and `CustomTabBar`.
+`ContentView` uses a native `TabView(selection: $selectedTab)` shell. Each tab's title and icon come from the `TabItems` enum (`Views/Components/TabItems.swift`), and tabs are selected by integer `.tag(0/1/2)`.
 
 Current tabs:
 
@@ -99,7 +99,7 @@ Common flows:
 - `InsightsView` edits suggested habits and manages rhythm experiments.
 - `HabitDetailView` presents `CreateHabitView` for editing.
 
-Keep the tab order in `ContentView` synchronized with `CustomTabBar.tabs`.
+Keep the tab order in `ContentView` (`.tag(0/1/2)`) synchronized with the `TabItems` cases used for each tab's label.
 
 ## Feature Notes
 
