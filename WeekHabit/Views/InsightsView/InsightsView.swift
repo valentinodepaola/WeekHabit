@@ -88,7 +88,7 @@ struct InsightsView: View {
     var body: some View {
         NavigationStack {
             AppBackground {
-                ScrollView {
+                ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: AppSpacing.l) {
                         header
 

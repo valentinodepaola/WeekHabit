@@ -3,9 +3,11 @@
 //  WeekHabit
 //
 //  Configuración del modo secuencia: cada hábito es una píldora cuya altura es
-//  proporcional al tiempo asignado. Al tocar una píldora se revela un agarre
-//  para arrastrar y ajustar su tiempo, además de controles para moverla en la
-//  secuencia. El total de la sesión es la suma de todas las píldoras.
+//  proporcional al tiempo asignado. Un conector vertical une las píldoras como
+//  una línea de tiempo para comunicar el orden. Cada píldora tiene una manija
+//  (a la derecha) que se arrastra para reordenar, y un agarre inferior —que
+//  aparece al seleccionarla— para ajustar su tiempo. El total de la sesión es
+//  la suma de todas las píldoras.
 //
 
 import SwiftUI
@@ -17,6 +19,11 @@ struct FocusSequenceSetup: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var selectedID: UUID?
     @State private var resizeBaseSeconds: Int?
+
+    // Reordenamiento por arrastre desde la manija.
+    @State private var draggingID: UUID?
+    @State private var dragOffset: CGFloat = 0   // desplazamiento visual de la píldora arrastrada
+    @State private var swapAccum: CGFloat = 0    // compensación acumulada por swaps ya aplicados
 
     private let minHeight: CGFloat = 60
     private let maxHeight: CGFloat = 136
@@ -42,7 +49,7 @@ struct FocusSequenceSetup: View {
                 }
             }
 
-            Text("Toca una píldora para ajustar su tiempo o moverla en la secuencia.")
+            Text("Toca para ajustar el tiempo. Arrastra desde la manija para cambiar el orden.")
                 .font(AppFont.label)
                 .foregroundStyle(AppColor.textTertiary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -63,6 +70,8 @@ struct FocusSequenceSetup: View {
     private func pill(index: Int, item: FocusSequenceItem) -> some View {
         let habit = habitsByID[item.id]
         let isSelected = selectedID == item.id
+        let isDragging = draggingID == item.id
+        let isLast = index == items.count - 1
 
         ZStack(alignment: .bottom) {
             HStack(spacing: AppSpacing.m) {
@@ -80,21 +89,7 @@ struct FocusSequenceSetup: View {
 
                 Spacer()
 
-                if isSelected {
-                    HStack(spacing: AppSpacing.s) {
-                        controlButton("chevron.up", disabled: index == 0) {
-                            move(item.id, by: -1)
-                        }
-                        controlButton("chevron.down", disabled: index == items.count - 1) {
-                            move(item.id, by: 1)
-                        }
-                    }
-                } else {
-                    Text("\(index + 1)")
-                        .font(AppFont.label)
-                        .foregroundStyle(AppColor.textTertiary)
-                        .frame(width: 22)
-                }
+                dragHandle(for: item, isDragging: isDragging)
             }
             .padding(.horizontal, AppSpacing.m)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -110,6 +105,22 @@ struct FocusSequenceSetup: View {
                 grabber(for: item)
             }
         }
+        // Conector de secuencia: une el icono de esta píldora con el de la
+        // siguiente, formando una línea de tiempo que comunica el orden.
+        .background(alignment: .bottomLeading) {
+            if !isLast {
+                Rectangle()
+                    .fill(AppColor.divider)
+                    .frame(width: 2, height: AppSpacing.s + 4)
+                    .offset(x: AppSpacing.m + 20 - 1, y: AppSpacing.s)
+                    .opacity(isDragging ? 0 : 1)
+            }
+        }
+        .scaleEffect(isDragging ? 1.03 : 1)
+        .shadow(color: isDragging ? Color.black.opacity(0.18) : .clear,
+                radius: isDragging ? 12 : 0, y: isDragging ? 6 : 0)
+        .offset(y: isDragging ? dragOffset : 0)
+        .zIndex(isDragging ? 1 : 0)
         .contentShape(Rectangle())
         .onTapGesture {
             withAnimation(AppMotion.respectful(AppMotion.smooth, reduceMotion)) {
@@ -117,6 +128,10 @@ struct FocusSequenceSetup: View {
             }
             AppHaptics.play(.selection)
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(habit?.title ?? "Hábito"), \(item.seconds / 60) minutos, posición \(index + 1) de \(items.count)")
+        .accessibilityAction(named: "Subir") { move(item.id, by: -1) }
+        .accessibilityAction(named: "Bajar") { move(item.id, by: 1) }
     }
 
     private func iconBadge(_ habit: Habit?) -> some View {
@@ -130,18 +145,14 @@ struct FocusSequenceSetup: View {
         .frame(width: 40, height: 40)
     }
 
-    private func controlButton(_ icon: String, disabled: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: icon)
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(disabled ? AppColor.textTertiary : AppColor.accent)
-                .frame(width: 34, height: 34)
-                .background(AppColor.bgSunken)
-                .clipShape(Circle())
-        }
-        .buttonStyle(.plain)
-        .disabled(disabled)
-        .opacity(disabled ? 0.4 : 1)
+    private func dragHandle(for item: FocusSequenceItem, isDragging: Bool) -> some View {
+        Image(systemName: "line.3.horizontal")
+            .font(.system(size: 16, weight: .semibold))
+            .foregroundStyle(isDragging ? AppColor.accent : AppColor.textTertiary)
+            .frame(width: 34, height: 34)
+            .contentShape(Rectangle())
+            .highPriorityGesture(reorderGesture(for: item))
+            .accessibilityHidden(true)
     }
 
     private func grabber(for item: FocusSequenceItem) -> some View {
@@ -174,6 +185,52 @@ struct FocusSequenceSetup: View {
             }
             .onEnded { _ in
                 resizeBaseSeconds = nil
+            }
+    }
+
+    private func reorderGesture(for item: FocusSequenceItem) -> some Gesture {
+        DragGesture(minimumDistance: 1)
+            .onChanged { value in
+                if draggingID != item.id {
+                    draggingID = item.id
+                    swapAccum = 0
+                    AppHaptics.play(.selection)
+                }
+
+                guard let idx = items.firstIndex(where: { $0.id == item.id }) else { return }
+                let effective = value.translation.height - swapAccum
+
+                var didSwap = false
+                if idx < items.count - 1 {
+                    let neighbor = height(for: items[idx + 1].seconds) + AppSpacing.s
+                    if effective > neighbor / 2 {
+                        withAnimation(AppMotion.respectful(AppMotion.smooth, reduceMotion)) {
+                            items.swapAt(idx, idx + 1)
+                        }
+                        swapAccum += neighbor
+                        AppHaptics.play(.selection)
+                        didSwap = true
+                    }
+                }
+                if !didSwap, idx > 0 {
+                    let neighbor = height(for: items[idx - 1].seconds) + AppSpacing.s
+                    if effective < -neighbor / 2 {
+                        withAnimation(AppMotion.respectful(AppMotion.smooth, reduceMotion)) {
+                            items.swapAt(idx, idx - 1)
+                        }
+                        swapAccum -= neighbor
+                        AppHaptics.play(.selection)
+                    }
+                }
+
+                dragOffset = value.translation.height - swapAccum
+            }
+            .onEnded { _ in
+                withAnimation(AppMotion.respectful(AppMotion.smooth, reduceMotion)) {
+                    dragOffset = 0
+                }
+                draggingID = nil
+                swapAccum = 0
             }
     }
 
