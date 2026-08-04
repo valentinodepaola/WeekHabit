@@ -62,4 +62,90 @@ final class LifecycleServiceTests: XCTestCase {
         XCTAssertTrue(plans.isEmpty)
         XCTAssertTrue(milestones.isEmpty)
     }
+
+    // MARK: - Cierre de plan
+
+    private func makeFinishedPlan(with habits: [Habit], in store: TestStore) throws -> Plan {
+        let plan = Plan(title: "Plan", endsAt: TestFactory.date(day: 10))
+        store.context.insert(plan)
+        for habit in habits { store.context.insert(habit) }
+        plan.habits = habits
+        try store.save()
+        return plan
+    }
+
+    func testCompleteWrapUpArchivesOnlyTheGivenHabitsAndMarksThePlanReviewed() throws {
+        let store = try TestStore()
+        let archived = TestFactory.habit()
+        let retained = TestFactory.habit()
+        let plan = try makeFinishedPlan(with: [archived, retained], in: store)
+        let reference = TestFactory.date(day: 20)
+
+        try PlanLifecycleService.completeWrapUp(
+            plan,
+            archiving: [archived],
+            reference: reference,
+            modelContext: store.context
+        )
+
+        XCTAssertEqual(archived.endsAt, AppCalendar.startOfDay(for: reference))
+        XCTAssertNil(retained.endsAt, "conservar un hábito no debe ponerle fecha de fin")
+        XCTAssertEqual(plan.reviewedAt, reference)
+    }
+
+    /// Es la garantía que motivó mover esto a un servicio: `reviewedAt == nil` es la
+    /// condición con la que `ContentView` reabre la hoja de cierre, así que no puede
+    /// quedar dependiendo del autosave.
+    func testCompleteWrapUpPersistsImmediately() throws {
+        let store = try TestStore()
+        let archived = TestFactory.habit()
+        let plan = try makeFinishedPlan(with: [archived], in: store)
+
+        try PlanLifecycleService.completeWrapUp(
+            plan,
+            archiving: [archived],
+            reference: TestFactory.date(day: 20),
+            modelContext: store.context
+        )
+
+        XCTAssertFalse(store.context.hasChanges, "el cierre debe quedar escrito, no pendiente")
+    }
+
+    /// Archivar fija `endsAt` a hoy: el hábito sigue siendo registrable hoy y deja de serlo
+    /// mañana. Es el comportamiento que ya tenía la vista.
+    func testArchivedHabitStaysLoggableTodayAndStopsTomorrow() throws {
+        let store = try TestStore()
+        let archived = TestFactory.habit()
+        let plan = try makeFinishedPlan(with: [archived], in: store)
+        let today = TestFactory.date(day: 20)
+        let tomorrow = TestFactory.date(day: 21)
+
+        try PlanLifecycleService.completeWrapUp(
+            plan,
+            archiving: [archived],
+            reference: today,
+            modelContext: store.context
+        )
+
+        XCTAssertTrue(archived.isLoggable(on: today))
+        XCTAssertFalse(archived.isLoggable(on: tomorrow))
+    }
+
+    func testCompleteWrapUpWithoutArchivedHabitsOnlyMarksThePlanReviewed() throws {
+        let store = try TestStore()
+        let retained = TestFactory.habit()
+        let plan = try makeFinishedPlan(with: [retained], in: store)
+        let reference = TestFactory.date(day: 20)
+
+        try PlanLifecycleService.completeWrapUp(
+            plan,
+            archiving: [],
+            reference: reference,
+            modelContext: store.context
+        )
+
+        XCTAssertNil(retained.endsAt)
+        XCTAssertEqual(plan.reviewedAt, reference)
+        XCTAssertFalse(plan.needsReview(reference: reference))
+    }
 }

@@ -10,10 +10,15 @@ extension Habit {
     /// para agendas flexibles, basta con cumplir la meta semanal; en el
     /// resto, debe estar completado o marcado con versión mínima ese día.
     func meetsTodaySectionTarget(on date: Date) -> Bool {
-        if isFlexibleSchedule && completedDaysThisWeek(reference: date) >= targetDaysPerWeek {
+        meetsTodaySectionTarget(on: date, index: HabitDayIndex(self))
+    }
+
+    /// Misma regla, resolviendo las consultas contra un índice ya construido.
+    func meetsTodaySectionTarget(on date: Date, index: HabitDayIndex) -> Bool {
+        if isFlexibleSchedule && completedDaysThisWeek(reference: date, index: index) >= targetDaysPerWeek {
             return true
         }
-        return isCompleted(on: date) || isMinimumCompleted(on: date)
+        return index.isCompleted(on: date) || index.isMinimumCompleted(on: date)
     }
 }
 
@@ -69,6 +74,87 @@ extension Array where Element == Habit {
         let active = activeCountToday(on: date)
         guard active > 0 else { return 0 }
         return Double(completedCountToday(on: date)) / Double(active)
+    }
+}
+
+/// Las secciones de Hoy y sus contadores, resueltos en una sola pasada.
+///
+/// Existe porque las funciones sueltas de arriba consultan `meetsTodaySectionTarget` por
+/// separado, y esa consulta llega a `completedDaysThisWeek`, que construye un
+/// `HabitDayIndex` nuevo cada vez. Entre `pendingToday`, `completedToday` y
+/// `completedCountToday` eso son tres índices por hábito y por pasada. Acá se construye uno
+/// solo por hábito y se derivan todas las secciones de él.
+///
+/// Las funciones sueltas se conservan: siguen siendo la forma correcta de responder una
+/// pregunta aislada, donde construir un índice saldría más caro que escanear.
+struct TodayPartition {
+    let pending: [Habit]
+    let completed: [Habit]
+    let skipped: [Habit]
+    let slipped: [Habit]
+    let completedCount: Int
+    let activeCount: Int
+    let progress: Double
+
+    static let empty = TodayPartition(
+        pending: [],
+        completed: [],
+        skipped: [],
+        slipped: [],
+        completedCount: 0,
+        activeCount: 0,
+        progress: 0
+    )
+}
+
+extension Array where Element == Habit {
+    /// Particiona los hábitos del día construyendo un solo `HabitDayIndex` por hábito.
+    ///
+    /// Equivale a llamar a `pendingToday`, `completedToday`, `skippedToday`, `slippedToday`,
+    /// `completedCountToday`, `activeCountToday` y `dailyProgress` sobre el mismo receptor.
+    /// Se espera que el receptor ya esté filtrado por `loggableToday(on:)`.
+    func todayPartition(on date: Date) -> TodayPartition {
+        guard !isEmpty else { return .empty }
+
+        var pending: [Habit] = []
+        var completed: [Habit] = []
+        var skipped: [Habit] = []
+        var slipped: [Habit] = []
+        var completedCount = 0
+
+        for habit in self {
+            let index = HabitDayIndex(habit)
+            let meetsTarget = habit.meetsTodaySectionTarget(on: date, index: index)
+            if meetsTarget { completedCount += 1 }
+
+            // `skipped` y `slipped` no se excluyen entre sí, igual que en las funciones
+            // sueltas: son filtros independientes. Lo que sí excluyen es pendiente y
+            // completado.
+            let isSkipped = index.isSkipped(on: date)
+            let isSlip = index.isSlip(on: date)
+            if isSkipped { skipped.append(habit) }
+            if isSlip { slipped.append(habit) }
+
+            guard !isSkipped, !isSlip else { continue }
+            if meetsTarget {
+                completed.append(habit)
+            } else {
+                pending.append(habit)
+            }
+        }
+
+        let activeCount = Swift.max(count - skipped.count, 0)
+        let progress = activeCount > 0 ? Double(completedCount) / Double(activeCount) : 0
+
+        return TodayPartition(
+            pending: pending,
+            completed: completed,
+            skipped: skipped,
+            slipped: slipped,
+            completedCount: completedCount,
+            activeCount: activeCount,
+            progress: progress
+        )
     }
 }
 

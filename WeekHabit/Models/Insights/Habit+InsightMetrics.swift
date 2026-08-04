@@ -39,6 +39,7 @@ extension Habit {
         guard start <= end else { return HabitCompletionStats(completed: 0, scheduled: 0) }
 
         let creationDay = AppCalendar.startOfDay(for: createdAt)
+        let index = HabitDayIndex(self)
         var scheduled = 0
         var completed = 0
 
@@ -49,11 +50,11 @@ extension Habit {
                 let visibleStart = max(max(weekStart, start), creationDay)
                 let visibleEnd = min(min(weekEnd, end), endsAt.map { AppCalendar.startOfDay(for: $0) } ?? end)
                 let loggableDays = visibleStart <= visibleEnd
-                    ? insightDays(from: visibleStart, to: visibleEnd).filter { !isSkipped(on: $0) && !isFreezeProtected(on: $0) }
+                    ? insightDays(from: visibleStart, to: visibleEnd).filter { !index.isSkipped(on: $0) && !index.isFreezeProtected(on: $0) }
                     : []
                 let weeklyTarget = min(targetDaysPerWeek, loggableDays.count)
                 scheduled += weeklyTarget
-                completed += min(weeklyTarget, loggableDays.filter { isTrustedCompleted(on: $0) }.count)
+                completed += min(weeklyTarget, loggableDays.filter { index.isTrustedCompleted(on: $0) }.count)
 
                 guard let nextWeek = AppCalendar.current.date(byAdding: .weekOfYear, value: 1, to: weekStart) else {
                     break
@@ -67,10 +68,10 @@ extension Habit {
         for day in insightDays(from: start, to: end)
         where day >= creationDay
             && isLoggable(on: day)
-            && !isSkipped(on: day)
-            && !isFreezeProtected(on: day) {
+            && !index.isSkipped(on: day)
+            && !index.isFreezeProtected(on: day) {
             scheduled += 1
-            if isTrustedCompleted(on: day) {
+            if index.isTrustedCompleted(on: day) {
                 completed += 1
             }
         }
@@ -103,6 +104,8 @@ extension Habit {
             to: end
         ) ?? end
 
+        let index = HabitDayIndex(self)
+
         return Weekday.ordered.map { weekday in
             var scheduled = 0
             var completed = 0
@@ -111,10 +114,10 @@ extension Habit {
             where day >= AppCalendar.startOfDay(for: createdAt)
                 && AppCalendar.weekday(of: day) == weekday
                 && isLoggable(on: day)
-                && !isSkipped(on: day)
-                && !isFreezeProtected(on: day) {
+                && !index.isSkipped(on: day)
+                && !index.isFreezeProtected(on: day) {
                 scheduled += 1
-                if isTrustedCompleted(on: day) {
+                if index.isTrustedCompleted(on: day) {
                     completed += 1
                 }
             }
@@ -172,10 +175,10 @@ extension Habit {
 
     func daysSinceLastCompletion(reference: Date = .now) -> Int? {
         let referenceDay = AppCalendar.startOfDay(for: reference)
-        let lastDate = entries
-            .map { AppCalendar.startOfDay(for: $0.date) }
+        let index = HabitDayIndex(self)
+        let lastDate = index.recordedDays
             .filter { $0 <= referenceDay }
-            .filter { isTrustedCompleted(on: $0) }
+            .filter { index.isTrustedCompleted(on: $0) }
             .max()
 
         guard let lastDate else { return nil }
@@ -197,16 +200,13 @@ extension Habit {
         let end = AppCalendar.startOfDay(for: endDate)
         guard start <= end else { return 0 }
 
+        let index = HabitDayIndex(self)
         var count = 0
         for day in insightDays(from: start, to: end)
         where day >= AppCalendar.startOfDay(for: createdAt)
             && isLoggable(on: day)
-            && !isTrustedCompleted(on: day)
-            && entries.contains(where: {
-                AppCalendar.isSameDay($0.date, day)
-                    && $0.kind == .minimum
-                    && $0.source.isTrustedForInsights
-            }) {
+            && !index.isTrustedCompleted(on: day)
+            && index.hasTrustedMinimum(on: day) {
             count += 1
         }
 
@@ -284,19 +284,20 @@ extension Habit {
         }
 
         let range = insightDateRange(days: 30, reference: reference)
+        let index = HabitDayIndex(self)
         var notDoneCount = 0
         var manualOnlyCount = 0
 
         for day in insightDays(from: range.lowerBound, to: range.upperBound)
         where day >= AppCalendar.startOfDay(for: createdAt)
             && isLoggable(on: day)
-            && !isSkipped(on: day)
-            && !isFreezeProtected(on: day) {
-            if isTrustedCompleted(on: day) {
+            && !index.isSkipped(on: day)
+            && !index.isFreezeProtected(on: day) {
+            if index.isTrustedCompleted(on: day) {
                 continue
             }
 
-            if isManualCompleted(on: day) {
+            if index.isManualCompleted(on: day) {
                 manualOnlyCount += 1
             } else {
                 notDoneCount += 1

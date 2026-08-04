@@ -21,6 +21,7 @@ struct OnboardingView: View {
     @State private var motivationText: String = ""
     @State private var createdPlan: Plan?
     @State private var didRequestPlanCreation = false
+    @State private var setupFailure: OnboardingSetupFailure?
 
     let onFinish: () -> Void
 
@@ -51,6 +52,13 @@ struct OnboardingView: View {
                     value: step
                 )
             }
+        }
+        .alert(item: $setupFailure) { failure in
+            Alert(
+                title: Text("No se pudo guardar"),
+                message: Text(failure.message),
+                dismissButton: .default(Text("Entendido"))
+            )
         }
     }
 
@@ -115,32 +123,24 @@ struct OnboardingView: View {
         guard createdPlan == nil, !didRequestPlanCreation else { return }
         didRequestPlanCreation = true
 
-        let trimmedGoal = goalText.trimmingCharacters(in: .whitespacesAndNewlines)
-        let trimmedMotivation = motivationText.trimmingCharacters(in: .whitespacesAndNewlines)
-
-        if let existingPlan = existingPlans.first {
-            existingPlan.title = trimmedGoal.isEmpty ? "Mi semana" : trimmedGoal
-            existingPlan.motivation = trimmedMotivation.isEmpty ? nil : trimmedMotivation
-            createdPlan = existingPlan
-            return
-        }
-
-        let endsAt = AppCalendar.startOfDay(
-            for: AppCalendar.current.date(byAdding: .day, value: 30, to: .now) ?? .now
+        createdPlan = OnboardingSetupService.ensurePlan(
+            goalText: goalText,
+            motivationText: motivationText,
+            existingPlans: existingPlans,
+            modelContext: modelContext
         )
-        let plan = Plan(
-            title: trimmedGoal.isEmpty ? "Mi semana" : trimmedGoal,
-            motivation: trimmedMotivation.isEmpty ? nil : trimmedMotivation,
-            endsAt: endsAt
-        )
-        modelContext.insert(plan)
-        createdPlan = plan
     }
 
     private func continueFromHabits() {
         guard let createdPlan, !createdPlan.habits.isEmpty else { return }
 
-        try? modelContext.save()
+        do {
+            try OnboardingSetupService.commit(modelContext: modelContext)
+        } catch {
+            setupFailure = OnboardingSetupFailure(message: error.localizedDescription)
+            return
+        }
+
         goForward()
     }
 

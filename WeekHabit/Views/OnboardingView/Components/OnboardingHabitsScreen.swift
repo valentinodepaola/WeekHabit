@@ -143,8 +143,11 @@ struct OnboardingHabitsScreen: View {
     private func toggleTemplate(_ template: StarterHabitTemplate) {
         if let habitID = templateHabitIDs[template.id] {
             if let habit = plan.habits.first(where: { $0.id == habitID }) {
-                plan.habits.removeAll { $0.id == habitID }
-                modelContext.delete(habit)
+                OnboardingSetupService.removeHabit(
+                    habit,
+                    from: plan,
+                    modelContext: modelContext
+                )
             }
             templateHabitIDs[template.id] = nil
             return
@@ -152,9 +155,11 @@ struct OnboardingHabitsScreen: View {
 
         guard canAddMore else { return }
 
-        let habit = OnboardingHabitDraft.from(template).makeHabit()
-        modelContext.insert(habit)
-        plan.habits.append(habit)
+        let habit = OnboardingSetupService.addHabit(
+            from: template,
+            to: plan,
+            modelContext: modelContext
+        )
         templateHabitIDs[template.id] = habit.id
     }
 }

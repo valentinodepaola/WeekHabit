@@ -45,9 +45,18 @@ enum TodaySheetRoute: Identifiable {
     }
 }
 
-struct TodayDeleteFailure: Identifiable {
+struct TodayFailure: Identifiable {
     let id = UUID()
+    let title: String
     let message: String
+
+    static func deleting(_ error: Error) -> TodayFailure {
+        TodayFailure(title: "No se pudo borrar", message: error.localizedDescription)
+    }
+
+    static func saving(_ error: Error) -> TodayFailure {
+        TodayFailure(title: "No se pudo guardar", message: error.localizedDescription)
+    }
 }
 
 extension View {
