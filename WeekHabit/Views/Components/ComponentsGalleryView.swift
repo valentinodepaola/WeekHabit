@@ -49,6 +49,12 @@ struct ComponentsGalleryView: View {
                     WHButton(title: "Compact", size: .compact, fullWidth: false) {}
                     WHButton(title: "Disabled", isDisabled: true) {}
                 }
+                HStack(spacing: AppSpacing.s) {
+                    WHCircleButton(systemName: "questionmark") {}
+                    WHCircleButton(systemName: "chevron.left") {}
+                    WHCircleButton(systemName: "chevron.right") {}
+                    Spacer()
+                }
             }
         }
     }

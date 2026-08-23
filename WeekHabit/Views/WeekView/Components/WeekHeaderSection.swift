@@ -43,19 +43,19 @@ struct WeekHeaderSection: View {
 
                 HStack(spacing: AppSpacing.s) {
                     if let onShowLegend {
-                        navButton(systemName: "questionmark") {
+                        WHCircleButton(systemName: "questionmark") {
                             onShowLegend()
                         }
                         .accessibilityLabel("Ver leyenda de la semana")
                     }
 
-                    navButton(systemName: "chevron.left") {
+                    WHCircleButton(systemName: "chevron.left") {
                         withAnimation(AppMotion.respectful(AppMotion.smooth, reduceMotion)) {
                             weekOffset -= 1
                         }
                     }
 
-                    navButton(systemName: "chevron.right") {
+                    WHCircleButton(systemName: "chevron.right") {
                         withAnimation(AppMotion.respectful(AppMotion.smooth, reduceMotion)) {
                             weekOffset += 1
                         }
@@ -81,20 +81,4 @@ struct WeekHeaderSection: View {
         .padding(.top, AppSpacing.l)
         .padding(.bottom, AppSpacing.l)
     }
-}
-
-private func navButton(systemName: String, action: @escaping () -> Void) -> some View {
-    Button(action: action) {
-        Image(systemName: systemName)
-            .font(.system(size: 15, weight: .semibold))
-            .foregroundStyle(AppColor.textPrimary)
-            .frame(width: 40, height: 40)
-            .background(AppColor.bgElevated)
-            .clipShape(Circle())
-            .overlay {
-                Circle()
-                    .stroke(AppColor.divider, lineWidth: 1)
-            }
-    }
-    .buttonStyle(.plain)
 }
