@@ -109,7 +109,7 @@ Detalle completo en **[ARCHITECTURE.md](ARCHITECTURE.md)**.
 
 ## Pruebas
 
-**107 casos en 18 suites**, cada uno contra un `ModelContainer` SwiftData en memoria
+**112 casos en 19 suites**, cada uno contra un `ModelContainer` SwiftData en memoria
 independiente. Cubren las transacciones de los servicios y las reglas de dominio; las vistas
 no se prueban para demostrar reglas de negocio — cuando una regla es difícil de probar sin
 renderizar, primero se extrae.

@@ -13,8 +13,28 @@ struct PerformanceSeedResult {
     let skippedBecauseSeedExists: Bool
 }
 
+struct PerformanceSeedPreview {
+    let habitCount: Int
+    let approximateEntryCount: Int
+}
+
+struct PerformanceSeedRemovalResult {
+    let removedHabitCount: Int
+}
+
 enum PerformanceSeedService {
     private static let seedTitlePrefix = "[Perf]"
+
+    static var preview: PerformanceSeedPreview {
+        PerformanceSeedPreview(
+            habitCount: seedSpecs().count,
+            approximateEntryCount: 1_480
+        )
+    }
+
+    static func hasSeed(in habits: [Habit]) -> Bool {
+        habits.contains { $0.title.hasPrefix(seedTitlePrefix) }
+    }
 
     @discardableResult
     static func seedIfNeeded(
@@ -22,7 +42,7 @@ enum PerformanceSeedService {
         reference: Date = .now,
         modelContext: ModelContext
     ) throws -> PerformanceSeedResult {
-        guard existingHabits.contains(where: { $0.title.hasPrefix(seedTitlePrefix) }) == false else {
+        guard hasSeed(in: existingHabits) == false else {
             return PerformanceSeedResult(
                 insertedHabitCount: 0,
                 insertedEntryCount: 0,
@@ -77,6 +97,22 @@ enum PerformanceSeedService {
             insertedEntryCount: insertedEntryCount,
             skippedBecauseSeedExists: false
         )
+    }
+
+    @discardableResult
+    static func removeSeed(
+        existingHabits: [Habit],
+        modelContext: ModelContext
+    ) throws -> PerformanceSeedRemovalResult {
+        let seedHabits = existingHabits.filter { $0.title.hasPrefix(seedTitlePrefix) }
+
+        for habit in seedHabits {
+            modelContext.delete(habit)
+        }
+
+        try modelContext.save()
+
+        return PerformanceSeedRemovalResult(removedHabitCount: seedHabits.count)
     }
 
     private static func seedSpecs() -> [PerformanceSeedSpec] {
