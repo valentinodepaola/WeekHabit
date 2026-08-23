@@ -85,9 +85,40 @@ final class PerformanceSeedServiceTests: XCTestCase {
         let remainingEntries = try store.context.fetch(FetchDescriptor<HabitEntry>())
         let remainingFreezes = try store.context.fetch(FetchDescriptor<StreakFreeze>())
         XCTAssertEqual(result.removedHabitCount, PerformanceSeedService.preview.habitCount)
+        XCTAssertEqual(result.removedExperimentCount, 0)
         XCTAssertEqual(remainingHabits.map(\.id), [realHabit.id])
         XCTAssertEqual(remainingEntries.map(\.id), [realEntry.id])
         XCTAssertEqual(remainingFreezes.map(\.id), [realFreeze.id])
+    }
+
+    func testRemoveSeedDeletesExperimentsOnSeedHabitsAndKeepsRealOnes() throws {
+        let store = try TestStore()
+        let reference = TestFactory.date(day: 30)
+        let realHabit = makeHabit(title: "Caminar de verdad")
+        store.context.insert(realHabit)
+        try store.save()
+
+        _ = try PerformanceSeedService.seedIfNeeded(
+            existingHabits: [realHabit],
+            reference: reference,
+            modelContext: store.context
+        )
+        let allHabits = try store.context.fetch(FetchDescriptor<Habit>())
+        let seedHabit = try XCTUnwrap(allHabits.first { $0.title.hasPrefix("[Perf]") })
+        let realExperiment = makeExperiment(for: realHabit, startedAt: reference)
+        let seedExperiment = makeExperiment(for: seedHabit, startedAt: reference)
+        store.context.insert(realExperiment)
+        store.context.insert(seedExperiment)
+        try store.save()
+
+        let result = try PerformanceSeedService.removeSeed(
+            existingHabits: allHabits,
+            modelContext: store.context
+        )
+
+        let remainingExperiments = try store.context.fetch(FetchDescriptor<HabitExperiment>())
+        XCTAssertEqual(result.removedExperimentCount, 1)
+        XCTAssertEqual(remainingExperiments.map(\.id), [realExperiment.id])
     }
 
     func testRemoveSeedWithoutSeedReturnsZeroAndPreservesStore() throws {
@@ -103,6 +134,17 @@ final class PerformanceSeedServiceTests: XCTestCase {
 
         XCTAssertEqual(result.removedHabitCount, 0)
         XCTAssertEqual(try store.context.fetch(FetchDescriptor<Habit>()).map(\.id), [realHabit.id])
+    }
+
+    private func makeExperiment(for habit: Habit, startedAt: Date) -> HabitExperiment {
+        HabitExperiment(
+            habit: habit,
+            experimentTargetDaysPerWeek: 3,
+            experimentActiveDaysOfWeek: [.monday, .wednesday, .friday],
+            suggestedStartHour: 9,
+            baselineConsistency: 0.5,
+            startedAt: startedAt
+        )
     }
 
     private func makeHabit(title: String) -> Habit {

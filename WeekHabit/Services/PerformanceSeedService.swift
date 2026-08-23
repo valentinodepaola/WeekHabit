@@ -20,6 +20,7 @@ struct PerformanceSeedPreview {
 
 struct PerformanceSeedRemovalResult {
     let removedHabitCount: Int
+    let removedExperimentCount: Int
 }
 
 enum PerformanceSeedService {
@@ -28,12 +29,15 @@ enum PerformanceSeedService {
     static var preview: PerformanceSeedPreview {
         PerformanceSeedPreview(
             habitCount: seedSpecs().count,
+            // Medido sobre el seed real: 5 specs x 365 días, menos los días fuera de agenda y
+            // los huecos deliberados, más los impulsos del hábito de dejar. `PerformanceSeedServiceTests`
+            // falla si el dataset se aleja de este número.
             approximateEntryCount: 1_480
         )
     }
 
     static func hasSeed(in habits: [Habit]) -> Bool {
-        habits.contains { $0.title.hasPrefix(seedTitlePrefix) }
+        habits.contains(where: isSeedHabit)
     }
 
     @discardableResult
@@ -104,7 +108,19 @@ enum PerformanceSeedService {
         existingHabits: [Habit],
         modelContext: ModelContext
     ) throws -> PerformanceSeedRemovalResult {
-        let seedHabits = existingHabits.filter { $0.title.hasPrefix(seedTitlePrefix) }
+        let seedHabits = existingHabits.filter(isSeedHabit)
+        let seedHabitIDs = Set(seedHabits.map(\.id))
+
+        // `HabitExperiment` apunta al hábito por `habitID`, no por relación, así que el borrado
+        // en cascada no lo alcanza. Sin esto queda un experimento huérfano que sigue mostrando
+        // el título `[Perf]` en Insights y que ya no se puede resolver desde la app.
+        let seedExperiments = try modelContext
+            .fetch(FetchDescriptor<HabitExperiment>())
+            .filter { seedHabitIDs.contains($0.habitID) }
+
+        for experiment in seedExperiments {
+            modelContext.delete(experiment)
+        }
 
         for habit in seedHabits {
             modelContext.delete(habit)
@@ -112,7 +128,14 @@ enum PerformanceSeedService {
 
         try modelContext.save()
 
-        return PerformanceSeedRemovalResult(removedHabitCount: seedHabits.count)
+        return PerformanceSeedRemovalResult(
+            removedHabitCount: seedHabits.count,
+            removedExperimentCount: seedExperiments.count
+        )
+    }
+
+    private static func isSeedHabit(_ habit: Habit) -> Bool {
+        habit.title.hasPrefix(seedTitlePrefix)
     }
 
     private static func seedSpecs() -> [PerformanceSeedSpec] {

@@ -253,7 +253,7 @@ Trece servicios en `Services/`, todos `enum` sin estado con métodos `static` qu
 | `HabitExperimentService` | Iniciar, mantener y revertir experimentos |
 | `OnboardingSetupService` | Plan inicial y hábitos de plantilla del onboarding |
 | `HabitReminderService` | Notificaciones locales por hábito y weekday activo |
-| `PerformanceSeedService` | **Solo DEBUG.** Dataset sintético de 5 hábitos × 365 días |
+| `PerformanceSeedService` | **Solo DEBUG.** Crear y borrar el dataset sintético de 5 hábitos × 365 días |
 
 `HabitReminderService` arma el cuerpo del recordatorio con la motivación del plan activo,
 si no la nota del hábito, si no un texto de respaldo, y no programa nada para hábitos
@@ -336,7 +336,10 @@ Ventana de 30 días: snapshot global, confianza del ritmo, mejor día y hora pun
 consistente y hábito que necesita atención, horas pico de impulsos, y experimentos de ritmo de
 7 días con aplicar / mantener / revertir.
 
-En DEBUG el toolbar incluye un botón `speedometer` que dispara `PerformanceSeedService`.
+En DEBUG, al final del scroll hay una card `PerformanceSeedToolsCard` con una sola acción
+contextual sobre `PerformanceSeedService`: crear el dataset sintético si no existe, o
+borrarlo si ya está. Ambas piden confirmación y reportan en la card cuánto crearon o
+borraron. No hay botón de seed en el toolbar.
 
 ### `FocusSessionView`
 

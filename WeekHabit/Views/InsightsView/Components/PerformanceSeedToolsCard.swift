@@ -149,6 +149,8 @@ struct PerformanceSeedToolsCard: View {
 
             if result.removedHabitCount == 0 {
                 feedback = "No había datos de rendimiento para borrar."
+            } else if result.removedExperimentCount > 0 {
+                feedback = "Se borraron \(result.removedHabitCount) hábitos de rendimiento y \(result.removedExperimentCount) experimentos que los usaban."
             } else {
                 feedback = "Se borraron \(result.removedHabitCount) hábitos de rendimiento."
             }
@@ -179,7 +181,7 @@ private enum PerformanceSeedAction {
             let preview = PerformanceSeedService.preview
             return "Se agregarán \(preview.habitCount) hábitos y alrededor de \(preview.approximateEntryCount.formatted()) registros sintéticos. Tus datos actuales no se modificarán."
         case .remove:
-            return "Se eliminarán todos los hábitos cuyo nombre comience con [Perf] y sus registros. Tus otros hábitos no se modificarán."
+            return "Se eliminarán todos los hábitos cuyo nombre comience con [Perf], sus registros y los experimentos que los usen. Tus otros hábitos no se modificarán."
         }
     }
 }
