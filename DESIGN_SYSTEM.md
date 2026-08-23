@@ -290,21 +290,27 @@ Icon badge = círculo 88×88 con fondo `accentMuted`, icono `36pt light` `accent
 
 [WeeklyReviewBanner.swift](WeekHabit/Views/Components/WeeklyReviewBanner.swift). Banner CTA tinted accent (8%) con border accent 22% — patrón para llamados a acción semanal/contextuales no destructivos.
 
-### 10.14 `IconButton` (legacy)
+### 10.14 `WHCircleButton`
+
+[WHCircleButton.swift](WeekHabit/Views/Components/WHCircleButton.swift). Botón circular **secundario** de los encabezados: `bgElevated` + borde `divider`, icono en `textPrimary`. 40pt por defecto (`size` ajustable). Usado en el header de Semana (leyenda, ‹ ›) y en el de Hoy (ayuda). El "+" relleno de acento **no** es este componente: sigue inline en cada header porque es la acción principal de su pantalla.
+
+### 10.15 `IconButton` (legacy)
 
 [IconButton.swift](WeekHabit/Views/Components/IconButton.swift). FAB circular o pill ancha — usado en `HabitDetailView` topBar. **Para nuevos botones usa `WHButton`**; este componente queda por compatibilidad.
 
-### 10.15 Componentes específicos de feature
+### 10.16 Componentes específicos de feature
 
 Cuando un componente sólo aplica a un feature, vive bajo `Views/<Feature>View/Components/`. Catálogo destacado:
 
 | Feature | Componente | Notas |
 |---|---|---|
-| Today | `DailyProgressCard`, `PlanAccordion`, `TodayHabitComponent`, `FocusSessionLauncherCard`, `LongestStreakBanner`, `QuantityLogSheet`, `SlipLogSheet`, `UrgeLogSheet`, `RecoveryPromptView`, `ReplacementPromptView`, `EntryNoteSheet` | Fila accordion con barra accent 4pt en `leading`, ring 86pt en progreso diario. |
+| Today | `DailyProgressCard`, `PlanAccordion`, `TodayHabitComponent`, `FocusSessionLauncherCard`, `LongestStreakBanner`, `QuantityLogSheet`, `SlipLogSheet`, `UrgeLogSheet`, `RecoveryPromptView`, `ReplacementPromptView`, `EntryNoteSheet`, `TodayHelpSheet` | Fila accordion con barra accent 4pt en `leading`, ring 86pt en progreso diario. |
 | Week | `WeekGridCell`, `WeekGridRow`, `WeekHeaderSection`, `DayColumn`, `StatTile`, `WeekGridLayout` | Celda 34pt con 12 estados visuales distintos. Layout en `WeekGridLayout` enum. |
 | HabitDetail | `CurrentStreakHeroCard`, `StreakBreakdownCard`, `StatTileView`, `WeekDotsCard`, `LastWeeksHeatmapCard`, `EntryHistoryCard`, `SlipTimelineCard`, `HabitExperimentStatusCard` | Hero color = `habit.habitColor`. |
 | Insights | `InsightsHeroCard`, `InsightConfidenceCard`, `InsightSummaryCard`, `RhythmExperimentCard`, `ActiveExperimentCard`, `ExperimentReviewCard`, `UrgePeakHoursCard`, `InsightProvisionalBadge`, `InsightsTrendBars` | Todas son cards con `bgElevated` + `appElevation(.low)`. |
 | CreateHabit | 30+ subcomponentes, todos envueltos en `CreateHabitFormSection` (wrapper de `WHFormSection`). | Orden conductual: Dirección → Acción → Señal → Medición → Ritmo → Final → Recordatorio → Plan. |
+
+`TodayHelpSheet` no lleva copy propio: lo lee de [HelpCatalog.swift](WeekHabit/Models/Support/HelpCatalog.swift), igual que `WeekLegendSheet` lo lee de `WeekGridCellFamily`. Cada fila trae su token de color (`accent`, `success`, `warning`, `info`) y la vista lo resuelve a `AppColor`, de forma que el catálogo no dependa de SwiftUI. Los colores repiten los que ese mismo estado ya usa en la app: descanso en `info` como el estado vacío de Hoy, slip en `warning` e impulso en `accent` como en la cuadrícula de Semana.
 
 ---
 

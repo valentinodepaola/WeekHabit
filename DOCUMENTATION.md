@@ -192,7 +192,9 @@ borrado del hábito.
 ### Tipos de apoyo
 
 `HabitAppearance` (paleta de iconos y colores), `Weekday`, `OnceFlags` (flags one-shot de
-educación just-in-time), `IdentityReinforcementCopy`.
+educación just-in-time), `IdentityReinforcementCopy`, `HelpCatalog` (el copy de la pantalla de
+ayuda: las cinco formas de registrar el día que no se descubren solas, con su icono y su token de
+color; si cambia cómo se marca un día, hay que revisar si alguna fila quedó mintiendo).
 
 ## Schema y migraciones
 
@@ -293,7 +295,7 @@ Pantalla de uso diario. Es la referencia del patrón de estado de pantalla: `Tod
 (struct de valor con los datos derivados, construida una vez por render) y `TodayScreenModel`
 (clase `@Observable` con rutas, confirmaciones y estado de sección).
 
-- Header con fecha y menú de creación (`WHCreationSheet`).
+- Header con fecha, botón de ayuda y menú de creación (`WHCreationSheet`).
 - `DailyProgressCard` con completados, total y pendientes.
 - `FocusSessionLauncherCard`.
 - Hábitos registrables hoy, agrupados por estado, con swipe para editar o borrar.
@@ -302,6 +304,11 @@ Pantalla de uso diario. Es la referencia del patrón de estado de pantalla: `Tod
 - Sección de planes con `PlanAccordion`.
 - Celebración de hitos y nota diferida.
 - Prompt de recuperación tras un fallo, que puede crear la versión mínima en un tap.
+- Pantalla de ayuda (`TodayHelpSheet`), abierta desde el "?" del header y presentada sola una
+  vez, la primera vez que se llega a Hoy. No es un catálogo de funciones: explica las cinco
+  formas de registrar el día que no se descubren solas —mínima, descanso, comodín, slip e
+  impulso—. Cede el turno al prompt de recuperación: si esa hoja ya está puesta, la ayuda
+  espera al próximo arranque en vez de gastarse.
 - Navegación a `HabitDetailView`.
 
 ### `CreateHabitView`
