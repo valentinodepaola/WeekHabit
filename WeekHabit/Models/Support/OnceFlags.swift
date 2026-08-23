@@ -9,4 +9,5 @@ enum OnceFlag: String {
     case hasSeenFreezeExplainer
     case hasSeenBreakIntro
     case hasSeenUrgeTooltip
+    case hasSeenTodayHelp
 }

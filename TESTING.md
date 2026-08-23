@@ -15,7 +15,7 @@ xcodebuild -project WeekHabit.xcodeproj \
 
 ## Estado actual de la suite
 
-Última validación conocida (2026-08-22): **113 tests passed** en 19 suites, sobre
+Última validación conocida (2026-08-23): **123 tests passed** en 20 suites, sobre
 `platform=iOS Simulator,name=iPhone 17 Pro`, sin fallos.
 
 Además de la cobertura inicial, la suite ya cubre:
@@ -58,6 +58,11 @@ Además de la cobertura inicial, la suite ya cubre:
     temporizado que descartaba la nota en silencio si no lograba presentarla en seis
     intentos. También el prompt de recuperación una vez por sesión y las confirmaciones de
     borrado derivadas de su opcional.
+- `HelpCatalogTests`: el catálogo de la pantalla de ayuda. No prueba la vista, prueba el copy
+  como dato: ids únicos, textos presentes, y —lo que de verdad protege— que la pantalla siga
+  cubriendo sólo las cinco formas de registrar el día y que el copy no vuelva a prometer cosas
+  que la app no hace (activar el comodín a mano, reanudar una pausa a mano).
+
 - `FocusSequenceTests`: el modelo de la secuencia ordenada de la Sesión de ritmo. El total es
   la suma de los bloques; `clampedSeconds` hace snap al paso de 300 s y respeta los límites;
   los estados por bloque (pendiente / en curso / hecho) y el índice actual son correctos al
@@ -262,5 +267,6 @@ regresión que devuelva un escaneo por día al dominio los rompe por orden de ma
 | Fase 3 — `TodayViewData` y `TodayScreenModel` | 103 |
 | Secuencia arrastrable de la Sesión de ritmo | 107 |
 | Blindaje y limpieza del seed de rendimiento | 113 |
+| Pantalla de ayuda — catálogo y precedencia de la hoja | 123 |
 
 El detalle de qué cerró cada fase vive en el historial de git.

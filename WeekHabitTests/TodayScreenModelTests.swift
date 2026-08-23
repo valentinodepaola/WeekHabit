@@ -177,4 +177,63 @@ final class TodayScreenModelTests: XCTestCase {
 
         XCTAssertNil(model.sheetRoute)
     }
+
+    // MARK: - Ayuda
+
+    func testHelpIsPresentedWhenTheScreenIsFree() {
+        let model = TodayScreenModel()
+
+        XCTAssertTrue(model.presentHelpIfPossible())
+        XCTAssertEqual(model.sheetRoute?.id, "help")
+    }
+
+    /// La regla de precedencia: el prompt de recuperación habla de ayer y su ventana se cierra;
+    /// la ayuda es perenne y puede esperar al próximo arranque.
+    func testHelpCedesItsTurnToTheRecoveryPrompt() {
+        let model = TodayScreenModel()
+        let candidate = RecoveryPromptCandidate(
+            habit: TestFactory.habit(),
+            date: TestFactory.date(day: 1),
+            isWeeklyFlexibleMiss: false
+        )
+        model.presentRecoveryPromptIfNeeded(candidate: candidate)
+        let presentedRoute = model.sheetRoute?.id
+
+        XCTAssertFalse(model.presentHelpIfPossible())
+        XCTAssertEqual(model.sheetRoute?.id, presentedRoute, "la ayuda no puede pisar la hoja presentada")
+    }
+
+    func testHelpIsSkippedWhileACoverIsPresented() {
+        let model = TodayScreenModel()
+        model.coverRoute = .plan(.create)
+
+        XCTAssertFalse(model.presentHelpIfPossible())
+        XCTAssertNil(model.sheetRoute)
+    }
+
+    func testHelpIsSkippedWhileAMilestoneIsStillVisible() {
+        let model = TodayScreenModel()
+        let payload = MilestoneCelebrationPayload(habit: TestFactory.habit(), milestone: .week)
+        model.presentMilestone(payload, noteEntry: nil, after: 0.05)
+        wait { model.milestoneCover != nil }
+
+        XCTAssertFalse(model.presentHelpIfPossible())
+        XCTAssertNil(model.sheetRoute)
+    }
+
+    /// Cerrar la ayuda pasa por el mismo `onDismiss` que la nota diferida: no puede tragársela.
+    func testQueuedNoteSurvivesTheHelpSheet() {
+        let model = TodayScreenModel()
+        let entry = makeEntry()
+        XCTAssertTrue(model.presentHelpIfPossible())
+
+        model.requestNoteEntry(entry)
+        XCTAssertEqual(model.sheetRoute?.id, "help", "la nota espera detrás de la ayuda")
+
+        model.sheetRoute = nil
+        model.presentPendingNoteIfPossible()
+
+        wait { model.sheetRoute != nil }
+        XCTAssertEqual(model.sheetRoute?.id, "noteEntry-\(entry.id)")
+    }
 }

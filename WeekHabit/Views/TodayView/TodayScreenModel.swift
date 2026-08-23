@@ -61,6 +61,16 @@ final class TodayScreenModel {
         planToDelete = plan
     }
 
+    /// Abre la ayuda sólo si la pantalla está libre. Devuelve si llegó a presentarla, para que la
+    /// vista marque el flag de "ya la vio" únicamente cuando el usuario de verdad la vio: si el
+    /// prompt de recuperación ganó el turno, la ayuda espera al próximo arranque en vez de gastarse.
+    @discardableResult
+    func presentHelpIfPossible() -> Bool {
+        guard sheetRoute == nil, coverRoute == nil, milestoneCover == nil else { return false }
+        sheetRoute = .help
+        return true
+    }
+
     /// Cierra la hoja actual y abre la siguiente cuando terminó de desaparecer. El retardo es
     /// deliberado: presentar dos hojas encimadas en el mismo ciclo las pisa.
     func replaceSheet(after delay: TimeInterval = 0.25, with next: @escaping () -> Void) {

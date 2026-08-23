@@ -28,6 +28,7 @@ struct TodayView: View {
     @AppStorage("weeklyReviewWeekdayRaw") var weeklyReviewWeekdayRaw: Int = Weekday.sunday.rawValue
     @AppStorage(OnceFlag.hasSeenFreezeExplainer.rawValue) var hasSeenFreezeExplainer = false
     @AppStorage(OnceFlag.hasSeenUrgeTooltip.rawValue) var hasSeenUrgeTooltip = false
+    @AppStorage(OnceFlag.hasSeenTodayHelp.rawValue) var hasSeenTodayHelp = false
 
     @State var model = TodayScreenModel()
     @Namespace var habitSectionNamespace
@@ -67,6 +68,10 @@ struct TodayView: View {
                 List {
                     TodayHeaderSection(
                         dateTitle: currentDateTitle,
+                        onHelpTap: {
+                            hasSeenTodayHelp = true
+                            model.sheetRoute = .help
+                        },
                         onCreateTap: { model.sheetRoute = .createMenu }
                     )
                     .todayListRow(
@@ -175,6 +180,11 @@ struct TodayView: View {
                 model.presentRecoveryPromptIfNeeded(
                     candidate: habits.recoveryPromptCandidate(reference: date)
                 )
+                // La ayuda cede el turno: si la recuperación ya ocupó la hoja, el flag no se marca
+                // y vuelve a intentarlo en el próximo arranque.
+                if !hasSeenTodayHelp, model.presentHelpIfPossible() {
+                    hasSeenTodayHelp = true
+                }
             }
         }
     }

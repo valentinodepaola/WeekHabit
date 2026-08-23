@@ -21,6 +21,7 @@ enum TodayCoverRoute: Identifiable {
 
 enum TodaySheetRoute: Identifiable {
     case createMenu
+    case help
     case quantityLog(habit: Habit, date: Date)
     case slipLog(habit: Habit)
     case urgeLog(habit: Habit)
@@ -32,6 +33,7 @@ enum TodaySheetRoute: Identifiable {
     var id: String {
         switch self {
         case .createMenu: return "createMenu"
+        case .help: return "help"
         case .quantityLog(let habit, _): return "quantityLog-\(habit.id)"
         case .slipLog(let habit): return "slipLog-\(habit.id)"
         case .urgeLog(let habit): return "urgeLog-\(habit.id)"

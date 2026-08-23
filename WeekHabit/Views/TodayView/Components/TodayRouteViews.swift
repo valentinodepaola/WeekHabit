@@ -80,6 +80,11 @@ extension TodayView {
             .presentationDetents([.height(420), .medium])
             .presentationDragIndicator(.visible)
             .presentationBackground(AppColor.bgCanvas)
+        case .help:
+            TodayHelpSheet()
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+                .presentationBackground(AppColor.bgCanvas)
         case .quantityLog(let habit, let logDate):
             QuantityLogSheet(
                 habit: habit,
