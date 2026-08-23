@@ -210,19 +210,17 @@ Cada métrica secundaria debe servir a eso:
 - Planes revisados al terminar.
 - Malos hábitos con menos slips y más reemplazos.
 
-## Estado Actual de la App
+## Sobre el estado de implementación
 
-Hoy WeekHabit ya tiene una base sólida para construir buenos hábitos: Hoy, Semana, Insights, recordatorios locales, cues, planes, sesiones de ritmo, fuentes confiables de registro, rachas, heatmap y experimentos de 7 días.
+Este documento **no lleva el estado de la app**. El estado caduca; la brújula no.
 
-Eso ya la separa de un tracker básico.
+Para saber qué está construido hoy, leer `README.md` y `DOCUMENTATION.md`. Para saber qué
+sigue abierto, leer los issues del repo.
 
-Las tres zonas que definían la misión completa están en distintos estados de avance:
-
-- **Resiliencia:** implementada en lo central. Existe `EntryKind.skipped` para descanso intencional, `EntryKind.missed` con razón de fallo, y `StreakFreeze` para comodines de racha. Puede quedar pendiente pulir la versión mínima viable y la prevención de recaídas a nivel de UI.
-- **Malos hábitos:** base de datos lista. `EntryKind.slip` (desliz) y `EntryKind.urge` (impulso resistido) existen en el modelo. La UI de malos hábitos como flujo diferenciado —abstinencia, detonante, reemplazo— sigue siendo una zona a desarrollar.
-- **Meta primero:** en progreso activo (rama `V1.4-goal-first`). El objetivo es que el producto nazca desde la meta y no solo desde un hábito inicial.
-
-La identidad de WeekHabit debe sostener ambas verdades: valorar lo que ya existe y no confundirlo con la misión completa.
+Lo único que esta sección debe recordar: valorar lo que ya existe no es lo mismo que dar la
+misión por cumplida. Las tres zonas que la definen —resiliencia, malos hábitos y meta
+primero— avanzan a ritmos distintos, y una función implementada en el modelo no está
+terminada hasta que el usuario puede entenderla y usarla sin que se la expliquen.
 
 ## Criterio Para Decidir Features
 

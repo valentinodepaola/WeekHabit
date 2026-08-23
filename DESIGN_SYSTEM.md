@@ -460,20 +460,32 @@ Cuando un hábito cambia de sección (pendiente → completado → slip), se usa
 
 `CreateHabitView` y `CreatePlanView` son la referencia. Reglas:
 
-- Local `@State` por campo, `init(...)` que hidrata desde la entidad en modo edición.
-- Computed `isSaveDisabled` con todas las reglas.
-- Normalizar (`trim`, valores numéricos) **antes** de guardar.
-- Insert/update directo con `modelContext`, sin servicio intermedio.
-- `dismiss()` al terminar.
+- El estado editable vive en un **draft de tipo valor** (`HabitDraft`, `PlanDraft`), no en
+  `@State` sueltos por campo. El draft hidrata desde la entidad en modo edición.
+- El draft expone `isSaveDisabled` y normaliza (`trim`, valores numéricos) **antes** de guardar.
+- La persistencia va a un **editor service** (`HabitEditorService`, `PlanEditorService`); la
+  vista nunca escribe a `modelContext`. Ver `ARCHITECTURE.md`.
+- Si el guardado falla, **mostrar el error y no cerrar**. `dismiss()` solo tras un save exitoso.
 - Refrescar side effects explícitos (ej. `HabitReminderService.refreshReminder(for:)`).
 - Top bar con `CreateHabitTopBar` (Cancelar text-button + `WHButton` compact "Guardar").
 - Cada bloque del form envuelto en `CreateHabitFormSection` / `WHFormSection`.
 
 ### 13.12 Onboarding
 
-[OnboardingView.swift](WeekHabit/Views/OnboardingView/OnboardingView.swift) — flujo goal-first con steps (`OnboardingStep` enum). Progress en top vía `OnboardingProgressView`. Transición entre pantallas: `.opacity.combined(with: .move(edge: .trailing))` con `AppMotion.gentle`. Respeta Reduce Motion (cambia a `.opacity` solo).
+[OnboardingView.swift](WeekHabit/Views/OnboardingView/OnboardingView.swift) — flujo goal-first de 6 pasos (`OnboardingStep`: `intro → goal → motivation → size → habits → notifications`; `intro` no cuenta en el progreso). Progress en top vía `OnboardingProgressView`. Transición entre pantallas: `.opacity.combined(with: .move(edge: .trailing))` con `AppMotion.gentle`. Respeta Reduce Motion (cambia a `.opacity` solo).
 
-### 13.13 Habit appearance picker
+### 13.13 Reordenar por arrastre (manija)
+
+Patrón de referencia: [FocusSequenceSetup.swift](WeekHabit/Views/FocusSessionView/Components/FocusSequenceSetup.swift).
+
+- El arrastre se inicia **desde una manija explícita**, no desde toda la fila: el cuerpo de la
+  fila queda libre para su gesto propio (ahí, tocar para ajustar el tiempo).
+- La fila arrastrada se desplaza visualmente con un offset; los swaps se aplican al cruzar el
+  umbral y se compensan con un acumulador para que la píldora no salte bajo el dedo.
+- Siempre acompañar con una línea de ayuda que nombre los dos gestos disponibles.
+- Háptica en cada swap, no en cada píxel de movimiento.
+
+### 13.14 Habit appearance picker
 
 Selector de icono/color de hábito vive en [HabitAppearancePicker.swift](WeekHabit/Views/CreateHabitView/Components/HabitAppearancePicker.swift) — grid agrupada por categoría (`HabitIconGroup`) + paleta de 24 colores. Reusa este picker antes de inventar uno nuevo si necesitas color o icono de hábito.
 
@@ -529,7 +541,7 @@ Antes de hacer commit, valida:
 5. ¿Animaciones envueltas en `AppMotion.respectful(_, reduceMotion)`?
 6. ¿Háptica solo en cierres con peso emocional?
 7. ¿Cambios de estado animan con `matchedGeometryEffect` cuando hay reorganización de listas?
-8. ¿Form sigue el patrón de `CreateHabitView` (state local + `isSaveDisabled` + trim + insert directo)?
+8. ¿Form sigue el patrón de `CreateHabitView` (draft de valor + `isSaveDisabled` + trim + editor service, sin escribir a `modelContext` desde la vista)?
 9. ¿Sheets usan `presentationDetents`, `presentationDragIndicator(.visible)`, `presentationBackground(AppColor.bgCanvas)`?
 10. ¿Swipe actions con destructive sin full-swipe + alerta de confirmación?
 11. ¿Estados sensibles (miss / slip / break / pause) usan copy neutral y color `warning` / `info`, no `destructiveAction`?

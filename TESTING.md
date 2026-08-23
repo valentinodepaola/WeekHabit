@@ -15,7 +15,7 @@ xcodebuild -project WeekHabit.xcodeproj \
 
 ## Estado actual de la suite
 
-Última validación conocida (2026-07-29): **106 tests passed** en
+Última validación conocida (2026-08-22): **107 tests passed** en 18 suites, sobre
 `platform=iOS Simulator,name=iPhone 17 Pro`, sin fallos.
 
 Además de la cobertura inicial, la suite ya cubre:
@@ -34,14 +34,14 @@ Además de la cobertura inicial, la suite ya cubre:
   - `attentionHabit`;
   - `urgePeakHourInsight`;
   - sugerencias de experimentos y orden por prioridad.
-- `OnboardingSetupService`, agregado en la Fase 1 de `docs/PLAN_MEJORAS.md`:
+- `OnboardingSetupService`, agregado en la Fase 1 del plan de mejoras:
   - título de respaldo y motivación nula cuando el texto viene vacío;
   - normalización de espacios y fecha de fin a 30 días en start-of-day;
   - reutilización del plan existente en vez de crear un segundo;
   - alta y baja de hábitos de plantilla ligados al plan;
   - guardado diferido: las mutaciones quedan pendientes hasta `commit`.
 - `HabitTrackingService.commitRecoveryMiss`: aplica la versión mínima y persiste.
-- `PerformanceBaselineTests`, agregado en la Fase 2 de `docs/PLAN_MEJORAS.md`. Ver abajo.
+- `PerformanceBaselineTests`, agregado en la Fase 2 del plan de mejoras. Ver abajo.
 - `AppCalendarTests`, agregado en la Fase 2.5: el calendario se cachea, y estas pruebas
   fijan que cachearlo no cambie lo que devuelven `startOfDay`, `weekday`, `weekRange` ni
   `isSameDay`, y que invalidar el caché lo reconstruya bien.
@@ -58,6 +58,11 @@ Además de la cobertura inicial, la suite ya cubre:
     temporizado que descartaba la nota en silencio si no lograba presentarla en seis
     intentos. También el prompt de recuperación una vez por sesión y las confirmaciones de
     borrado derivadas de su opcional.
+- `FocusSequenceTests`: el modelo de la secuencia ordenada de la Sesión de ritmo. El total es
+  la suma de los bloques; `clampedSeconds` hace snap al paso de 300 s y respeta los límites;
+  los estados por bloque (pendiente / en curso / hecho) y el índice actual son correctos al
+  inicio, a mitad del segundo bloque y pasado el total; y `reconcile` conserva orden y tiempos
+  ya asignados al agregar hábitos nuevos.
 - `TodayCollectionsTests` suma pruebas de **equivalencia** de `todayPartition(on:)` contra
   las siete funciones sueltas que reemplaza, incluido el caso de agenda flexible y el
   solapamiento de descanso con slip.
@@ -103,7 +108,8 @@ consulta por día escaneando linealmente todas las entradas del hábito.
 `currentStreakBreakdown` crece 5,1× pero queda en 6,83 ms porque corta en el primer día roto
 y escanea pocos días. `bestStreak` recorre todo el rango, y por eso paga el costo completo.
 
-La decisión que salió de estos números está en `docs/PLAN_MEJORAS.md`.
+La decisión que salió de estos números fue indexar las entradas por día en vez de cachear;
+el resultado está en la tercera medición.
 
 ## Segunda medición — con el `Calendar` cacheado
 
@@ -162,8 +168,8 @@ consultar un día es O(1), agrandar el historial casi no la afecta.
 **Las colecciones de Today siguen en ~48 ms.** Estaba previsto: cada partición
 (`pendingToday`, `completedToday`, `skippedToday`, `slippedToday`) hace **una sola** consulta
 por hábito, así que construir un índice por función cuesta más o menos lo mismo que escanear.
-Bajarlo exige compartir un índice entre las cuatro particiones, que es una decisión abierta
-en `docs/PLAN_MEJORAS.md`. La Fase 3 la cerró; ver la cuarta medición.
+Bajarlo exige compartir un índice entre las cuatro particiones. La Fase 3 lo hizo; ver la
+cuarta medición.
 
 ## Cuarta medición — con el índice compartido entre particiones (Fase 3)
 
@@ -239,9 +245,17 @@ regresión que devuelva un escaneo por día al dominio los rompe por orden de ma
 - Cada bug corregido en tracking, scheduling, streaks, freezes o recovery debe incluir
   una prueba de regresión.
 
-## Estado histórico de fases 2, 3 y 4
+## Cómo creció la suite
 
-La fase 2 agregó el target, fixtures en memoria y 13 pruebas de regresión. La fase 3
-dividió el dominio monolítico de `Habit` por responsabilidad. La fase 4 extrajo
-`PlanDraft` y `PlanEditorService`, y elevó la suite a 16 pruebas. La suite completa compila
-y pasa en iOS Simulator.
+| Momento | Tests |
+|---|---:|
+| Fase 2 del refactor — target, fixtures en memoria y regresiones iniciales | 13 |
+| Fase 4 — `PlanDraft` y `PlanEditorService` | 16 |
+| A1 — servicios de persistencia extraídos | 43 |
+| A2 — colecciones de Today | 53 |
+| Fase 1 del plan de mejoras — `OnboardingSetupService` | 70 |
+| Índice por día — `HabitDayIndex` y sus pruebas de equivalencia | 81 |
+| Fase 3 — `TodayViewData` y `TodayScreenModel` | 103 |
+| Secuencia arrastrable de la Sesión de ritmo | 107 |
+
+El detalle de qué cerró cada fase vive en el historial de git.

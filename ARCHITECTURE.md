@@ -66,9 +66,9 @@ implementan las transacciones de SwiftData.
 
 ## Estado de pantalla
 
-`TodayView` es la referencia del patrón, introducido en la Fase 3 de `docs/PLAN_MEJORAS.md`
-como prueba de concepto. **Todavía no se replicó en las otras vistas**; hacerlo es una
-decisión abierta.
+`TodayView` es la referencia del patrón, introducido como prueba de concepto en la Fase 3 del
+plan de mejoras. **Todavía no se replicó en las otras vistas**; decidirlo es un issue abierto
+del repo.
 
 Son dos tipos con responsabilidades distintas, y se pueden adoptar por separado:
 
@@ -81,7 +81,7 @@ Son dos tipos con responsabilidades distintas, y se pueden adoptar por separado:
 
 La vista conserva `@Query` y `@Environment(\.modelContext)`, y sigue delegando las mutaciones
 a los servicios. No hay repositorios, use cases ni DTOs: el descarte de Clean Architecture
-está argumentado en `docs/PLAN_MEJORAS.md`.
+está argumentado más abajo.
 
 Lo que este patrón habilita, además de la claridad: **el estado de coordinación se vuelve
 testeable**. Las secuencias de presentación diferida vivían dentro de la `View` y por eso no
@@ -96,9 +96,69 @@ Cuando una vista se parta en varios archivos, sus miembros pasan de `private` a 
   y el prompt de recuperación en `HabitTrackingService.commitRecoveryMiss`.
 - El cierre de plan delega en `PlanLifecycleService.completeWrapUp`. Era la última escritura
   implícita —asignaba `endsAt` y `reviewedAt` sin pasar por `modelContext`— y por eso no la
-  detectaba la auditoría original. Detalle en `docs/PLAN_MEJORAS.md`.
-- El plan detallado de las fases 5 y 6 está en `REFACTOR_HANDOFF.md`. Lo que sigue está en
-  `docs/PLAN_MEJORAS.md`.
+  detectaba una auditoría que solo buscaba `insert`, `delete` y `save`. De ahí sale la regla
+  de escritura implícita de más arriba.
+- Lo que sigue abierto vive en los issues del repo. Los planes de refactor ya ejecutados
+  (`PLAN_SIMPLIFICACION.md`, `REFACTOR_HANDOFF.md`, `docs/PLAN_MEJORAS.md`) se borraron; su
+  historia vive en git.
+
+## Por qué no Clean Architecture + MVVM
+
+Se evaluó migrar la app a Clean Architecture con MVVM y **se descartó por costo/beneficio**.
+El dato que decidió: **48 archivos de vista referencian `Habit` directamente** y 12 usan
+`@Query`. Clean Architecture prohíbe exactamente eso.
+
+Las cuatro razones concretas:
+
+1. **`@Query` es incompatible y no tiene reemplazo equivalente.** Es un property wrapper que
+   solo funciona dentro de una `View` y devuelve clases `@Model`. Renunciar a él significa
+   fetch manual más observar `ModelContext.didSave` por `NotificationCenter` y refrescar a
+   mano: más código, menos preciso, y reintroduce bugs de "la vista no se actualizó" que hoy
+   no existen.
+2. **Mapear las entidades `@Model` a structs puras cuesta rendimiento.** `Habit` tiene
+   relación con carga perezosa a `HabitEntry`. Hoy `Habit+Streaks` y el heatmap recorren
+   entradas bajo demanda; con mappers a DTO habría que materializar el grafo completo en cada
+   lectura.
+3. **`@Observable` + SwiftData todavía tiene aristas.** Mutar un `@Model` desde un ViewModel
+   no siempre propaga la invalidación como lo hace `@Query`.
+4. **No hay red de seguridad donde más se tocaría.** La suite protege servicios y dominio; las
+   vistas explícitamente no se testean. Sería reescribir ~17 000 líneas sin tests que avisen
+   de regresiones.
+
+Estimación de la migración completa: **4–7 semanas**, con riesgo alto de regresión y una app
+peor integrada con SwiftUI que la actual.
+
+La app ya tiene la mayor parte del beneficio que buscaba esa migración: dominio puro separado
+por responsabilidad en `Models/Domain/`, servicios sin estado como frontera de escritura,
+drafts como capa de estado de feature, y errores de persistencia que no se silencian.
+
+**Esta decisión está tomada.** Reabrirla exige evidencia nueva, no preferencia de estilo.
+
+## Riesgo conocido: invalidación de `AppCalendar` por zona horaria
+
+`AppCalendar.current` está cacheado. Antes se reconstruía en cada acceso, así que un cambio de
+zona horaria se reflejaba solo; ahora la corrección depende de que llegue la notificación de
+invalidación.
+
+**Verificado:** el observador se registra, se suscribe a las dos notificaciones, y publicarlas
+a mano no rompe ni deja el caché en mal estado
+(`AppCalendarTests.testCalendarStaysUsableAfterInvalidationNotifications`).
+
+**No verificado:** que iOS efectivamente publique `.NSSystemTimeZoneDidChange` y que la app
+muestre los días nuevos, con la app abierta y el usuario cruzando zonas horarias. No se pudo
+comprobar porque el simulador hereda la zona horaria del Mac anfitrión y cambiarla ahí requiere
+privilegios de administrador.
+
+Formas de cerrarlo, si llega a importar: probarlo a mano en un dispositivo real, o validar en
+cada acceso que el `timeZone` del calendario cacheado siga coincidiendo con `TimeZone.current`
+—una comparación barata al lado de construir el calendario, que vuelve la corrección
+independiente de la notificación—. Se descartó al planear para no pagar una búsqueda por
+acceso; a la luz de que el cacheo solo dio un 7 %, ese ahorro vale menos de lo que parecía.
+
+**Detalle relacionado:** `HabitEntry.date` y `StreakFreeze.protectedDate` se normalizan a
+start-of-day en sus inits y nada los muta después, así que comparar `Date` directo es correcto
+—salvo si el usuario cruzó zonas horarias entre que se escribió la entrada y se la consulta—.
+Por eso `HabitDayIndex` **renormaliza cada entrada al construirse**, con el calendario vigente.
 
 ## Dominio de hábitos
 
@@ -138,5 +198,5 @@ scheduling, streaks, freezes y recovery descritos en `TESTING.md`.
 Las vistas no se prueban para demostrar reglas de negocio. Cuando una regla es difícil de
 probar sin renderizar una vista, debe extraerse primero a dominio o a un servicio.
 
-Las fases 2, 3 y 4 de arquitectura están protegidas por 16 pruebas de regresión que pasan
-en iOS Simulator.
+Las reglas de arquitectura están protegidas por la suite completa, que pasa en iOS
+Simulator. El conteo vigente y la cobertura por área están en `TESTING.md`.
