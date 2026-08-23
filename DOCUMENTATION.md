@@ -1,55 +1,40 @@
 # WeekHabit — Documentación del proyecto
 
-## ¿Qué es WeekHabit?
+Referencia técnica del repo. Para la visión de producto, leer `IDENTIDAD_MISION.md`. Para las
+reglas de arquitectura, `ARCHITECTURE.md`. Para tokens y componentes, `DESIGN_SYSTEM.md`.
+Para la suite y los números de rendimiento, `TESTING.md`.
 
-WeekHabit es una app iOS para construir hábitos con ritmo semanal. La app ayuda al usuario a planear hábitos, registrarlos día a día, revisar su semana, detectar patrones de consistencia y trabajar metas agrupadas en planes.
+## Qué es WeekHabit
 
-El enfoque principal no es solo “marcar tareas”, sino ayudar a entender el ritmo real: qué hábitos se sostienen, qué días funcionan mejor, qué horarios tienen más evidencia y cuándo conviene ajustar una meta.
+App iOS para construir hábitos con ritmo semanal: planear hábitos, registrarlos día a día,
+revisar la semana, detectar patrones de consistencia y agrupar hábitos bajo metas.
 
-**Stack:** Swift 5.0 · SwiftUI · SwiftData · UserNotifications · iOS 26.4+ · Universal (iPhone + iPad)
+El enfoque no es solo "marcar tareas", sino entender el ritmo real: qué hábitos se sostienen,
+qué días funcionan mejor, qué horarios tienen más evidencia y cuándo conviene ajustar.
 
-**Estado del proyecto:**
+**Stack:** Swift 5.0 · SwiftUI · SwiftData · UserNotifications · iOS 26.4+ · iPhone y iPad.
 
-- Proyecto Xcode único: `WeekHabit.xcodeproj`
-- Sin dependencias externas: no SPM, CocoaPods ni paquetes de terceros
-- Target unitario `WeekHabitTests` con SwiftData en memoria
-- UI y comentarios en español
-- Persistencia local con SwiftData y schema versionado hasta `SchemaV17`
+- Proyecto Xcode único: `WeekHabit.xcodeproj`. Sin SPM, CocoaPods ni dependencias externas.
+- Target de pruebas `WeekHabitTests` con SwiftData en memoria.
+- UI y comentarios en español (es_MX). Identificadores en inglés.
+- Persistencia local con schema versionado hasta `SchemaV17`.
 
-## Features actuales
-
-- Onboarding inicial conectado al primer lanzamiento con selección opcional de hábito inicial.
-- Crear, editar y borrar hábitos desde `TodayView`.
-- Hábitos tipo check: hecho / no hecho.
-- Hábitos tipo cantidad: minutos, páginas, kilómetros, vasos, repeticiones o unidad personalizada futura.
-- Programación diaria, por días específicos o por veces por semana.
-- Fecha opcional de fin para archivar hábitos automáticamente después de cierto día.
-- Recordatorios locales por hábito usando `UserNotifications`, programados en sus días activos.
-- Asociación de hábitos a planes.
-- Crear, editar y borrar planes desde la pantalla de Hoy.
-- Planes con motivación, fecha de fin, meta de completitud y hábitos asociados.
-- Revisión automática de planes terminados mediante `PlanWrapUpView`.
-- Vista Hoy con progreso diario, hábitos activos, planes, edición/borrado y sesión de enfoque.
-- Vista Semana con grilla editable, navegación por semanas, resumen y logging retroactivo.
-- Insights de 30 días con consistencia, confianza, tendencias, mejores días/horas y sugerencias.
-- Experimentos de ritmo de 7 días sugeridos desde Insights, con mantener/revertir.
-- Detalle de hábito con racha, desglose honesto de racha, progreso semanal, dots, heatmap y estado de experimento.
-- Sesiones de enfoque con timer, selección de hábitos, revisión final y persistencia de `FocusSession`.
-- Separación entre marcas confiables para Insights (`today`, `focusSession`) y marcas manuales retroactivas (`manual`).
-
-## Build y ejecución
+## Build y pruebas
 
 ```bash
-# Abrir en Xcode
 open WeekHabit.xcodeproj
+```
 
-# Build para simulador
+```bash
 xcodebuild -project WeekHabit.xcodeproj \
   -scheme WeekHabit \
   -destination 'platform=iOS Simulator,name=iPhone 16' \
   build
+```
 
-# Verificación rápida sin firma de código
+Verificación rápida sin firma de código:
+
+```bash
 xcodebuild -project WeekHabit.xcodeproj \
   -scheme WeekHabit \
   -destination 'generic/platform=iOS Simulator' \
@@ -57,535 +42,399 @@ xcodebuild -project WeekHabit.xcodeproj \
   build CODE_SIGNING_ALLOWED=NO
 ```
 
-La estrategia y cobertura de pruebas está documentada en `TESTING.md`. No hay
-configuración de lint por ahora.
+Suite completa:
+
+```bash
+xcodebuild -project WeekHabit.xcodeproj \
+  -scheme WeekHabit \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+  test
+```
+
+No hay configuración de lint.
+
+## Estructura del repo
+
+```text
+WeekHabit/
+  WeekHabitApp.swift        Entry point, ModelContainer y RootView
+  ContentView.swift         Shell de tabs + hojas de cierre de plan y revisión semanal
+  Models/
+    Entities/               @Model de SwiftData y enums persistidos
+    Domain/                 Reglas puras de solo lectura sobre las entidades
+    Insights/               Métricas de 30 días, agregados y sugerencias
+    Persistence/            SchemaV1…V17 y HabitMigrationPlan
+    Routing/                Value types de navegación (HabitRoute, PlanRoute)
+    Support/                HabitAppearance, Weekday, OnceFlags, copy de identidad
+  Services/                 Frontera de escritura (13 servicios sin estado)
+  Views/
+    <Feature>View/          Pantalla + su carpeta Components/
+    Components/             UI compartida por 2+ features
+  Extensions/               Design tokens, AppCalendar, AppFormatters, AppPerformance
+WeekHabitTests/             18 suites contra un ModelContainer en memoria
+scripts/                    Seed de rendimiento y exportación de iconos
+```
 
 ## Arquitectura
 
-El proyecto usa una arquitectura SwiftUI pragmática con SwiftData.
+Arquitectura SwiftUI pragmática. Las reglas completas y sus excepciones están en
+`ARCHITECTURE.md`; esto es el resumen.
 
 ```text
 Vistas SwiftUI
-  @Query para leer
-  Coordinación de navegación, haptics y presentación
+  @Query para leer · navegación, animación, haptics y coordinación
         |
         v
-Estado de feature y servicios de dominio
-  HabitDraft / PlanDraft
-  HabitTrackingService
-  HabitEditorService / PlanEditorService
+Estado de feature
+  HabitDraft · PlanDraft · TodayViewData · TodayScreenModel
         |
         v
-Lógica de dominio de solo lectura
-  Habit+Scheduling / Completion / Streaks
-  Habit+Freezes / Recovery / Presentation
-  Habit+Insights
-  HabitExperiment+Domain
-  FocusSession+Domain
-  Plan+Domain
+Servicios de dominio
+  Mutaciones, transacciones y reconciliación de relaciones
         |
         v
-Persistencia SwiftData
-  Habit
-  HabitEntry
-  HabitExperiment
-  FocusSession
-  Plan
-  HabitSchema / HabitMigrationPlan
+Dominio de solo lectura
+  Habit+Scheduling / Completion / Streaks / Freezes / Recovery / Presentation
+  HabitDayIndex · Plan+Domain · FocusSession+Domain · HabitExperiment+Domain
+        |
+        v
+SwiftData
+  9 entidades · SchemaV17 · HabitMigrationPlan
 ```
 
-Las vistas top-level consultan con `@Query`. Las mutaciones compartidas se delegan a servicios de dominio, mientras que los formularios complejos agrupan estado y validación en drafts de tipo valor.
+Las tres reglas que más importan al escribir código nuevo:
 
-`WeekHabitApp.swift` crea el `ModelContainer` usando:
+1. **Las vistas no escriben a `modelContext`.** Toda mutación pasa por un servicio. Asignar
+   una propiedad de un `@Model` desde una vista también es una escritura: SwiftData la
+   persiste por autosave.
+2. **Los errores de persistencia no se silencian** con `try?`. Se muestran, y un formulario
+   no hace `dismiss()` tras un save fallido.
+3. **Las entradas `.urge` son evidencia independiente.** Cambiar el estado principal de un día
+   nunca las borra ni las convierte.
 
-```swift
-Schema(versionedSchema: SchemaV17.self)
-HabitMigrationPlan.self
-```
-
-`RootView` decide si mostrar `OnboardingView` o `ContentView` según `@AppStorage("hasCompletedAppOnboarding")`. También refresca recordatorios al iniciar y cuando la app vuelve a estar activa.
+`WeekHabitApp` construye el `ModelContainer` con `Schema(versionedSchema: SchemaV17.self)` y
+`HabitMigrationPlan.self`. `RootView` decide entre `OnboardingView` y `ContentView` según
+`@AppStorage("hasCompletedAppOnboarding")`, y al iniciar y al volver a foreground refresca los
+recordatorios de hábitos y el de revisión semanal.
 
 ## Modelos de datos
 
+Nueve entidades `@Model`, todas en `Models/Entities/`.
+
 ### `Habit`
 
-Entidad principal para un hábito.
+Entidad central.
 
-Campos importantes:
-
-| Campo | Descripción |
+| Campo | Notas |
 |---|---|
-| `title`, `note`, `cue` | Nombre, nota y señal contextual del hábito |
-| `iconNameRaw`, `colorHexRaw` | Apariencia persistida |
-| `targetDaysPerWeek` | Meta semanal normalizada |
-| `activeDaysOfWeekRaw` | Días activos como raw values de `Weekday` |
-| `trackingKindRaw` | Tipo de tracking: check o cantidad |
-| `measurementUnitRaw` | Unidad para hábitos cuantificables |
-| `customUnitName` | Nombre de unidad personalizada, reservado para uso futuro |
-| `targetValuePerSession` | Cantidad requerida por sesión para considerar completado |
-| `scheduleKindRaw` | Programación: diario, días específicos o veces por semana |
-| `endsAt` | Fecha opcional de fin; después de ese día ya no se puede registrar |
-| `isReminderEnabled`, `reminderTime` | Configuración de recordatorio local |
-| `entries` | Registros de completitud con delete rule `.cascade` |
-| `plans` | Planes asociados al hábito |
+| `title`, `note`, `cue` | `cue` es la señal "después de X, hago Y" |
+| `minimumViableTitle` | Versión mínima para días difíciles |
+| `iconNameRaw`, `colorHexRaw` | Con fallback a `legacyArea` y a `HabitAppearance` |
+| `trackingKindRaw` | `HabitTrackingKind`: `check` o `quantity` |
+| `measurementUnitRaw`, `customUnitName`, `targetValuePerSession` | Solo para `quantity` |
+| `scheduleKindRaw` | `HabitScheduleKind`: `daily`, `specificDays`, `timesPerWeek` |
+| `targetDaysPerWeek`, `activeDaysOfWeekRaw` | Agenda; `activeDaysOfWeek` expone un `Set<Weekday>` |
+| `directionRaw` | `HabitDirection`: `build` o `break` |
+| `endsAt`, `pausedUntil` | Fin y pausa temporal |
+| `allowsWeeklyFreeze` | Habilita el comodín semanal |
+| `isReminderEnabled`, `reminderTime` | Recordatorio local |
+| `celebratedMilestonesRaw` | Hitos ya celebrados, para no repetir la celebración |
 
-Propiedades computadas relevantes:
-
-- `activeDaysOfWeek`: versión tipada de `activeDaysOfWeekRaw`.
-- `iconName`, `colorHex`, `habitColor`: apariencia con fallback.
-- `trackingKind`: `HabitTrackingKind`.
-- `measurementUnit`: `HabitMeasurementUnit`.
-- `scheduleKind`: `HabitScheduleKind`.
-
-Tipos relacionados:
-
-- `HabitTrackingKind`: `.check`, `.quantity`
-- `HabitMeasurementUnit`: `.none`, `.minutes`, `.pages`, `.kilometers`, `.glasses`, `.repetitions`, `.custom`
-- `HabitScheduleKind`: `.daily`, `.specificDays`, `.timesPerWeek`
+Relaciones: `entries` y `streakFreezes` en cascade, `replacementHabit` con nullify, `plans`
+como inversa de `Plan.habits`.
 
 ### `HabitEntry`
 
-Registro de avance para un hábito en un día.
+Un registro por día. `date` se normaliza a start-of-day en el init.
 
-| Campo | Descripción |
-|---|---|
-| `date` | Día normalizado con `AppCalendar.startOfDay` |
-| `completedAt` | Timestamp real cuando la marca sucede en tiempo real; `nil` para retroactivas |
-| `sourceRaw` | Origen persistido de la marca |
-| `kindRaw` | Tipo de entrada: completado, descanso intencional o fallo recuperado |
-| `focusSessionID` | ID de la sesión de enfoque que originó la marca, si aplica |
-| `completedCount` | Conteo entero histórico/compatibilidad |
-| `value` | Valor real para hábitos cuantificables |
-| `failureReason` | Razón opcional de fallo post-prompt para entradas `.missed` |
-| `habit` | Relación inversa |
-
-Fuentes:
-
-| Fuente | Uso | Confiable para Insights |
-|---|---|---|
-| `.today` | Registro desde Hoy | Sí |
-| `.focusSession` | Registro desde una sesión de enfoque | Sí |
-| `.manual` | Registro retroactivo desde Semana | No |
-
-Tipos de entrada:
-
-| Tipo | Uso |
-|---|---|
-| `.completed` | El hábito se completó o avanzó en un día |
-| `.skipped` | Descanso intencional; preserva racha y no cuenta como fallo |
-| `.missed` | Fallo reconocido desde el prompt de recuperación; puede tener `failureReason` |
-| `.slip` | Desliz registrado para malos hábitos; no destruye identidad, es información |
-| `.urge` | Impulso resistido para malos hábitos; evidencia de progreso de abstinencia |
-
-Razones de fallo (`HabitFailureReason`): `.tooDifficult`, `.forgot`, `.badTiming`, `.lowEnergy`, `.other`.
+- `HabitEntrySource`: `today`, `focusSession`, `manual`. Solo las dos primeras son
+  `isTrustedForInsights`; las manuales sirven de historia pero no de evidencia de ritmo.
+- `EntryKind`: `completed`, `skipped`, `minimum`, `missed`, `slip`, `urge`.
+- `SlipTrigger`: `stress`, `boredom`, `social`, `fatigue`, `craving`, `other`.
+- `HabitFailureReason`: `tooDifficult`, `forgot`, `badTiming`, `lowEnergy`, `other`.
+- Además: `completedAt`, `focusSessionID`, `completedCount`, `value`, `slipContext`, nota.
 
 ### `Plan`
 
-Agrupa hábitos alrededor de un objetivo temporal.
+Meta que agrupa hábitos: `title`, `motivation`, `measurableOutcome`, `startedAt`, `endsAt`,
+`targetCompletionRate`, `reviewedAt`. Relación nullify con `habits` y cascade con
+`milestones`.
 
-| Campo | Descripción |
-|---|---|
-| `title` | Nombre del plan |
-| `motivation` | Texto motivacional usado también como cuerpo de recordatorios cuando aplica |
-| `startedAt` | Inicio del plan |
-| `endsAt` | Fin del plan |
-| `targetCompletionRate` | Meta de completitud agregada |
-| `reviewedAt` | Fecha en que el usuario cerró/revisó el plan |
-| `habits` | Hábitos asociados |
+### `PlanMilestone`
 
-`Plan+Domain` calcula si el plan está activo, terminado, pendiente de revisión, días restantes, progreso agregado y si alcanzó la meta.
+Hito de un plan: `title`, `targetDate`, `completedAt`.
 
 ### `StreakFreeze`
 
-Comodín semanal que protege la racha de un hábito ante un día perdido.
-
-| Campo | Descripción |
-|---|---|
-| `weekStart` | Inicio de la semana a la que corresponde el comodín |
-| `habit` | Relación inversa al hábito dueño |
-
-La lógica de ciclo de vida (verificar comodín activo, aplicar a la racha, detectar semana vigente) vive en `Domain/StreakFreeze+Domain.swift`.
+Comodín semanal: `habitID`, `weekStartDate`, `protectedDate`, `usedAt`. Un día perdido por
+semana no rompe la racha. `protectedDate` se normaliza a start-of-day.
 
 ### `HabitExperiment`
 
-Persistencia de una prueba de ritmo de 7 días sugerida por Insights.
-
-Guarda el estado original del hábito, el estado experimental, la hora sugerida opcional, consistencia base y estado de resolución.
-
-Estados:
-
-- `.active`
-- `.kept`
-- `.reverted`
-- `.cancelled`
+Experimento de ritmo de 7 días. Guarda el ritmo original
+(`originalTargetDaysPerWeek`, `originalActiveDaysOfWeekRaw`) y el propuesto
+(`experimentTargetDaysPerWeek`, `experimentActiveDaysOfWeekRaw`, `suggestedStartHour`), más
+`baselineConsistency` y `HabitExperimentStatus`. Guardar el original es lo que hace posible
+revertir.
 
 ### `FocusSession`
 
-Representa una sesión de enfoque.
+Sesión de ritmo: `startedAt`, `endedAt`, `durationSeconds`, `selectedHabitIDsRaw`,
+`completedHabitIDsRaw` y `FocusSessionStatus`.
 
-Estados:
+### `WeeklyReview` y `WeeklyReviewDecision`
 
-- `.running`
-- `.reviewing`
-- `.completed`
-- `.cancelled`
+Revisión de una semana (`weekStart`, `reviewedAt`, `reflectionNote`) con una decisión por
+hábito en cascade. Cada decisión guarda `habitID`, `habitTitle`, `decisionRaw` y
+`weeklyCompletionRatio`; el título se copia a propósito para que la revisión sobreviva al
+borrado del hábito.
 
-Guarda inicio, fin, duración opcional, hábitos seleccionados y hábitos completados durante la revisión.
+### Tipos de apoyo
 
-### `HabitAppearance`
-
-Define la paleta curada de SF Symbols y colores disponibles para hábitos. También conserva fallback para categorías legacy mediante `LegacyHabitArea`.
-
-### `Weekday`
-
-Enum con raw values compatibles con `Calendar`: domingo = 1, lunes = 2, etc.
-
-Usar `Weekday.ordered` para mostrar L-D.
+`HabitAppearance` (paleta de iconos y colores), `Weekday`, `OnceFlags` (flags one-shot de
+educación just-in-time), `IdentityReinforcementCopy`.
 
 ## Schema y migraciones
 
-`HabitSchema.swift` declara:
+`Models/Persistence/HabitSchema.swift` declara `SchemaV1` … `SchemaV17` y
+`HabitMigrationPlan`, con 16 `MigrationStage` lightweight encadenados.
 
-```text
-SchemaV1:  Habit, HabitEntry
-SchemaV2:  + HabitExperiment
-SchemaV3:  + FocusSession
-SchemaV4:  cambios aditivos en modelos existentes
-SchemaV5:  + Plan
-SchemaV6:  cambios aditivos
-SchemaV7:  cambios aditivos
-SchemaV8:  + StreakFreeze
-SchemaV9:  + HabitEntry.failureReason y EntryKind.missed
-SchemaV10: cambios aditivos
-SchemaV11: cambios aditivos
-SchemaV12: cambios aditivos
-SchemaV13–V17: evolución aditiva de hábitos, revisiones y tracking (versión actual: V17)
-```
+Reglas:
 
-`HabitMigrationPlan` registra migraciones lightweight de V1 a V12.
-
-Regla importante: no editar schemas antiguos para cambios de forma persistida. Crear el siguiente `SchemaV*`, incluir los modelos vigentes y agregar el `MigrationStage` correspondiente.
+- Un cambio de forma persistida exige un `SchemaV*` nuevo y su `MigrationStage`.
+- **No editar schemas viejos** para representar formas nuevas.
+- Un campo persistido nuevo también toca inicializadores y llamadores.
 
 ## Lógica de dominio
 
-### Dominio de `Habit`
-
-La lógica reusable está separada por responsabilidad:
+Puro cálculo de solo lectura sobre las entidades, en `Models/Domain/` y `Models/Insights/`.
 
 | Archivo | Responsabilidad |
 |---|---|
-| `Habit+Scheduling` | Fechas, programación, pausas y días registrables |
-| `Habit+Completion` | Estados diarios, cantidades, progreso semanal y ratios |
-| `Habit+Streaks` | Racha actual, visible, histórica y desglose |
-| `Habit+Freezes` | Protección y candidatos de comodín semanal |
-| `Habit+Recovery` | Candidatos diarios y semanales de recuperación |
-| `Habit+Presentation` | Textos derivados, formato y matriz del heatmap |
+| `Habit+Scheduling` | Agenda, pausas, fechas de fin, días registrables, recorrido de semanas |
+| `Habit+Completion` | Estado diario, cantidades, progreso semanal, ratios |
+| `Habit+Streaks` | Racha actual, de exhibición, mejor racha y desglose honesto |
+| `Habit+Freezes` | Protección por comodín y candidatos de la semana |
+| `Habit+Recovery` | Candidatos a prompt de recuperación |
+| `Habit+Presentation` | Copy derivado, formato de cantidades, matriz del heatmap |
+| `HabitDayIndex` | Índice de entradas y comodines por día normalizado |
+| `HabitCollection+Today` | Particiones del día y `TodayPartition` |
+| `Habit+InsightMetrics` | Métricas de 30 días, confianza, fallos, mejor día/hora |
+| `HabitCollection+InsightSnapshot` | Snapshot global, readiness, confianza |
+| `HabitCollection+InsightContexts` | Mejor día/hora, hábito de atención, top consistente, urges |
+| `HabitCollection+ExperimentSuggestions` | Sugerencias de experimentos y su scoring |
+| `HabitExperiment+Domain` | Aplicar, mantener, revertir, cancelar, revisar |
+| `FocusSession+Domain` | Progreso del timer, revisión, completado, cancelación |
+| `Plan+Domain` | Estado activo/terminado/en revisión, progreso, estado de meta |
 
-Los métodos mantienen APIs pequeñas sobre `Habit`. Para lógica nueva, elegir el archivo
-según la regla de negocio en lugar de crear otra extensión general.
+Usar `AppCalendar` para todo cálculo de fechas, nunca `Calendar.current` directo.
 
-### `Habit+Insights`
+**`HabitDayIndex` no es opcional en los recorridos largos.** Cualquier función que consulte
+muchos días seguidos debe construir el índice una vez y reutilizarlo: llamar a las funciones
+de un solo día dentro de un bucle es cuadrático, y fue la causa de un `bestStreak` de 2 478 ms.
+Para una consulta aislada sale más barato escanear. Los números están en `TESTING.md`.
 
-Calcula métricas de 30 días, confianza, tendencias y sugerencias de ritmo.
+## Servicios
 
-Conceptos principales:
+Trece servicios en `Services/`, todos `enum` sin estado con métodos `static` que reciben el
+`ModelContext`. Son la frontera de escritura de la app.
 
-- `HabitCompletionStats`
-- `GlobalInsightSnapshot`
-- `InsightReadiness`
-- `RhythmConfidence`
-- `HabitInsightSummary`
-- `WeekdayPerformance`
-- `HourWindow`
-- `RhythmExperimentSuggestion`
-- `RankedRhythmSuggestion`
-- `HabitInsightContext`
-- `ContextualHourInsight`
-- `ContextualWeekdayInsight`
+| Servicio | Responsabilidad |
+|---|---|
+| `HabitTrackingService` | **Única autoridad del estado diario**: completar, cantidades, versión mínima, descanso, slips, urges, misses de recuperación y comodines |
+| `HabitEditorService` | Crear y editar hábitos, apariencia, agenda, reemplazo y planes vinculados |
+| `HabitLifecycleService` | Borrado de hábitos |
+| `PlanEditorService` | Crear y editar planes, vincular hábitos, reconciliar hitos |
+| `PlanLifecycleService` | Borrado y cierre de plan (`completeWrapUp`) |
+| `WeeklyReviewEditorService` | Persistir la revisión semanal, sus decisiones y las pausas |
+| `WeeklyReviewService` | Calendario de la revisión y su notificación (no persiste) |
+| `FocusSessionEditorService` | Iniciar, revisar, completar y cancelar sesiones |
+| `EntryNoteService` | Notas de entrada, con normalización de texto vacío a `nil` |
+| `HabitExperimentService` | Iniciar, mantener y revertir experimentos |
+| `OnboardingSetupService` | Plan inicial y hábitos de plantilla del onboarding |
+| `HabitReminderService` | Notificaciones locales por hábito y weekday activo |
+| `PerformanceSeedService` | **Solo DEBUG.** Dataset sintético de 5 hábitos × 365 días |
 
-Los cálculos que intentan representar ritmo real deben usar solo marcas con `entry.source.isTrustedForInsights`.
-Las entradas `.missed` alimentan razones de fallo y recomendaciones, pero no cuentan como completitud ni como descanso.
-
-### `HabitExperiment+Domain`
-
-Gestiona el ciclo de vida de pruebas de ritmo:
-
-- detectar activo o pendiente de revisión
-- aplicar cambios al hábito
-- conservar resultado
-- revertir al plan original
-- cancelar
-- calcular consistencia durante el experimento
-
-### `FocusSession+Domain`
-
-Gestiona timer, progreso, transición a revisión, completado y cancelación de sesiones.
-
-También define:
-
-- `FocusDurationPreset`: 10, 25, 45 minutos y libre
-- `FocusTimeFormatter`: formato del timer
-
-### `Plan+Domain`
-
-Calcula estado y progreso de planes:
-
-- `isActive(reference:)`
-- `isFinished(reference:)`
-- `needsReview(reference:)`
-- `daysRemaining(reference:)`
-- `progress(reference:)`
-- `meetsGoal(reference:)`
-- `daysRemainingText`
+`HabitReminderService` arma el cuerpo del recordatorio con la motivación del plan activo,
+si no la nota del hábito, si no un texto de respaldo, y no programa nada para hábitos
+terminados.
 
 ## Pantallas y flujos
 
 ### Lanzamiento y onboarding
 
-`WeekHabitApp` muestra `AppLaunchView`, luego `RootView`.
+`WeekHabitApp` → `AppLaunchView` (splash animado en `Views/SplashScreen/`) → `RootView`.
 
-`RootView`:
-
-- muestra `OnboardingView` si el usuario no terminó onboarding;
-- muestra `ContentView` si ya lo terminó;
-- refresca recordatorios al iniciar y al volver a foreground.
-
-`OnboardingView` tiene pasos de introducción, insights, permiso de notificaciones y selección de hábito inicial. Si el usuario elige una plantilla, se crea un `Habit` desde `StarterHabitTemplate`.
+`OnboardingView` es un flujo goal-first de seis pasos (`OnboardingStep`):
+`intro → goal → motivation → size → habits → notifications`. Crea el plan inicial y los
+hábitos de plantilla a través de `OnboardingSetupService`, y puede pedir permiso de
+notificaciones al final. Reducirlo a tres pasos se evaluó y **se descartó** como decisión de
+producto.
 
 ### Navegación principal
 
-`ContentView` usa un `TabView(selection: $selectedTab)` nativo. El título y el ícono de cada tab salen del enum `TabItems` (`Views/Components/TabItems.swift`), y cada tab se selecciona por `.tag(0/1/2)`.
+`ContentView` usa un `TabView(selection:)` nativo. Títulos e iconos salen de `TabItems`.
 
-Tabs actuales:
-
-| Índice | Vista | Descripción |
+| Tag | Vista | Rol |
 |---|---|---|
-| 0 | `TodayView` | Hoy, hábitos, planes, creación/edición, sesión de enfoque |
+| 0 | `TodayView` | Registro del día, planes, sesión de ritmo |
 | 1 | `WeekView` | Grilla semanal editable |
 | 2 | `InsightsView` | Métricas, tendencias y experimentos |
 
-`ContentView` también presenta `PlanWrapUpView` cuando encuentra un plan terminado con `reviewedAt == nil`.
+`ContentView` también presenta dos hojas por su cuenta: `PlanWrapUpView` cuando hay un plan
+terminado sin revisar, y `WeeklyReviewView` cuando toca la revisión semanal y no hay un cierre
+de plan pendiente. No existe una pestaña `HabitsView`.
 
-No existe una pestaña separada `HabitsView` en la versión actual.
+Mantener sincronizado el orden de los `.tag(0/1/2)` con los casos de `TabItems`.
 
 ### `TodayView`
 
-Pantalla principal de uso diario.
+Pantalla de uso diario. Es la referencia del patrón de estado de pantalla: `TodayViewData`
+(struct de valor con los datos derivados, construida una vez por render) y `TodayScreenModel`
+(clase `@Observable` con rutas, confirmaciones y estado de sección).
 
-Funciones:
-
-- Header con fecha actual y menú de creación.
-- Crear hábito o crear plan.
-- Estado vacío para crear un hábito activo hoy.
+- Header con fecha y menú de creación (`WHCreationSheet`).
 - `DailyProgressCard` con completados, total y pendientes.
 - `FocusSessionLauncherCard`.
-- Lista de hábitos loggeables hoy.
-- Swipe en hábitos para editar o borrar.
-- Logging de hábitos check con toggle.
-- Logging de hábitos por cantidad mediante `QuantityLogSheet`.
+- Hábitos registrables hoy, agrupados por estado, con swipe para editar o borrar.
+- Check con toggle; cantidad con `QuantityLogSheet`.
+- Slip con detonante y urge para hábitos de romper.
 - Sección de planes con `PlanAccordion`.
-- Swipe en planes para editar o eliminar.
+- Celebración de hitos y nota diferida.
+- Prompt de recuperación tras un fallo, que puede crear la versión mínima en un tap.
 - Navegación a `HabitDetailView`.
 
 ### `CreateHabitView`
 
-Formulario full-screen para crear o editar hábitos.
-
-Incluye:
-
-- nombre, nota y cue;
-- apariencia;
-- tipo de tracking;
-- unidad y meta por sesión para cantidades;
-- programación diaria, por días específicos o veces por semana;
-- fecha de fin opcional;
-- recordatorio local;
-- selección de planes activos.
-
-Al guardar:
-
-- normaliza schedule y fecha de fin;
-- cancela experimento activo si se editó manualmente el hábito;
-- actualiza asociaciones con planes;
-- refresca el recordatorio del hábito.
+Formulario full-screen para crear y editar. Estado en `HabitDraft`, persistencia en
+`HabitEditorService`. Cubre nombre, nota, señal, apariencia, tipo de seguimiento, unidad y
+meta por sesión, agenda, dirección build/break, versión mínima, hábito de reemplazo,
+recordatorio y fecha de fin.
 
 ### `CreatePlanView` y `PlanFlowView`
 
-`PlanFlowView` muestra `PlanOnboardingView` la primera vez que el usuario crea un plan. Después abre directamente `CreatePlanView`.
-
-`CreatePlanView` permite:
-
-- crear o editar plan;
-- capturar nombre y motivación;
-- elegir fecha de fin;
-- definir meta de completitud;
-- seleccionar hábitos asociados.
-
-El formulario mantiene su estado, validación y normalización en `PlanDraft`.
-`PlanEditorService` centraliza la creación/edición del plan, las relaciones con hábitos y
-la reconciliación de hitos. La vista solo coordina presentación, errores y cierre.
+Creación y edición de planes con `PlanDraft` y `PlanEditorService`: meta, motivación,
+resultado medible, fecha de fin, tasa objetivo, hábitos vinculados e hitos.
+`PlanOnboardingView` educa en la primera creación. `PlanDetailView` muestra progreso.
 
 ### `PlanWrapUpView`
 
-Se presenta como sheet cuando un plan terminó y todavía no fue revisado.
-
-Muestra:
-
-- título y motivación;
-- completitud del plan;
-- si alcanzó la meta;
-- lista de hábitos para conservar o archivar.
-
-Los hábitos no conservados reciben `endsAt = hoy`. El plan queda marcado con `reviewedAt`.
+Cierre de un plan terminado. Delega en `PlanLifecycleService.completeWrapUp`, que archiva los
+hábitos elegidos y marca `reviewedAt`. Mientras `reviewedAt` sea `nil`, `ContentView` vuelve a
+abrir la hoja.
 
 ### `WeekView`
 
-Vista semanal de todos los hábitos visibles en la semana.
-
-Funciones:
-
-- navegación por semanas;
-- tira de días L-D;
-- grilla por hábito;
-- tap en hábito para abrir detalle;
-- logging manual retroactivo;
-- logging por cantidad con `QuantityLogSheet`;
-- resumen de completados, meta total y consistencia.
-
-Las marcas creadas desde Semana usan `source: .manual` y `completedAt: nil`, por diseño no cuentan como evidencia confiable para Insights.
+Grilla semanal editable con navegación entre semanas, logging retroactivo (`source: .manual`),
+resumen de completados/meta/consistencia y leyenda on-demand desde el botón `?`. Los estados
+de celda están agrupados en cuatro familias visuales: hecho, pausa con intención, señal útil
+y vacío.
 
 ### `InsightsView`
 
-Pantalla de análisis de hábitos.
+Ventana de 30 días: snapshot global, confianza del ritmo, mejor día y hora punta, hábito más
+consistente y hábito que necesita atención, horas pico de impulsos, y experimentos de ritmo de
+7 días con aplicar / mantener / revertir.
 
-Incluye:
-
-- consistencia global;
-- tendencia contra periodo anterior;
-- confianza del ritmo;
-- contexto de datos insuficientes cuando aplica;
-- revisión de experimentos vencidos;
-- sugerencias de experimento de ritmo;
-- experimentos activos;
-- hábito más consistente;
-- hábito que necesita atención;
-- mejor día;
-- hora punta;
-- edición del hábito sugerido.
+En DEBUG el toolbar incluye un botón `speedometer` que dispara `PerformanceSeedService`.
 
 ### `FocusSessionView`
 
-Flujo full-screen iniciado desde Hoy.
-
-Fases:
-
-| Fase | Descripción |
-|---|---|
-| `setup` | Elegir duración y hábitos |
-| `running` | Timer activo y hábitos seleccionados |
-| `review` | Checklist final de hábitos completados |
-
-Al completar la revisión se crean o actualizan `HabitEntry` con `source: .focusSession`, `completedAt` real y `focusSessionID`.
+Flujo full-screen con tres fases: `setup` (duración y hábitos), `running` (timer) y `review`
+(checklist final). Soporta **secuencia ordenada**: cada hábito es una píldora cuya altura es
+proporcional a su tiempo, se toca para ajustar la duración y se arrastra desde una manija para
+reordenar. El modelo vive en `FocusSequence`. Al completar la revisión se crean o actualizan
+`HabitEntry` con `source: .focusSession`, `completedAt` real y `focusSessionID`.
 
 ### `HabitDetailView`
 
-Detalle analítico de un hábito.
+Detalle analítico: experimento activo o pendiente, racha actual y mejor racha, desglose honesto
+de la racha (días hechos, descansos intencionales y comodines usados), progreso semanal, dots
+de la semana, heatmap de 10 semanas, información de cantidad y edición del hábito.
 
-Muestra:
+### `WeeklyReviewView`
 
-- estado de experimento activo o pendiente;
-- racha actual y mejor racha;
-- desglose de racha actual por días hechos, descansos intencionales y comodines usados;
-- progreso semanal;
-- dots de la semana actual;
-- heatmap de las últimas 10 semanas;
-- información de cantidad cuando el hábito es cuantificable;
-- edición del hábito.
-
-## Servicios
-
-### `HabitReminderService`
-
-Servicio para recordatorios locales.
-
-Responsabilidades:
-
-- leer autorización de notificaciones;
-- programar recordatorios por hábito y por weekday activo;
-- cancelar recordatorios por hábito;
-- refrescar todos los recordatorios;
-- usar motivación de planes activos como cuerpo del recordatorio cuando exista;
-- usar nota del hábito como fallback;
-- evitar programar recordatorios para hábitos terminados.
+Revisión de la semana: una decisión por hábito y una reflexión escrita. Persiste con
+`WeeklyReviewEditorService`, que evita duplicar la revisión de una semana ya cerrada y pausa
+siete días los hábitos marcados. `WeeklyReviewBanner` avisa cuando toca.
 
 ## Design system
 
-Usar estos helpers antes de introducir estilos sueltos:
+Reusar tokens y componentes antes de introducir estilos sueltos. El catálogo completo está en
+`DESIGN_SYSTEM.md`; la galería viva, en `ComponentsGalleryView`.
 
-- `AppBackground`: fondo top-level claro/oscuro.
-- `AppColor`: tokens de color.
-- `AppFont`: tokens tipográficos.
-- `AppRadius`: escala de radios.
-- `IconButton`: botón compartido para acciones compactas.
-- `HabitAppearance`: paleta de iconos y colores de hábitos.
+- Tokens: `AppColor`, `AppFont`, `AppSpacing`, `AppRadius`, `appElevation`, `AppMotion`,
+  `AppHaptics`, `AppBackground`.
+- Componentes: `WHCard`, `WHButton`, `WHListRow`, `WHChip`, `WHEmptyState`, `WHProgressRing`,
+  `WHProgressBar`, `WHFormSection`, `WHSectionHeader`, `WHConfidenceTag`, `WHDayBadge`,
+  `WHCreationSheet`, `WeeklyReviewBanner`, `IconButton`.
+- Apariencia de hábito: `HabitAppearance`.
+- Fechas y formato: `AppCalendar` y `AppFormatters` (locale `es_MX` centralizado).
 
-Reglas prácticas:
+Reglas prácticas: envolver pantallas top-level en `AppBackground`; animaciones dentro de
+`AppMotion.respectful(_, reduceMotion)`; strings visibles en español; componentes compartidos
+en `Views/Components`, locales en `Views/<Feature>View/Components`.
 
-- Envolver pantallas top-level con `AppBackground`.
-- Usar `AppCalendar` para fechas.
-- Evitar `Calendar.current` directo salvo casos donde sea deliberado y revisado.
-- Mantener strings visibles en español.
-- Mantener identificadores en inglés si siguen el estilo actual.
-- Componentes compartidos en `Views/Components`.
-- Componentes locales en `Views/<Feature>View/Components`.
+**Copy en estados sensibles.** Miss, slip, break, recuperación y pausa nunca usan lenguaje
+punitivo ni estilos destructivos. El rojo destructivo se reserva para acciones que borran
+datos de verdad. El registro del usuario es información útil, no una falta.
 
 ## Convenciones de persistencia
 
-- Leer con `@Query`.
-- Escribir con `@Environment(\.modelContext)` desde la vista que origina la acción.
-- SwiftData persiste automáticamente en los flujos principales; solo llamar `save()` cuando sea necesario.
-- Evitar duplicados por día al registrar cantidades o sesiones.
-- Si un cálculo se repite, moverlo a una extensión de dominio.
-- Si un cambio toca datos persistidos, actualizar schema, migraciones, inicializadores y documentación.
+- Leer con `@Query` desde vistas top-level.
+- **Escribir siempre a través de un servicio de dominio**, nunca con `modelContext` desde la
+  vista. Incluye asignar propiedades de un `@Model`.
+- Una decisión que se toma una sola vez —cierre de plan, prompt de recuperación— guarda de
+  inmediato; el autosave no garantiza cuándo.
+- Evitar estados principales duplicados por día al registrar cantidades o sesiones.
+- Nunca borrar ni convertir `.urge` al cambiar el estado principal del día.
+- Conservar las delete rules actuales: hábito cascadea entries y freezes; plan cascadea hitos
+  y hace nullify de hábitos; revisión semanal cascadea decisiones.
 
 ## Cómo agregar features
 
-### Nuevo campo persistido
+### Campo persistido nuevo
 
-1. Crear el siguiente `SchemaV*`.
-2. Incluir todos los modelos actuales.
-3. Agregarlo a `HabitMigrationPlan.schemas`.
-4. Agregar `MigrationStage`.
-5. Actualizar `init`, callers, previews y docs.
-6. No modificar schemas antiguos para representar la nueva forma.
+1. Agregar la propiedad a la entidad.
+2. Crear `SchemaV18` y su `MigrationStage` en `HabitMigrationPlan`.
+3. Actualizar inicializadores y llamadores.
+4. Si es editable, agregarlo al draft y al editor service correspondiente.
+5. Documentarlo aquí.
 
-### Nueva pantalla
+### Pantalla nueva
 
-1. Crear `Views/<NombreView>/<NombreView>.swift`.
-2. Crear `Components/` si hay piezas locales.
-3. Usar `AppBackground`.
-4. Si es tab, actualizar `ContentView` (agregar el tab al `TabView` con su `.tag`) y el enum `TabItems`.
-5. Si es modal, seguir el patrón de `fullScreenCover`.
-6. Si es push, usar `NavigationStack` / `navigationDestination` desde la vista dueña.
+1. Crear `Views/<Feature>View/<Feature>View.swift` con su carpeta `Components/`.
+2. Envolver en `AppBackground` y usar tokens existentes.
+3. Modelar las rutas con enums `Identifiable`; creación y edición van en `fullScreenCover`.
+4. Revisar densidad, radios, tipografía y tono de las pantallas vecinas antes de inventar un
+   patrón nuevo.
 
-### Nueva métrica o insight
+### Métrica o insight nuevo
 
-1. Implementar cálculo en `Habit+Insights`.
-2. Definir un tipo pequeño si la UI necesita varios valores.
-3. Decidir explícitamente si usa marcas confiables o todas las marcas.
-4. Crear componente visual en `Views/InsightsView/Components`.
-5. Mantener mutaciones de experimentos en la vista dueña.
+1. Implementar el cálculo en `Models/Insights/` (`Habit+InsightMetrics` para lo per-hábito,
+   `HabitCollection+*` para los agregados).
+2. Respetar `isTrustedForInsights`: las marcas `.manual` no son evidencia de ritmo.
+3. Si recorre muchos días, construir un `HabitDayIndex` una sola vez.
+4. Agregar tests; el ranking de sugerencias decide lo que la app le propone al usuario.
 
-### Nueva lógica de fechas, rachas o semanas
+### Mutación nueva
 
-1. Agregar el método al archivo de dominio responsable o a `Plan+Domain`.
-2. Usar `AppCalendar`.
-3. Mantener el método puro cuando sea posible.
-4. Evitar duplicar filtros de `entries` dentro de varias vistas.
+1. Ponerla en el servicio del flujo, no en la vista.
+2. Propagar el error en vez de tragarlo con `try?`.
+3. Agregar tests con el `ModelContainer` en memoria de `TestSupport.swift`.
 
-## Estado de documentación
+### Lógica de fechas, rachas o semanas
 
-Esta documentación describe la versión actual del repo con `SchemaV17`, navegación de 3 tabs, onboarding conectado, planes, recordatorios, hábitos cuantificables, recuperación post-fallo, comodines de racha (`StreakFreeze`) y soporte de malos hábitos (`EntryKind.slip`, `EntryKind.urge`).
+Usar `AppCalendar`. Si el cálculo se repite, moverlo a la extensión de dominio que le
+corresponde y probarlo ahí.
 
-Las fases pendientes del refactor arquitectónico y sus criterios de aceptación están
-documentados en `REFACTOR_HANDOFF.md`.
+## Estado de la documentación
+
+Este documento describe el repo con `SchemaV17`, 9 entidades, 13 servicios, navegación de tres
+tabs, onboarding de seis pasos, planes con hitos, hábitos de romper con slips y urges,
+comodines de racha, recuperación post-fallo, revisión semanal, sesiones de ritmo con secuencia
+ordenada y experimentos de 7 días.
+
+El trabajo que sigue abierto está en `docs/PLAN_MEJORAS.md` y en los issues del repo. Los
+planes ya ejecutados (`PLAN_SIMPLIFICACION.md`, `REFACTOR_HANDOFF.md`) se borraron; su
+historia vive en git.

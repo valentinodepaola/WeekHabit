@@ -97,8 +97,8 @@ Cuando una vista se parta en varios archivos, sus miembros pasan de `private` a 
 - El cierre de plan delega en `PlanLifecycleService.completeWrapUp`. Era la última escritura
   implícita —asignaba `endsAt` y `reviewedAt` sin pasar por `modelContext`— y por eso no la
   detectaba la auditoría original. Detalle en `docs/PLAN_MEJORAS.md`.
-- El plan detallado de las fases 5 y 6 está en `REFACTOR_HANDOFF.md`. Lo que sigue está en
-  `docs/PLAN_MEJORAS.md`.
+- Lo que sigue abierto está en `docs/PLAN_MEJORAS.md`. Los planes ya cerrados
+  (`PLAN_SIMPLIFICACION.md`, `REFACTOR_HANDOFF.md`) se borraron; su historia vive en git.
 
 ## Dominio de hábitos
 
@@ -138,5 +138,5 @@ scheduling, streaks, freezes y recovery descritos en `TESTING.md`.
 Las vistas no se prueban para demostrar reglas de negocio. Cuando una regla es difícil de
 probar sin renderizar una vista, debe extraerse primero a dominio o a un servicio.
 
-Las fases 2, 3 y 4 de arquitectura están protegidas por 16 pruebas de regresión que pasan
-en iOS Simulator.
+Las reglas de arquitectura están protegidas por la suite completa, que pasa en iOS
+Simulator. El conteo vigente y la cobertura por área están en `TESTING.md`.

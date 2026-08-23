@@ -2,8 +2,9 @@
 
 Este plan es el sucesor de `PLAN_SIMPLIFICACION.md`, que quedó cerrado con las fases
 A1–A5 y B2–B4 implementadas. Cada fase de acá es ejecutable en una sesión independiente.
-Leer también `ARCHITECTURE.md`, `TESTING.md` y `REFACTOR_HANDOFF.md` antes de empezar una
-fase.
+Leer también `ARCHITECTURE.md` y `TESTING.md` antes de empezar una fase. Este es el único
+plan vivo: `PLAN_SIMPLIFICACION.md` y `REFACTOR_HANDOFF.md` quedaron cerrados y se borraron
+el 2026-08-22; su contenido vive en el historial de git.
 
 Comando de build de referencia:
 
@@ -33,12 +34,10 @@ xcodebuild -project WeekHabit.xcodeproj \
   errores de guardado se muestran en una alerta en vez de tragarse o mandarse a `print`.
   Validación: **70 tests passed** en `iPhone 17 Pro` y recorrido manual del onboarding
   completo en simulador limpio, con persistencia confirmada tras reiniciar la app.
-- Corrección respecto a `REFACTOR_HANDOFF.md`: ese documento todavía lista **A4 como
-  siguiente paso recomendado**, pero A4 ya está implementado según
-  `PLAN_SIMPLIFICACION.md` y se verifica en el código (`AppPerformance.measure` en 13
-  puntos de Insights/Week, `PerformanceSeedService`, `scripts/seed_performance_data.sh`).
-  Lo que quedó pendiente de A4 es **ejecutar la medición y decidir si cachear**, no
-  construir el instrumental. La Fase 2 de este plan cierra eso.
+- El instrumental de medición de A4 (`AppPerformance.measure` en 13 puntos de Insights/Week,
+  `PerformanceSeedService`, `scripts/seed_performance_data.sh`) ya existía al abrir este plan.
+  Lo que quedaba pendiente era **ejecutar la medición y decidir si cachear**; lo cierra la
+  Fase 2.
 - **Fase 2 implementada.** La medición existe y dio un veredicto claro: **cachear no
   alcanza, hay que indexar las entradas por día.** `bestStreak` crece 9,1× ante una entrada
   3× mayor, y el snapshot de Insights cuesta 1 610 ms con 15 hábitos. Los números están en

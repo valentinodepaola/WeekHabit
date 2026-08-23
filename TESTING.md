@@ -15,7 +15,7 @@ xcodebuild -project WeekHabit.xcodeproj \
 
 ## Estado actual de la suite
 
-Última validación conocida (2026-07-29): **106 tests passed** en
+Última validación conocida (2026-08-22): **107 tests passed** en 18 suites, sobre
 `platform=iOS Simulator,name=iPhone 17 Pro`, sin fallos.
 
 Además de la cobertura inicial, la suite ya cubre:
@@ -58,6 +58,11 @@ Además de la cobertura inicial, la suite ya cubre:
     temporizado que descartaba la nota en silencio si no lograba presentarla en seis
     intentos. También el prompt de recuperación una vez por sesión y las confirmaciones de
     borrado derivadas de su opcional.
+- `FocusSequenceTests`: el modelo de la secuencia ordenada de la Sesión de ritmo. El total es
+  la suma de los bloques; `clampedSeconds` hace snap al paso de 300 s y respeta los límites;
+  los estados por bloque (pendiente / en curso / hecho) y el índice actual son correctos al
+  inicio, a mitad del segundo bloque y pasado el total; y `reconcile` conserva orden y tiempos
+  ya asignados al agregar hábitos nuevos.
 - `TodayCollectionsTests` suma pruebas de **equivalencia** de `todayPartition(on:)` contra
   las siete funciones sueltas que reemplaza, incluido el caso de agenda flexible y el
   solapamiento de descanso con slip.
@@ -239,9 +244,17 @@ regresión que devuelva un escaneo por día al dominio los rompe por orden de ma
 - Cada bug corregido en tracking, scheduling, streaks, freezes o recovery debe incluir
   una prueba de regresión.
 
-## Estado histórico de fases 2, 3 y 4
+## Cómo creció la suite
 
-La fase 2 agregó el target, fixtures en memoria y 13 pruebas de regresión. La fase 3
-dividió el dominio monolítico de `Habit` por responsabilidad. La fase 4 extrajo
-`PlanDraft` y `PlanEditorService`, y elevó la suite a 16 pruebas. La suite completa compila
-y pasa en iOS Simulator.
+| Momento | Tests |
+|---|---:|
+| Fase 2 del refactor — target, fixtures en memoria y regresiones iniciales | 13 |
+| Fase 4 — `PlanDraft` y `PlanEditorService` | 16 |
+| A1 — servicios de persistencia extraídos | 43 |
+| A2 — colecciones de Today | 53 |
+| Fase 1 de `docs/PLAN_MEJORAS.md` — `OnboardingSetupService` | 70 |
+| Índice por día — `HabitDayIndex` y sus pruebas de equivalencia | 81 |
+| Fase 3 — `TodayViewData` y `TodayScreenModel` | 103 |
+| Secuencia arrastrable de la Sesión de ritmo | 107 |
+
+El detalle de qué cerró cada fase está en `docs/PLAN_MEJORAS.md` y en el historial de git.
