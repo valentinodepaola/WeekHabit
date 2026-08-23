@@ -15,7 +15,7 @@ xcodebuild -project WeekHabit.xcodeproj \
 
 ## Estado actual de la suite
 
-Última validación conocida (2026-08-22): **107 tests passed** en 18 suites, sobre
+Última validación conocida (2026-08-22): **113 tests passed** en 19 suites, sobre
 `platform=iOS Simulator,name=iPhone 17 Pro`, sin fallos.
 
 Además de la cobertura inicial, la suite ya cubre:
@@ -63,6 +63,10 @@ Además de la cobertura inicial, la suite ya cubre:
   los estados por bloque (pendiente / en curso / hecho) y el índice actual son correctos al
   inicio, a mitad del segundo bloque y pasado el total; y `reconcile` conserva orden y tiempos
   ya asignados al agregar hábitos nuevos.
+- `PerformanceSeedServiceTests`: detección e idempotencia del seed DEBUG, consistencia entre
+  el resultado reportado y lo persistido, y borrado en cascada de los datos `[Perf]` sin tocar
+  hábitos, registros ni comodines reales. El borrado también limpia los `HabitExperiment` que
+  apuntan al seed por `habitID` —fuera del alcance del cascade— y conserva los reales.
 - `TodayCollectionsTests` suma pruebas de **equivalencia** de `todayPartition(on:)` contra
   las siete funciones sueltas que reemplaza, incluido el caso de agenda flexible y el
   solapamiento de descanso con slip.
@@ -257,5 +261,6 @@ regresión que devuelva un escaneo por día al dominio los rompe por orden de ma
 | Índice por día — `HabitDayIndex` y sus pruebas de equivalencia | 81 |
 | Fase 3 — `TodayViewData` y `TodayScreenModel` | 103 |
 | Secuencia arrastrable de la Sesión de ritmo | 107 |
+| Blindaje y limpieza del seed de rendimiento | 113 |
 
 El detalle de qué cerró cada fase vive en el historial de git.

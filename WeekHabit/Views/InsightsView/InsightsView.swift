@@ -137,6 +137,13 @@ struct InsightsView: View {
                                 warmupCard
                             }
                         }
+
+                        #if DEBUG
+                        PerformanceSeedToolsCard(
+                            habits: habits,
+                            referenceDate: referenceDate
+                        )
+                        #endif
                     }
                     .padding(.horizontal, AppSpacing.l)
                     .padding(.top, AppSpacing.l)
@@ -154,18 +161,6 @@ struct InsightsView: View {
                     )
                 }
             }
-            #if DEBUG
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        seedPerformanceData()
-                    } label: {
-                        Image(systemName: "speedometer")
-                    }
-                    .accessibilityLabel("Crear datos de performance")
-                }
-            }
-            #endif
         }
     }
 
@@ -351,24 +346,6 @@ struct InsightsView: View {
         }
     }
 
-    #if DEBUG
-    private func seedPerformanceData() {
-        do {
-            let result = try PerformanceSeedService.seedIfNeeded(
-                existingHabits: habits,
-                reference: referenceDate,
-                modelContext: modelContext
-            )
-            if result.skippedBecauseSeedExists {
-                print("WeekHabit performance seed already exists.")
-            } else {
-                print("WeekHabit performance seed inserted \(result.insertedHabitCount) habits and \(result.insertedEntryCount) entries.")
-            }
-        } catch {
-            print("WeekHabit performance seed failed: \(error)")
-        }
-    }
-    #endif
 }
 
 #Preview {
