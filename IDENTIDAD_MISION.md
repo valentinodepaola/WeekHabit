@@ -215,7 +215,7 @@ Cada métrica secundaria debe servir a eso:
 Este documento **no lleva el estado de la app**. El estado caduca; la brújula no.
 
 Para saber qué está construido hoy, leer `README.md` y `DOCUMENTATION.md`. Para saber qué
-sigue abierto, leer `docs/PLAN_MEJORAS.md` y los issues del repo.
+sigue abierto, leer los issues del repo.
 
 Lo único que esta sección debe recordar: valorar lo que ya existe no es lo mismo que dar la
 misión por cumplida. Las tres zonas que la definen —resiliencia, malos hábitos y meta

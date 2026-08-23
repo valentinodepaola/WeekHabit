@@ -435,6 +435,6 @@ tabs, onboarding de seis pasos, planes con hitos, hábitos de romper con slips y
 comodines de racha, recuperación post-fallo, revisión semanal, sesiones de ritmo con secuencia
 ordenada y experimentos de 7 días.
 
-El trabajo que sigue abierto está en `docs/PLAN_MEJORAS.md` y en los issues del repo. Los
-planes ya ejecutados (`PLAN_SIMPLIFICACION.md`, `REFACTOR_HANDOFF.md`) se borraron; su
+El trabajo que sigue abierto vive en los issues del repo. Los planes de refactor ya ejecutados
+(`PLAN_SIMPLIFICACION.md`, `REFACTOR_HANDOFF.md`, `docs/PLAN_MEJORAS.md`) se borraron; su
 historia vive en git.

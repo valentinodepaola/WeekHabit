@@ -31,8 +31,9 @@ There is no lint configuration. `WeekHabitTests` is the unit test target.
 
 The app uses a pragmatic SwiftUI architecture with SwiftData.
 
-Read `docs/PLAN_MEJORAS.md` before continuing the remaining architectural work; it is the
-only live plan and records what each closed phase decided.
+Open architectural work lives in the repo's GitHub issues, not in a plan document.
+`ARCHITECTURE.md` records the decisions already taken — including why Clean Architecture was
+rejected. Do not reopen a settled decision without new evidence.
 
 - Views read with `@Query`.
 - Reusable mutations live in domain services such as `HabitTrackingService`, `HabitEditorService`, and `PlanEditorService`.

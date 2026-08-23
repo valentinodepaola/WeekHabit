@@ -34,14 +34,14 @@ Además de la cobertura inicial, la suite ya cubre:
   - `attentionHabit`;
   - `urgePeakHourInsight`;
   - sugerencias de experimentos y orden por prioridad.
-- `OnboardingSetupService`, agregado en la Fase 1 de `docs/PLAN_MEJORAS.md`:
+- `OnboardingSetupService`, agregado en la Fase 1 del plan de mejoras:
   - título de respaldo y motivación nula cuando el texto viene vacío;
   - normalización de espacios y fecha de fin a 30 días en start-of-day;
   - reutilización del plan existente en vez de crear un segundo;
   - alta y baja de hábitos de plantilla ligados al plan;
   - guardado diferido: las mutaciones quedan pendientes hasta `commit`.
 - `HabitTrackingService.commitRecoveryMiss`: aplica la versión mínima y persiste.
-- `PerformanceBaselineTests`, agregado en la Fase 2 de `docs/PLAN_MEJORAS.md`. Ver abajo.
+- `PerformanceBaselineTests`, agregado en la Fase 2 del plan de mejoras. Ver abajo.
 - `AppCalendarTests`, agregado en la Fase 2.5: el calendario se cachea, y estas pruebas
   fijan que cachearlo no cambie lo que devuelven `startOfDay`, `weekday`, `weekRange` ni
   `isSameDay`, y que invalidar el caché lo reconstruya bien.
@@ -108,7 +108,8 @@ consulta por día escaneando linealmente todas las entradas del hábito.
 `currentStreakBreakdown` crece 5,1× pero queda en 6,83 ms porque corta en el primer día roto
 y escanea pocos días. `bestStreak` recorre todo el rango, y por eso paga el costo completo.
 
-La decisión que salió de estos números está en `docs/PLAN_MEJORAS.md`.
+La decisión que salió de estos números fue indexar las entradas por día en vez de cachear;
+el resultado está en la tercera medición.
 
 ## Segunda medición — con el `Calendar` cacheado
 
@@ -167,8 +168,8 @@ consultar un día es O(1), agrandar el historial casi no la afecta.
 **Las colecciones de Today siguen en ~48 ms.** Estaba previsto: cada partición
 (`pendingToday`, `completedToday`, `skippedToday`, `slippedToday`) hace **una sola** consulta
 por hábito, así que construir un índice por función cuesta más o menos lo mismo que escanear.
-Bajarlo exige compartir un índice entre las cuatro particiones, que es una decisión abierta
-en `docs/PLAN_MEJORAS.md`. La Fase 3 la cerró; ver la cuarta medición.
+Bajarlo exige compartir un índice entre las cuatro particiones. La Fase 3 lo hizo; ver la
+cuarta medición.
 
 ## Cuarta medición — con el índice compartido entre particiones (Fase 3)
 
@@ -252,9 +253,9 @@ regresión que devuelva un escaneo por día al dominio los rompe por orden de ma
 | Fase 4 — `PlanDraft` y `PlanEditorService` | 16 |
 | A1 — servicios de persistencia extraídos | 43 |
 | A2 — colecciones de Today | 53 |
-| Fase 1 de `docs/PLAN_MEJORAS.md` — `OnboardingSetupService` | 70 |
+| Fase 1 del plan de mejoras — `OnboardingSetupService` | 70 |
 | Índice por día — `HabitDayIndex` y sus pruebas de equivalencia | 81 |
 | Fase 3 — `TodayViewData` y `TodayScreenModel` | 103 |
 | Secuencia arrastrable de la Sesión de ritmo | 107 |
 
-El detalle de qué cerró cada fase está en `docs/PLAN_MEJORAS.md` y en el historial de git.
+El detalle de qué cerró cada fase vive en el historial de git.
