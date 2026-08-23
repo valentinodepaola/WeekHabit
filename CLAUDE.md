@@ -35,13 +35,6 @@ Open architectural work lives in the repo's GitHub issues, not in a plan documen
 `ARCHITECTURE.md` records the decisions already taken. Do not reopen a settled decision
 without new evidence.
 
-**Migration in progress.** The app is moving to Clean Architecture + MVVM. That decision was
-previously rejected in `ARCHITECTURE.md` and was reopened with new evidence; the implementation
-plan, the conventions every phase must follow, and the two decision gates live in issue #27 and
-its sub-issues. **Read #27 before writing architectural code** — until the migration closes,
-`ARCHITECTURE.md` describes the old shape for anything not yet migrated, and #27 describes the
-target. Do not add a plan document to the repo: the issues are the source of truth.
-
 - Views read with `@Query`.
 - Reusable mutations live in domain services such as `HabitTrackingService`, `HabitEditorService`, and `PlanEditorService`.
 - Complex forms group editable state and validation in value-type drafts such as `HabitDraft` and `PlanDraft`.

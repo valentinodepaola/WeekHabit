@@ -104,18 +104,6 @@ Cuando una vista se parta en varios archivos, sus miembros pasan de `private` a 
 
 ## Por qué no Clean Architecture + MVVM
 
-> **⚠️ Decisión reabierta — esta sección ya no describe el rumbo de la app.**
->
-> La app está migrando a Clean Architecture + MVVM. Lo que sigue es el análisis que la
-> descartó en su momento, y se conserva porque explica los riesgos reales que la migración
-> tiene que resolver —sobre todo la incompatibilidad de `@Query`, que sigue siendo el punto
-> más delicado—. Lo que cambió: ese análisis pesó rendimiento, `@Query` y falta de tests,
-> pero nunca pesó el costo de comprensión de quien mantiene la app, que es lo que reabrió
-> la decisión.
->
-> El plan de implementación, las convenciones y las dos compuertas viven en el issue #27 y
-> sus subissues. Esta sección se reemplaza por el ADR nuevo al cerrar la fase F10 (#38).
-
 Se evaluó migrar la app a Clean Architecture con MVVM y **se descartó por costo/beneficio**.
 El dato que decidió: **48 archivos de vista referencian `Habit` directamente** y 12 usan
 `@Query`. Clean Architecture prohíbe exactamente eso.
