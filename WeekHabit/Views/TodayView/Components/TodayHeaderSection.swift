@@ -7,6 +7,7 @@ import SwiftUI
 
 struct TodayHeaderSection: View {
     let dateTitle: String
+    let onHelpTap: () -> Void
     let onCreateTap: () -> Void
 
     var body: some View {
@@ -23,16 +24,21 @@ struct TodayHeaderSection: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            Button(action: onCreateTap) {
-                Image(systemName: "plus")
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 42, height: 42)
-                    .background(AppColor.accent)
-                    .clipShape(Circle())
-                    .appElevation(.low)
+            HStack(spacing: AppSpacing.s) {
+                WHCircleButton(systemName: "questionmark", action: onHelpTap)
+                    .accessibilityLabel("Qué puedo hacer")
+
+                Button(action: onCreateTap) {
+                    Image(systemName: "plus")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(width: 42, height: 42)
+                        .background(AppColor.accent)
+                        .clipShape(Circle())
+                        .appElevation(.low)
+                }
+                .accessibilityLabel("Crear")
             }
-            .accessibilityLabel("Crear")
         }
     }
 }
