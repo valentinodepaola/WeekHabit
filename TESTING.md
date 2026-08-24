@@ -268,5 +268,6 @@ regresión que devuelva un escaneo por día al dominio los rompe por orden de ma
 | Secuencia arrastrable de la Sesión de ritmo | 107 |
 | Blindaje y limpieza del seed de rendimiento | 113 |
 | Pantalla de ayuda — catálogo y precedencia de la hoja | 123 |
+| Widget de pendientes — `TodayWidgetSnapshot` y su resumen de una línea | 143 |
 
 El detalle de qué cerró cada fase vive en el historial de git.

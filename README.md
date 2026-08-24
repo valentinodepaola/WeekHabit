@@ -25,10 +25,12 @@ Funcional y en uso. **No publicada en la App Store.** Desarrollo activo en este 
 Swift 5 · SwiftUI · SwiftData · UserNotifications · iOS 26.4+ · universal iPhone/iPad.
 
 **Cero dependencias externas.** Sin SPM, sin CocoaPods, sin paquetes de terceros: todo está
-resuelto con APIs nativas. Un proyecto Xcode único, `WeekHabit.xcodeproj`, más el target de
-pruebas `WeekHabitTests`.
+resuelto con APIs nativas. Un proyecto Xcode único, `WeekHabit.xcodeproj`, con tres targets:
+la app `WeekHabit`, la extensión de widget `WeekHabitWidgets` y las pruebas `WeekHabitTests`.
+El código que app y widget comparten vive en `WeekHabitCore/`, una carpeta que ambos compilan
+—no un paquete— para que nada tenga que volverse `public`.
 
-~26 300 líneas de Swift en 238 archivos.
+~28 600 líneas de Swift en 262 archivos.
 
 ## Qué hace
 
@@ -54,6 +56,11 @@ pruebas `WeekHabitTests`.
 - **Recordatorios locales** por día activo, con la motivación del plan como cuerpo.
 - **Una hoja de ayuda** en Hoy, que explica las cinco formas de registrar el día que no se
   descubren solas: versión mínima, descanso, comodín, slip e impulso.
+- **Widget de pendientes** en la pantalla de bloqueo y en la de inicio, en cuatro tamaños.
+  Nace de un problema concreto: la app no se abre porque se olvida, y al abrirla es ver la
+  lista lo que empuja a actuar. En vez de traer al usuario, la lista va a donde ya mira.
+  Distingue cuatro estados —con pendientes, día cerrado, descanso y sin hábitos— para que un
+  día sin nada que hacer no se muestre como un cero que parece un fallo.
 
 ## Cómo correrlo
 
@@ -111,7 +118,7 @@ Detalle completo en **[ARCHITECTURE.md](ARCHITECTURE.md)**.
 
 ## Pruebas
 
-**123 casos en 20 suites**, cada uno contra un `ModelContainer` SwiftData en memoria
+**143 casos en 21 suites**, cada uno contra un `ModelContainer` SwiftData en memoria
 independiente. Cubren las transacciones de los servicios y las reglas de dominio; las vistas
 no se prueban para demostrar reglas de negocio — cuando una regla es difícil de probar sin
 renderizar, primero se extrae.
