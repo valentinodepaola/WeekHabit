@@ -9,7 +9,12 @@ import SwiftUI
 ///
 /// Tres líneas fijas en los cuatro estados: contexto, titular y detalle. La estructura no
 /// cambia entre estados para que el ojo encuentre siempre el dato en el mismo renglón.
-/// Monocromático, como toda la pantalla de bloqueo.
+///
+/// El color lo pone el sistema, pero la **jerarquía** sí es nuestra: `.widgetAccentable()`
+/// parte el widget en dos grupos, y solo el marcado toma el tinte que el usuario eligió para
+/// su bloqueo. Se marca únicamente el encabezado, para que el titular y los nombres se queden
+/// en el grupo de máximo contraste. Sin marcar nada, los tres renglones caían en el mismo
+/// grupo y salían del mismo color lavado, que fue lo que se vio en la primera prueba.
 struct TodayRectangularView: View {
     let snapshot: TodayWidgetSnapshot
 
@@ -17,7 +22,7 @@ struct TodayRectangularView: View {
         VStack(alignment: .leading, spacing: 2) {
             Text(TodayWidgetCopy.eyebrow(for: snapshot))
                 .font(.system(size: 10, weight: .medium))
-                .opacity(0.62)
+                .widgetAccentable()
 
             HStack(spacing: 4) {
                 if let symbolName = snapshot.state.symbolName {
@@ -28,11 +33,11 @@ struct TodayRectangularView: View {
                     .font(.system(size: 17, weight: .semibold, design: .rounded))
             }
 
-            // Una sola línea: a 76 pt no cabe una cuarta, y un nombre partido a la mitad se
-            // lee como un error de la app y no como una lista larga.
+            // Una sola línea: a 76 pt no cabe una cuarta. `compactPendingList` ya recorta por
+            // nombre completo, así que este `lineLimit` es un cinturón, no el mecanismo.
             Text(TodayWidgetCopy.detail(for: snapshot))
                 .font(.system(size: 12, design: .rounded))
-                .opacity(0.68)
+                .opacity(0.78)
                 .lineLimit(1)
         }
         .frame(maxWidth: .infinity, alignment: .leading)

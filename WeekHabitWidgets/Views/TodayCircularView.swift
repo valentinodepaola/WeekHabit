@@ -8,63 +8,75 @@ import WidgetKit
 
 /// `accessoryCircular` — 72 × 72 en la pantalla de bloqueo.
 ///
-/// Monocromático: el sistema tiñe la vista completa, así que acá no se usa ningún token de
-/// color. Todo se resuelve con opacidades sobre el color heredado.
+/// Usa el `Gauge` del sistema y no `WHProgressRing`. En el bloqueo iOS aplica su propio
+/// tratamiento de vibrancy y el tinte que el usuario haya elegido, y un anillo dibujado a
+/// mano pelea contra eso: en la primera prueba en dispositivo el riel desaparecía y el arco
+/// a cero se reducía a un punto suelto que parecía un error de render. El `Gauge` es el
+/// componente que el sistema usa en sus propios widgets, así que resuelve contraste y tinte
+/// por nosotros y queda a la par del clima o la batería.
+///
+/// El precio es perder el grosor y el centro a medida, y que el anillo ya no sea idéntico al
+/// de la app. En el bloqueo eso no era nuestro de todas formas.
 struct TodayCircularView: View {
     let snapshot: TodayWidgetSnapshot
 
     var body: some View {
-        ZStack {
-            AccessoryWidgetBackground()
-
-            if snapshot.state.showsProgressRing {
-                ring
-            } else {
-                dashedRing
-            }
-
-            center
+        if snapshot.state.showsProgressRing {
+            gauge
+        } else {
+            glyph
         }
     }
 
-    private var ring: some View {
-        Circle()
-            .trim(from: 0, to: max(0.001, snapshot.progress))
-            .stroke(.primary, style: StrokeStyle(lineWidth: 5, lineCap: .round))
-            .rotationEffect(.degrees(-90))
-            .padding(6)
-            .background(Circle().stroke(.primary.opacity(0.25), lineWidth: 5).padding(6))
-    }
+    // MARK: - Con progreso
 
-    private var dashedRing: some View {
-        Circle()
-            .stroke(
-                .primary.opacity(0.3),
-                style: StrokeStyle(lineWidth: 5, lineCap: .round, dash: [3, 9])
-            )
-            .padding(6)
+    private var gauge: some View {
+        Gauge(value: snapshot.progress) {
+            bottomLabel
+        } currentValueLabel: {
+            centerLabel
+        }
+        .gaugeStyle(.accessoryCircular)
     }
 
     @ViewBuilder
-    private var center: some View {
+    private var centerLabel: some View {
         if let symbolName = snapshot.state.symbolName {
             Image(systemName: symbolName)
-                .font(.system(size: 22, weight: .semibold))
+                .font(.system(size: 18, weight: .semibold))
         } else {
-            VStack(spacing: 0) {
-                Text("\(snapshot.pendingCount)")
-                    .font(.system(size: 22, weight: .semibold, design: .rounded))
-                Text(TodayWidgetCopy.remainingLabel)
-                    .font(.system(size: 8, weight: .medium))
-                    .opacity(0.7)
+            Text("\(snapshot.pendingCount)")
+        }
+    }
+
+    /// La etiqueta de abajo aclara que la cifra es lo que **falta** y no lo hecho. En el día
+    /// cerrado no hay nada que aclarar: el check ya lo dice.
+    @ViewBuilder
+    private var bottomLabel: some View {
+        if snapshot.state == .allDone {
+            EmptyView()
+        } else {
+            Text(TodayWidgetCopy.remainingLabel)
+        }
+    }
+
+    // MARK: - Sin progreso
+
+    /// Descanso y "sin hábitos" no dibujan medidor: no hay nada que medir, y un medidor
+    /// vacío se lee como un cero, que a su vez se lee como una falla.
+    private var glyph: some View {
+        ZStack {
+            AccessoryWidgetBackground()
+
+            if let symbolName = snapshot.state.symbolName {
+                Image(systemName: symbolName)
+                    .font(.system(size: 26, weight: .semibold))
             }
         }
     }
 }
 
 #if DEBUG
-import WidgetKit
-
 #Preview("Circular · pendientes", as: .accessoryCircular) {
     TodayWidget()
 } timeline: {
