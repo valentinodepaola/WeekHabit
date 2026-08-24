@@ -145,6 +145,31 @@ struct TodayWidgetSnapshot: Equatable {
         state == .rest && scheduledCount > 0
     }
 
+    /// Los pendientes que caben en una línea, cortados **por nombre completo**, más un
+    /// "+N" final cuando quedó algo fuera.
+    ///
+    /// Vive acá y no en la vista por dos razones. Una: en la primera prueba en dispositivo la
+    /// lista se cortó a media palabra —"Diario Whoop · Orar · Lav…"— y una palabra partida se
+    /// lee como un error de la app, no como una lista larga; es una regla que merece prueba.
+    /// Dos: las vistas del widget viven en la extensión, donde el target de pruebas no llega.
+    ///
+    /// El presupuesto va en caracteres porque acá no se puede medir texto. Siempre entra al
+    /// menos un nombre, aunque se pase: mejor un nombre recortado por el sistema que ninguno.
+    func pendingSummary(budget: Int, separatorWidth: Int = 3) -> [String] {
+        var shown: [String] = []
+        var used = 0
+
+        for row in listedPending {
+            let separator = shown.isEmpty ? 0 : separatorWidth
+            guard shown.isEmpty || used + separator + row.title.count <= budget else { break }
+            shown.append(row.title)
+            used += separator + row.title.count
+        }
+
+        let hidden = pendingCount - shown.count
+        return hidden > 0 ? shown + ["+\(hidden)"] : shown
+    }
+
     private static func resolveState(
         hasAnyHabit: Bool,
         activeCount: Int,

@@ -178,6 +178,67 @@ final class TodayWidgetSnapshotTests: XCTestCase {
         XCTAssertTrue(snapshot.listedCompleted.isEmpty)
     }
 
+    // MARK: - Resumen de una línea
+
+    /// La regla que se rompió en la primera prueba en dispositivo: la lista se cortaba a
+    /// media palabra ("Diario Whoop · Orar · Lav…"), que se lee como un error de la app.
+    func testPendingSummaryNeverCutsAName() throws {
+        let day = TestFactory.date(day: 3)
+        let habits = ["Diario Whoop", "Orar", "Lavar los platos"].map { namedHabit($0) }
+
+        let summary = makeSnapshot(habits: habits, on: day).pendingSummary(budget: 26)
+
+        XCTAssertEqual(summary, ["Diario Whoop", "Orar", "+1"])
+        for piece in summary where !piece.hasPrefix("+") {
+            XCTAssertTrue(
+                ["Diario Whoop", "Orar", "Lavar los platos"].contains(piece),
+                "\(piece) no es un nombre completo"
+            )
+        }
+    }
+
+    func testPendingSummaryKeepsEverythingWhenItFits() throws {
+        let day = TestFactory.date(day: 3)
+        let habits = ["Leer", "Orar"].map { namedHabit($0) }
+
+        let summary = makeSnapshot(habits: habits, on: day).pendingSummary(budget: 26)
+
+        XCTAssertEqual(summary, ["Leer", "Orar"])
+    }
+
+    /// El "+N" cuenta sobre el total de pendientes, no sobre los tres que el snapshot lista:
+    /// si no, con cinco pendientes diría "+0" y estaría mintiendo.
+    func testPendingSummaryCountsEveryHabitLeftOut() throws {
+        let day = TestFactory.date(day: 3)
+        let habits = ["Leer", "Orar", "Correr", "Meditar", "Estirar"].map { namedHabit($0) }
+
+        let summary = makeSnapshot(habits: habits, on: day).pendingSummary(budget: 26)
+
+        // Los tres nombres cortos entran en el presupuesto, y `listedPending` no guarda más
+        // de tres: los otros dos pendientes se resumen.
+        XCTAssertEqual(summary, ["Leer", "Orar", "Correr", "+2"])
+    }
+
+    /// Mejor un nombre que el sistema recorte que una línea vacía.
+    func testPendingSummaryAlwaysKeepsTheFirstName() throws {
+        let day = TestFactory.date(day: 3)
+        let long = namedHabit("Escribir el diario de la mañana sin excusas")
+
+        let summary = makeSnapshot(habits: [long], on: day).pendingSummary(budget: 26)
+
+        XCTAssertEqual(summary, ["Escribir el diario de la mañana sin excusas"])
+    }
+
+    func testPendingSummaryIsEmptyWithoutPendingHabits() throws {
+        let day = TestFactory.date(day: 3)
+        let done = namedHabit("Leer")
+        TestFactory.entry(.completed, habit: done, date: day, value: 1)
+
+        let summary = makeSnapshot(habits: [done], on: day).pendingSummary(budget: 26)
+
+        XCTAssertTrue(summary.isEmpty)
+    }
+
     // MARK: - Racha
 
     func testStreakIsOnlyResolvedWhenTheDayIsClosed() throws {

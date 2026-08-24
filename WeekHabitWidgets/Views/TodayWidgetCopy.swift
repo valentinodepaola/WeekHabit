@@ -48,7 +48,7 @@ enum TodayWidgetCopy {
     static func detail(for snapshot: TodayWidgetSnapshot) -> String {
         switch snapshot.state {
         case .pending:
-            return snapshot.listedPending.map(\.title).joined(separator: " · ")
+            return compactPendingList(for: snapshot)
         case .allDone:
             return closedDayDetail(for: snapshot)
         case .rest:
@@ -89,6 +89,21 @@ enum TodayWidgetCopy {
     static let unavailableDetail = "Para poner al día lo que ves aquí"
 
     // MARK: - Privados
+
+    /// Cuántos caracteres entran en la tercera línea de `accessoryRectangular`.
+    ///
+    /// A 172 pt de ancho y 12 pt de tipo entran unos 30; se deja margen porque el ancho real
+    /// cambia con el tamaño de pantalla y con el tipo de letra accesible.
+    private static let rectangularBudget = 26
+
+    /// El qué lo decide `pendingSummary` —qué nombres caben—; el cómo se lee, esta capa.
+    private static func compactPendingList(for snapshot: TodayWidgetSnapshot) -> String {
+        snapshot
+            .pendingSummary(budget: rectangularBudget, separatorWidth: separatorText.count)
+            .joined(separator: separatorText)
+    }
+
+    private static let separatorText = " · "
 
     private static func pendingCount(_ count: Int) -> String {
         count == 1 ? "1 pendiente" : "\(count) pendientes"
