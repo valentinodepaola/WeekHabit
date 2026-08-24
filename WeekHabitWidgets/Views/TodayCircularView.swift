@@ -30,9 +30,18 @@ struct TodayCircularView: View {
 
     // MARK: - Con progreso
 
+    /// Sin etiqueta bajo la cifra.
+    ///
+    /// La ranura inferior del `Gauge` la dimensiona el sistema y resultó demasiado angosta
+    /// para "FALTAN": primero la cortó a "FALT…", y al encogerla hasta caber quedó ilegible.
+    /// Una palabra que hay que descifrar aclara menos que ninguna, así que se quita. El arco
+    /// da el contexto y la cifra es el dato.
+    ///
+    /// En `systemSmall` y `systemMedium` la etiqueta sí se conserva: ahí el centro es nuestro
+    /// y hay espacio para que se lea.
     private var gauge: some View {
         Gauge(value: snapshot.progress) {
-            bottomLabel
+            EmptyView()
         } currentValueLabel: {
             centerLabel
         }
@@ -46,26 +55,6 @@ struct TodayCircularView: View {
                 .font(.system(size: 18, weight: .semibold))
         } else {
             Text("\(snapshot.pendingCount)")
-        }
-    }
-
-    /// La etiqueta de abajo aclara que la cifra es lo que **falta** y no lo hecho. En el día
-    /// cerrado no hay nada que aclarar: el check ya lo dice.
-    ///
-    /// El ancho de esta ranura lo decide el sistema y no se puede consultar, así que en la
-    /// primera prueba en dispositivo la palabra salió cortada como "FALT…". En vez de adivinar
-    /// un tamaño fijo que quepa en un iPhone y no en otro, se pide que **encoja hasta caber**:
-    /// `minimumScaleFactor` la achica antes que truncarla. Una palabra corta en mayúsculas
-    /// aguanta ese encogimiento; cortada, no dice nada.
-    @ViewBuilder
-    private var bottomLabel: some View {
-        if snapshot.state == .allDone {
-            EmptyView()
-        } else {
-            Text(TodayWidgetCopy.remainingLabel)
-                .font(.system(size: 8, weight: .medium))
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
         }
     }
 
