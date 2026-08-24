@@ -12,7 +12,9 @@ import SwiftData
 struct WeekHabitApp: App {
     let container: ModelContainer = {
         let schema = Schema(versionedSchema: SchemaV17.self)
-        let config = ModelConfiguration(schema: schema)
+        // La base vive en el App Group para que la extensión del widget pueda leerla. La app
+        // es la única que la migra: ver `AppGroupStore`.
+        let config = AppGroupStore.appConfiguration(schema: schema)
         do {
             return try ModelContainer(
                 for: schema,
@@ -57,11 +59,16 @@ private struct RootView: View {
         .task {
             await refreshHabitRemindersIfNeeded()
         }
-        .onChange(of: scenePhase) { _, newValue in
+        .onChange(of: scenePhase) { oldValue, newValue in
             if newValue == .active {
                 Task {
                     await refreshHabitRemindersIfNeeded()
                 }
+            } else if oldValue == .active {
+                // Al salir de primer plano el widget pasa a ser lo único que el usuario ve
+                // de la app. Ver `WidgetRefreshService` para por qué se refresca acá y no en
+                // cada mutación.
+                WidgetRefreshService.reloadTodayWidget()
             }
         }
     }
