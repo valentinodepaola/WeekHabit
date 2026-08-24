@@ -32,6 +32,11 @@
 			path = WeekHabitTests;
 			sourceTree = "<group>";
 		};
+		C00000012F99AE8F00C47A6D /* WeekHabitCore */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = WeekHabitCore;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -56,6 +61,7 @@
 			isa = PBXGroup;
 			children = (
 				A913822C2F99AE8F00C47A6D /* WeekHabit */,
+				C00000012F99AE8F00C47A6D /* WeekHabitCore */,
 				B20000022F99AE8F00C47A6D /* WeekHabitTests */,
 				A913822B2F99AE8F00C47A6D /* Products */,
 			);
@@ -87,6 +93,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				A913822C2F99AE8F00C47A6D /* WeekHabit */,
+				C00000012F99AE8F00C47A6D /* WeekHabitCore */,
 			);
 			name = WeekHabit;
 			packageProductDependencies = (
