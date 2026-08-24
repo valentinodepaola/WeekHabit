@@ -51,12 +51,21 @@ struct TodayCircularView: View {
 
     /// La etiqueta de abajo aclara que la cifra es lo que **falta** y no lo hecho. En el día
     /// cerrado no hay nada que aclarar: el check ya lo dice.
+    ///
+    /// El ancho de esta ranura lo decide el sistema y no se puede consultar, así que en la
+    /// primera prueba en dispositivo la palabra salió cortada como "FALT…". En vez de adivinar
+    /// un tamaño fijo que quepa en un iPhone y no en otro, se pide que **encoja hasta caber**:
+    /// `minimumScaleFactor` la achica antes que truncarla. Una palabra corta en mayúsculas
+    /// aguanta ese encogimiento; cortada, no dice nada.
     @ViewBuilder
     private var bottomLabel: some View {
         if snapshot.state == .allDone {
             EmptyView()
         } else {
             Text(TodayWidgetCopy.remainingLabel)
+                .font(.system(size: 8, weight: .medium))
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
         }
     }
 
