@@ -8,7 +8,7 @@ Referencia viva del sistema visual y de interacción de WeekHabit. Pensado para 
 
 ## 1. Filosofía visual
 
-- **Modo oscuro primero, modo claro derivado en simetría.** Los tokens se declaran con `adaptive(light:, dark:)` en [AppColor.swift](WeekHabit/Extensions/AppColor.swift).
+- **Modo oscuro primero, modo claro derivado en simetría.** Los tokens se declaran con `adaptive(light:, dark:)` en [AppColor.swift](WeekHabitCore/Extensions/AppColor.swift).
 - **Voz dual tipográfica.** Serif (New York) para títulos y hero — voz contemplativa. Sans rounded (SF Rounded) para cuerpo — voz operativa cálida. Sans default para etiquetas — voz técnica sobria.
 - **Jerarquía por fondo, no por sombra.** En oscuro, la profundidad se construye con `bgCanvas / bgElevated / bgSunken`. La sombra apenas existe. En claro, sombras cálidas suaves.
 - **Color de hábito (`habitColor`) gobierna el componente.** Cuando una pantalla muestra un solo hábito, su color se aplica a marcadores, bordes y acentos locales. El `AppColor.accent` (terracotta) es la voz general de la app.
@@ -18,7 +18,7 @@ Referencia viva del sistema visual y de interacción de WeekHabit. Pensado para 
 
 ## 2. Paleta de colores
 
-Todos los colores son **adaptativos** (cambian según `userInterfaceStyle`). Nunca uses hex hardcoded fuera de [HabitAppearance.swift](WeekHabit/Models/Support/HabitAppearance.swift) (paleta de selección de hábito).
+Todos los colores son **adaptativos** (cambian según `userInterfaceStyle`). Nunca uses hex hardcoded fuera de [HabitAppearance.swift](WeekHabitCore/Models/Support/HabitAppearance.swift) (paleta de selección de hábito).
 
 ### 2.1 Fondos · estructura
 
@@ -63,17 +63,17 @@ Todos los colores son **adaptativos** (cambian según `userInterfaceStyle`). Nun
 
 ### 2.6 Aliases legacy
 
-Existen shims (`strongText`, `mutedText`, `surface`, `accentSoft`, etc.) en [AppColor.swift](WeekHabit/Extensions/AppColor.swift:60). **No agregues nuevos usos**: deuda técnica a migrar. Nuevo código usa los tokens semánticos.
+Existen shims (`strongText`, `mutedText`, `surface`, `accentSoft`, etc.) en [AppColor.swift](WeekHabitCore/Extensions/AppColor.swift:60). **No agregues nuevos usos**: deuda técnica a migrar. Nuevo código usa los tokens semánticos.
 
 ### 2.7 Paleta de hábito (selectable)
 
-`HabitAppearance.colorHexes` en [HabitAppearance.swift](WeekHabit/Models/Support/HabitAppearance.swift:169) — 24 colores cálidos/tierra elegibles por el usuario para personalizar cada hábito. Acceso via `habit.habitColor`. Los componentes que renderizan un hábito específico (`TodayHabitComponent`, `WeekGridRow`, `HabitDetailView` hero) usan este color, no `AppColor.accent`.
+`HabitAppearance.colorHexes` en [HabitAppearance.swift](WeekHabitCore/Models/Support/HabitAppearance.swift:169) — 24 colores cálidos/tierra elegibles por el usuario para personalizar cada hábito. Acceso via `habit.habitColor`. Los componentes que renderizan un hábito específico (`TodayHabitComponent`, `WeekGridRow`, `HabitDetailView` hero) usan este color, no `AppColor.accent`.
 
 ---
 
 ## 3. Tipografía — `AppFont`
 
-Escala disciplinada de **8 niveles** (ver [AppFont.swift](WeekHabit/Extensions/AppFont.swift)). Toda tipografía nueva referencia un token.
+Escala disciplinada de **8 niveles** (ver [AppFont.swift](WeekHabitCore/Extensions/AppFont.swift)). Toda tipografía nueva referencia un token.
 
 | Token | Size · Weight · Design | Uso |
 |---|---|---|
@@ -98,7 +98,7 @@ Escala disciplinada de **8 niveles** (ver [AppFont.swift](WeekHabit/Extensions/A
 
 ## 4. Espaciado — `AppSpacing`
 
-Escala 4pt en [AppSpacing.swift](WeekHabit/Extensions/AppSpacing.swift). **Toda dimensión** de padding, gap o margin va por un token.
+Escala 4pt en [AppSpacing.swift](WeekHabitCore/Extensions/AppSpacing.swift). **Toda dimensión** de padding, gap o margin va por un token.
 
 | Token | pt | Uso típico |
 |---|---|---|
@@ -118,7 +118,7 @@ Escala 4pt en [AppSpacing.swift](WeekHabit/Extensions/AppSpacing.swift). **Toda 
 
 ## 5. Radios — `AppRadius`
 
-[AppRadius.swift](WeekHabit/Extensions/AppRadius.swift). Toda esquina redondeada referencia un token.
+[AppRadius.swift](WeekHabitCore/Extensions/AppRadius.swift). Toda esquina redondeada referencia un token.
 
 | Token | pt | Uso |
 |---|---|---|
@@ -149,7 +149,7 @@ Aplicar con `.appElevation(.low)`. **Nunca** uses `.shadow(...)` directo.
 
 ## 7. Motion — `AppMotion`
 
-[AppMotion.swift](WeekHabit/Extensions/AppMotion.swift). Cinco curvas. Todas respetan Reduce Motion vía `AppMotion.respectful(_, reduceMotion)`.
+[AppMotion.swift](WeekHabitCore/Extensions/AppMotion.swift). Cinco curvas. Todas respetan Reduce Motion vía `AppMotion.respectful(_, reduceMotion)`.
 
 | Curva | Spring | Cuándo |
 |---|---|---|
@@ -260,7 +260,7 @@ Icon badge = círculo 88×88 con fondo `accentMuted`, icono `36pt light` `accent
 
 ### 10.6 `WHProgressRing`
 
-[WHProgressRing.swift](WeekHabit/Views/Components/WHProgressRing.swift). Anillo de progreso con `center` ViewBuilder. Track `divider`, progress `accent` (o color de hábito). Tamaño y `lineWidth` configurables. Default 96pt, lineWidth 10.
+[WHProgressRing.swift](WeekHabitCore/Components/WHProgressRing.swift). Anillo de progreso con `center` ViewBuilder. Track `divider`, progress `accent` (o color de hábito). Tamaño y `lineWidth` configurables. Default 96pt, lineWidth 10.
 
 ### 10.7 `WHProgressBar`
 
@@ -310,7 +310,7 @@ Cuando un componente sólo aplica a un feature, vive bajo `Views/<Feature>View/C
 | Insights | `InsightsHeroCard`, `InsightConfidenceCard`, `InsightSummaryCard`, `RhythmExperimentCard`, `ActiveExperimentCard`, `ExperimentReviewCard`, `UrgePeakHoursCard`, `InsightProvisionalBadge`, `InsightsTrendBars` | Todas son cards con `bgElevated` + `appElevation(.low)`. |
 | CreateHabit | 30+ subcomponentes, todos envueltos en `CreateHabitFormSection` (wrapper de `WHFormSection`). | Orden conductual: Dirección → Acción → Señal → Medición → Ritmo → Final → Recordatorio → Plan. |
 
-`TodayHelpSheet` no lleva copy propio: lo lee de [HelpCatalog.swift](WeekHabit/Models/Support/HelpCatalog.swift), igual que `WeekLegendSheet` lo lee de `WeekGridCellFamily`. Cada fila trae su token de color (`accent`, `success`, `warning`, `info`) y la vista lo resuelve a `AppColor`, de forma que el catálogo no dependa de SwiftUI. Los colores repiten los que ese mismo estado ya usa en la app: descanso en `info` como el estado vacío de Hoy, slip en `warning` e impulso en `accent` como en la cuadrícula de Semana.
+`TodayHelpSheet` no lleva copy propio: lo lee de [HelpCatalog.swift](WeekHabitCore/Models/Support/HelpCatalog.swift), igual que `WeekLegendSheet` lo lee de `WeekGridCellFamily`. Cada fila trae su token de color (`accent`, `success`, `warning`, `info`) y la vista lo resuelve a `AppColor`, de forma que el catálogo no dependa de SwiftUI. Los colores repiten los que ese mismo estado ya usa en la app: descanso en `info` como el estado vacío de Hoy, slip en `warning` e impulso en `accent` como en la cuadrícula de Semana.
 
 ---
 
@@ -530,7 +530,7 @@ Selector de icono/color de hábito vive en [HabitAppearancePicker.swift](WeekHab
 
 ## 16. Calendario y fechas
 
-- **Nunca uses `Calendar.current` directamente.** Usa `AppCalendar` en [AppCalendar.swift](WeekHabit/Extensions/AppCalendar.swift): `AppCalendar.current`, `AppCalendar.startOfDay(for:)`, `AppCalendar.isSameDay(_, _)`, `AppCalendar.weekday(of:)`, `AppCalendar.weekRange(containing:)`.
+- **Nunca uses `Calendar.current` directamente.** Usa `AppCalendar` en [AppCalendar.swift](WeekHabitCore/Extensions/AppCalendar.swift): `AppCalendar.current`, `AppCalendar.startOfDay(for:)`, `AppCalendar.isSameDay(_, _)`, `AppCalendar.weekday(of:)`, `AppCalendar.weekRange(containing:)`.
 - Semana empieza según `AppCalendar` (no asumas lunes).
 - Para mostrar día corto: `Weekday.shortName.uppercased(with: es_MX)` (DayColumn pattern).
 

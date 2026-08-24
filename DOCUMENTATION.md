@@ -56,24 +56,34 @@ No hay configuración de lint.
 ## Estructura del repo
 
 ```text
-WeekHabit/
-  WeekHabitApp.swift        Entry point, ModelContainer y RootView
-  ContentView.swift         Shell de tabs + hojas de cierre de plan y revisión semanal
+WeekHabitCore/              Compilado por la app Y por el widget
   Models/
     Entities/               @Model de SwiftData y enums persistidos
     Domain/                 Reglas puras de solo lectura sobre las entidades
     Insights/               Métricas de 30 días, agregados y sugerencias
-    Persistence/            SchemaV1…V17 y HabitMigrationPlan
-    Routing/                Value types de navegación (HabitRoute, PlanRoute)
+    Persistence/            SchemaV1…V17, HabitMigrationPlan y AppGroupStore
+    Routing/                Value types de navegación (HabitRoute, PlanRoute, WidgetDeepLink)
     Support/                HabitAppearance, Weekday, OnceFlags, copy de identidad
-  Services/                 Frontera de escritura (13 servicios sin estado)
+  Extensions/               Los tokens que el widget necesita (color, tipografía, calendario)
+  Components/               WHProgressRing
+WeekHabit/                  Solo la app
+  WeekHabitApp.swift        Entry point, ModelContainer y RootView
+  ContentView.swift         Shell de tabs + hojas de cierre de plan y revisión semanal
+  Services/                 Frontera de escritura (14 servicios sin estado)
   Views/
     <Feature>View/          Pantalla + su carpeta Components/
     Components/             UI compartida por 2+ features
-  Extensions/               Design tokens, AppCalendar, AppFormatters, AppPerformance
-WeekHabitTests/             18 suites contra un ModelContainer en memoria
+  Extensions/               Tokens y helpers que solo usa la app (haptics, fondo, teclado)
+WeekHabitWidgets/           Extensión de widget
+  Views/                    Una vista por familia + copy y muestras
+Config/                     Entitlements del App Group e Info.plist de la extensión
+WeekHabitTests/             21 suites contra un ModelContainer en memoria
 scripts/                    Seed de rendimiento y exportación de iconos
 ```
+
+El corte no es estético: **lo que está en `WeekHabitCore/` lo compilan los dos targets**, así
+que un archivo nuevo ahí llega al widget solo. Es una carpeta y no un paquete, de modo que
+cada target la compila dentro de su propio módulo y todo sigue siendo `internal`.
 
 ## Arquitectura
 
@@ -206,6 +216,24 @@ Reglas:
 - Un cambio de forma persistida exige un `SchemaV*` nuevo y su `MigrationStage`.
 - **No editar schemas viejos** para representar formas nuevas.
 - Un campo persistido nuevo también toca inicializadores y llamadores.
+
+## Widget de pendientes
+
+La extensión `WeekHabitWidgets` muestra lo que falta hoy sin abrir la app, que es el problema
+que originó la feature: el usuario se olvida de entrar, y al entrar es cuando ver la lista lo
+empuja a actuar. En vez de traerlo, la lista va a donde ya mira.
+
+- **Familias:** `accessoryCircular` y `accessoryRectangular` en la pantalla de bloqueo,
+  `systemSmall` y `systemMedium` en la de inicio.
+- **Cuatro estados:** con pendientes, día cerrado, descanso y sin hábitos. Son cuatro para que
+  un día sin pendientes no se muestre como un cero: descansar es una decisión, no una falla.
+- **Solo lectura.** Tocarlo abre la app en Hoy; no se marcan hábitos desde el widget.
+- **Datos:** `TodayWidgetSnapshot` deriva todo en una pasada desde los hábitos, reutilizando
+  `todayPartition(on:)`. Vive en `WeekHabitCore/` para que las pruebas lo alcancen.
+- **Refresco:** al salir de primer plano, vía `WidgetRefreshService`; y por sí solo al cruzar
+  la medianoche.
+- La base se comparte por el App Group `group.com.valentino.WeekHabit`. La app es la única que
+  migra el esquema; la extensión abre el contenedor de solo lectura.
 
 ## Lógica de dominio
 

@@ -4,7 +4,7 @@ This file gives concise guidance for coding agents working in this repository.
 
 ## Project
 
-WeekHabit is a SwiftUI iOS app for weekly habit tracking and rhythm building. It is a single Xcode project (`WeekHabit.xcodeproj`) with no Swift Package Manager dependencies or CocoaPods, plus the `WeekHabitTests` unit test target.
+WeekHabit is a SwiftUI iOS app for weekly habit tracking and rhythm building. It is a single Xcode project (`WeekHabit.xcodeproj`) with no Swift Package Manager dependencies or CocoaPods, and three targets: the `WeekHabit` app, the `WeekHabitWidgets` widget extension, and the `WeekHabitTests` unit test target.
 
 Stack: Swift 5.0, SwiftUI, SwiftData, UserNotifications, iOS 26.4+, universal iPhone/iPad.
 
@@ -26,6 +26,27 @@ xcodebuild -project WeekHabit.xcodeproj \
 ```
 
 There is no lint configuration. `WeekHabitTests` is the unit test target.
+
+## Targets and shared code
+
+Three folders map to targets:
+
+- `WeekHabit/` — the app: views, services, app-only extensions.
+- `WeekHabitWidgets/` — the widget extension.
+- `WeekHabitCore/` — **compiled into both**: `Models/`, the design tokens the widget needs
+  (`AppCalendar`, `AppColor`, `AppFont`, `AppFormatters`, `AppMotion`, `AppRadius`,
+  `AppSpacing`, `Color+Hex`) and `WHProgressRing`.
+
+`WeekHabitCore` is a plain folder, not a package — each target compiles the sources into its
+own module, so everything stays `internal` and nothing needs `public`.
+
+**A new file under `WeekHabitCore/` reaches both targets automatically** (synchronized
+groups), which is the whole point of the split. Code the widget must not see goes in
+`WeekHabit/`. `WeekHabitCore` must not import anything from `WeekHabit/`: the extension
+would fail to compile.
+
+The SwiftData store lives in the App Group `group.com.valentino.WeekHabit`, built through
+`AppGroupStore`. Only the app migrates the schema; the extension opens it read-only.
 
 ## Architecture
 
@@ -89,6 +110,9 @@ Current tabs:
 - `1`: `WeekView`
 - `2`: `InsightsView`
 
+`ContentView` also handles `WidgetDeepLink.today`: tapping the widget forces tab `0`, so the
+user lands on Hoy instead of resuming wherever the app was left.
+
 There is no separate `HabitsView` tab in the current app.
 
 `ContentView` also presents `PlanWrapUpView` as a sheet when a plan has ended and has not been reviewed.
@@ -130,6 +154,18 @@ Reminders:
 - Reminders are skipped for finished habits.
 - Reminder body prefers active plan motivation, then habit note, then fallback copy.
 
+Widget (`WeekHabitWidgets`):
+
+- One widget, four families: `accessoryCircular`, `accessoryRectangular`, `systemSmall`,
+  `systemMedium`. Read-only — it shows and opens the app, it does not log habits.
+- Everything it draws comes from `TodayWidgetSnapshot`, derived in one pass. Its four states
+  (`pending`, `allDone`, `rest`, `empty`) exist so an empty day never reads as a failure.
+- Copy lives in `TodayWidgetCopy`, never inline in a view.
+- The lock-screen families are **monochrome**: the system tints them, so they use no
+  `AppColor` token.
+- `WidgetRefreshService` reloads the timelines when the scene leaves `.active` — one place,
+  not one call per mutation.
+
 Onboarding:
 
 - `OnboardingView` is connected.
@@ -149,7 +185,8 @@ Views/
     SharedComponent.swift
 ```
 
-Shared UI goes in `Views/Components`. Feature-specific UI stays in that feature's `Components` folder.
+Shared UI goes in `Views/Components`. Feature-specific UI stays in that feature's `Components`
+folder. UI the widget also needs goes in `WeekHabitCore/Components`.
 
 ## Design System
 
