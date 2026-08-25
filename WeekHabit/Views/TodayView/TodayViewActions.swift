@@ -20,10 +20,9 @@ extension TodayView {
 
         let willComplete = !habit.isCompleted(on: date)
         let closesDay = willComplete && data.remainingCount == 1
-        var result: HabitTrackingResult?
 
         transitionHabitBetweenSections {
-            result = HabitTrackingService.toggleCompletion(
+            _ = HabitTrackingService.toggleCompletion(
                 for: habit,
                 on: date,
                 source: .today,
@@ -37,13 +36,8 @@ extension TodayView {
             playDayClosedHaptic()
         }
 
-        if willComplete, let insertedEntry = result?.entry {
-            presentLiveMilestoneIfNeeded(
-                for: habit,
-                on: date,
-                noteEntry: insertedEntry,
-                afterDayClosed: closesDay
-            )
+        if willComplete {
+            presentLiveMilestoneIfNeeded(for: habit, on: date, afterDayClosed: closesDay)
         }
     }
 
@@ -73,20 +67,13 @@ extension TodayView {
     func presentLiveMilestoneIfNeeded(
         for habit: Habit,
         on date: Date,
-        noteEntry: HabitEntry? = nil,
         afterDayClosed: Bool = false
     ) {
-        guard let milestone = habit.crossedMilestone(on: date) else {
-            if let noteEntry {
-                model.requestNoteEntry(noteEntry)
-            }
-            return
-        }
+        guard let milestone = habit.crossedMilestone(on: date) else { return }
 
         habit.markMilestoneCelebrated(milestone)
         model.presentMilestone(
             MilestoneCelebrationPayload(habit: habit, milestone: milestone),
-            noteEntry: noteEntry,
             after: afterDayClosed ? 1.75 : 0.6
         )
     }

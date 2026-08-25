@@ -155,8 +155,6 @@ extension TodayView {
             WeeklyReviewView(weekStart: weekStart)
                 .presentationDragIndicator(.visible)
                 .presentationBackground(AppColor.bgCanvas)
-        case .noteEntry(let entry):
-            EntryNoteSheet(entry: entry)
         }
     }
 

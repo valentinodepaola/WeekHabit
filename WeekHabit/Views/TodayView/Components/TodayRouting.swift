@@ -28,7 +28,6 @@ enum TodaySheetRoute: Identifiable {
     case recoveryPrompt(RecoveryPromptCandidate)
     case replacementPrompt(breakHabit: Habit, replacementHabit: Habit)
     case weeklyReview(weekStart: Date)
-    case noteEntry(entry: HabitEntry)
 
     var id: String {
         switch self {
@@ -42,7 +41,6 @@ enum TodaySheetRoute: Identifiable {
             return "replacementPrompt-\(breakHabit.id)-\(replacementHabit.id)"
         case .weeklyReview(let weekStart):
             return "weeklyReview-\(weekStart.timeIntervalSinceReferenceDate)"
-        case .noteEntry(let entry): return "noteEntry-\(entry.id)"
         }
     }
 }
