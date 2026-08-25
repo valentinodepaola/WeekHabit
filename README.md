@@ -38,8 +38,7 @@ El código que app y widget comparten vive en `WeekHabitCore/`, una carpeta que 
   propia), con agenda diaria, por días específicos o flexible ("X veces por semana").
 - **Hábitos para construir y para dejar.** No son el mismo flujo con distinto texto: los de
   dejar registran recaídas con su detonante, impulsos resistidos y hábito de reemplazo.
-- **Registro del día** con progreso, día de descanso, versión mínima para días difíciles y
-  notas por registro.
+- **Registro del día** con progreso, día de descanso y versión mínima para días difíciles.
 - **Vista de la semana** con grilla editable, registro retroactivo y consistencia.
 - **Rachas honestas**: desglose entre días hechos, descansos intencionales y comodines usados,
   más un comodín semanal que evita que un día perdido borre el progreso.

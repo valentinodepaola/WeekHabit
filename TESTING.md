@@ -25,7 +25,6 @@ Además de la cobertura inicial, la suite ya cubre:
   - `HabitLifecycleService`
   - `PlanLifecycleService`
   - `FocusSessionEditorService`
-  - `EntryNoteService`
   - `HabitExperimentService`
 - Métricas y ranking de Insights agregados en A3:
   - readiness;
@@ -54,10 +53,9 @@ Además de la cobertura inicial, la suite ya cubre:
   - `TodayViewDataTests`: particiones y contadores del día, exclusión de descansos y slips
     de los candidatos a sesión de enfoque conservando el orden, y estabilidad de la firma
     de sección.
-  - `TodayScreenModelTests`: la secuencia hito → nota diferida, que antes era un reintento
-    temporizado que descartaba la nota en silencio si no lograba presentarla en seis
-    intentos. También el prompt de recuperación una vez por sesión y las confirmaciones de
-    borrado derivadas de su opcional.
+  - `TodayScreenModelTests`: quién puede ocupar la pantalla y en qué orden — el hito tras su
+    retardo, el prompt de recuperación una vez por sesión, la ayuda cediéndole el turno, y las
+    confirmaciones de borrado derivadas de su opcional.
 - `HelpCatalogTests`: el catálogo de la pantalla de ayuda. No prueba la vista, prueba el copy
   como dato: ids únicos, textos presentes, y —lo que de verdad protege— que la pantalla siga
   cubriendo sólo las cinco formas de registrar el día y que el copy no vuelva a prometer cosas

@@ -304,9 +304,9 @@ Cuando un componente sólo aplica a un feature, vive bajo `Views/<Feature>View/C
 
 | Feature | Componente | Notas |
 |---|---|---|
-| Today | `DailyProgressCard`, `PlanAccordion`, `TodayHabitComponent`, `FocusSessionLauncherCard`, `LongestStreakBanner`, `QuantityLogSheet`, `SlipLogSheet`, `UrgeLogSheet`, `RecoveryPromptView`, `ReplacementPromptView`, `EntryNoteSheet`, `TodayHelpSheet` | Fila accordion con barra accent 4pt en `leading`, ring 86pt en progreso diario. |
+| Today | `DailyProgressCard`, `PlanAccordion`, `TodayHabitComponent`, `FocusSessionLauncherCard`, `LongestStreakBanner`, `QuantityLogSheet`, `SlipLogSheet`, `UrgeLogSheet`, `RecoveryPromptView`, `ReplacementPromptView`, `TodayHelpSheet` | Fila accordion con barra accent 4pt en `leading`, ring 86pt en progreso diario. |
 | Week | `WeekGridCell`, `WeekGridRow`, `WeekHeaderSection`, `DayColumn`, `StatTile`, `WeekGridLayout` | Celda 34pt con 12 estados visuales distintos. Layout en `WeekGridLayout` enum. |
-| HabitDetail | `CurrentStreakHeroCard`, `StreakBreakdownCard`, `StatTileView`, `WeekDotsCard`, `LastWeeksHeatmapCard`, `EntryHistoryCard`, `SlipTimelineCard`, `HabitExperimentStatusCard` | Hero color = `habit.habitColor`. |
+| HabitDetail | `CurrentStreakHeroCard`, `StreakBreakdownCard`, `StatTileView`, `WeekDotsCard`, `LastWeeksHeatmapCard`, `SlipTimelineCard`, `HabitExperimentStatusCard` | Hero color = `habit.habitColor`. |
 | Insights | `InsightsHeroCard`, `InsightConfidenceCard`, `InsightSummaryCard`, `RhythmExperimentCard`, `ActiveExperimentCard`, `ExperimentReviewCard`, `UrgePeakHoursCard`, `InsightProvisionalBadge`, `InsightsTrendBars` | Todas son cards con `bgElevated` + `appElevation(.low)`. |
 | CreateHabit | 30+ subcomponentes, todos envueltos en `CreateHabitFormSection` (wrapper de `WHFormSection`). | Orden conductual: Dirección → Acción → Señal → Medición → Ritmo → Final → Recordatorio → Plan. |
 

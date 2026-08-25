@@ -117,6 +117,8 @@ final class HabitEntry {
     var failureReason: String?
     var slipTriggerRaw: String?
     var slipContext: String?
+    /// Sin lectores desde que se quitó la UI de notas. Se conserva a propósito: guarda texto
+    /// que el usuario ya escribió, y borrarlo exigiría un `SchemaV18` y perdería ese texto.
     var note: String?
     var habit: Habit?
 

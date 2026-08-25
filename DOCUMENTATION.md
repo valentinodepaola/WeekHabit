@@ -162,7 +162,9 @@ Un registro por día. `date` se normaliza a start-of-day en el init.
 - `EntryKind`: `completed`, `skipped`, `minimum`, `missed`, `slip`, `urge`.
 - `SlipTrigger`: `stress`, `boredom`, `social`, `fatigue`, `craving`, `other`.
 - `HabitFailureReason`: `tooDifficult`, `forgot`, `badTiming`, `lowEnergy`, `other`.
-- Además: `completedAt`, `focusSessionID`, `completedCount`, `value`, `slipContext`, nota.
+- Además: `completedAt`, `focusSessionID`, `completedCount`, `value`, `slipContext`.
+- `note` sigue en el modelo pero ya no tiene UI: conserva el texto escrito antes de que se
+  quitaran las notas de entrada. Ver `HabitEntry.swift`.
 
 ### `Plan`
 
@@ -279,7 +281,6 @@ Trece servicios en `Services/`, todos `enum` sin estado con métodos `static` qu
 | `WeeklyReviewEditorService` | Persistir la revisión semanal, sus decisiones y las pausas |
 | `WeeklyReviewService` | Calendario de la revisión y su notificación (no persiste) |
 | `FocusSessionEditorService` | Iniciar, revisar, completar y cancelar sesiones |
-| `EntryNoteService` | Notas de entrada, con normalización de texto vacío a `nil` |
 | `HabitExperimentService` | Iniciar, mantener y revertir experimentos |
 | `OnboardingSetupService` | Plan inicial y hábitos de plantilla del onboarding |
 | `HabitReminderService` | Notificaciones locales por hábito y weekday activo |
@@ -330,7 +331,7 @@ Pantalla de uso diario. Es la referencia del patrón de estado de pantalla: `Tod
 - Check con toggle; cantidad con `QuantityLogSheet`.
 - Slip con detonante y urge para hábitos de romper.
 - Sección de planes con `PlanAccordion`.
-- Celebración de hitos y nota diferida.
+- Celebración de hitos.
 - Prompt de recuperación tras un fallo, que puede crear la versión mínima en un tap.
 - Pantalla de ayuda (`TodayHelpSheet`), abierta desde el "?" del header y presentada sola una
   vez, la primera vez que se llega a Hoy. No es un catálogo de funciones: explica las cinco
@@ -388,7 +389,7 @@ reordenar. El modelo vive en `FocusSequence`. Al completar la revisión se crean
 
 Detalle analítico: experimento activo o pendiente, racha actual y mejor racha, desglose honesto
 de la racha (días hechos, descansos intencionales y comodines usados), progreso semanal, dots
-de la semana, heatmap de 10 semanas, información de cantidad y edición del hábito.
+de la semana, heatmap de 52 semanas, información de cantidad y edición del hábito.
 
 ### `WeeklyReviewView`
 
