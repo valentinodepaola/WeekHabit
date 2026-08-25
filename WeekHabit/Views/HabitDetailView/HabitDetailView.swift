@@ -90,8 +90,6 @@ struct HabitDetailView: View {
                         SlipTimelineCard(habit: habit)
                     }
 
-                    EntryHistoryCard(habit: habit)
-
                     LastWeeksHeatmapCard(habit: habit, weeks: 52)
                 }
                 .padding(.horizontal, AppSpacing.l)

@@ -34,9 +34,6 @@ final class TodayScreenModel {
     var latestFreezeExplainerMessage: String?
     private(set) var didShowRecoveryPromptThisSession = false
 
-    /// Nota pendiente de mostrar después de una celebración de hito.
-    private var pendingNoteEntry: HabitEntry?
-
     // MARK: - Confirmaciones como binding
 
     /// Las alertas de borrado se derivan del opcional en vez de llevar un `Bool` aparte:
@@ -80,41 +77,13 @@ final class TodayScreenModel {
         }
     }
 
-    /// Muestra la celebración del hito, dejando la nota en cola si venía una.
+    /// Muestra la celebración del hito tras el retardo que deja terminar la animación de la lista.
     func presentMilestone(
         _ payload: MilestoneCelebrationPayload,
-        noteEntry: HabitEntry?,
         after delay: TimeInterval
     ) {
-        pendingNoteEntry = noteEntry
         DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
             self?.milestoneCover = payload
-        }
-    }
-
-    /// Pide mostrar la hoja de nota. Si hay algo presentado, queda en cola y la consume
-    /// `presentPendingNoteIfPossible()` cuando la pantalla se libera.
-    func requestNoteEntry(_ entry: HabitEntry) {
-        guard sheetRoute == nil, milestoneCover == nil else {
-            pendingNoteEntry = entry
-            return
-        }
-        sheetRoute = .noteEntry(entry: entry)
-    }
-
-    /// Consume la nota en cola. Se llama desde el `onDismiss` de la portada de hito y del
-    /// sheet, que es cuando la pantalla realmente quedó libre.
-    ///
-    /// Antes esto era un reintento temporizado que consultaba `sheetRoute` hasta seis veces
-    /// esperando que se liberara; si no lo lograba, la nota se perdía sin aviso.
-    func presentPendingNoteIfPossible() {
-        guard let entry = pendingNoteEntry, milestoneCover == nil else { return }
-        pendingNoteEntry = nil
-
-        // Un solo retardo corto para dejar terminar la animación de cierre.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
-            guard let self, self.sheetRoute == nil else { return }
-            self.sheetRoute = .noteEntry(entry: entry)
         }
     }
 

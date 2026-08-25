@@ -138,13 +138,10 @@ struct TodayView: View {
             .fullScreenCover(item: $model.coverRoute) { route in
                 routeCover(route)
             }
-            .fullScreenCover(
-                item: $model.milestoneCover,
-                onDismiss: model.presentPendingNoteIfPossible
-            ) { payload in
+            .fullScreenCover(item: $model.milestoneCover) { payload in
                 MilestoneCelebrationView(habit: payload.habit, milestone: payload.milestone)
             }
-            .sheet(item: $model.sheetRoute, onDismiss: model.presentPendingNoteIfPossible) { route in
+            .sheet(item: $model.sheetRoute) { route in
                 routeSheet(route, data: data, on: date)
             }
             .sheet(item: $model.detailPlan) { plan in
