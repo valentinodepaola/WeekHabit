@@ -201,34 +201,19 @@ extension TodayView {
         }
     }
 
-    func persistRecoveryMiss(_ candidate: RecoveryPromptCandidate, reason: HabitFailureReason?) {
-        guard commitRecoveryMiss(candidate, reason: reason) else { return }
-
-        model.sheetRoute = nil
-    }
-
-    func createMinimumVersion(for candidate: RecoveryPromptCandidate, title: String) {
-        let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedTitle.isEmpty else { return }
-        guard commitRecoveryMiss(candidate, reason: nil, minimumTitle: trimmedTitle) else { return }
-
-        model.sheetRoute = nil
-        AppHaptics.play(.selection)
-    }
-
-    /// Devuelve `false` y muestra la alerta si el guardado falla.
-    func commitRecoveryMiss(
+    /// Guarda la razón de un pendiente de ayer. Devuelve `false` y muestra la alerta si el
+    /// guardado falla; la navegación de la hoja es de `RecoveryPromptSheet`.
+    func persistRecoveryMiss(
         _ candidate: RecoveryPromptCandidate,
-        reason: HabitFailureReason?,
-        minimumTitle: String? = nil
+        reason: HabitFailureReason
     ) -> Bool {
         do {
             try HabitTrackingService.commitRecoveryMiss(
                 candidate,
                 reason: reason,
-                minimumTitle: minimumTitle,
                 modelContext: modelContext
             )
+            AppHaptics.play(.selection)
             return true
         } catch {
             model.failure = .saving(error)

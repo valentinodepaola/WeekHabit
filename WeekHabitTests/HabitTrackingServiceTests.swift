@@ -83,7 +83,7 @@ final class HabitTrackingServiceTests: XCTestCase {
         let habit = TestFactory.habit()
         store.insert(habit)
         let completed = TestFactory.entry(.completed, habit: habit, date: date, value: 1)
-        let candidate = RecoveryPromptCandidate(habit: habit, date: date, isWeeklyFlexibleMiss: false)
+        let candidate = RecoveryPromptCandidate(habit: habit, date: date)
 
         HabitTrackingService.recordRecoveryMiss(
             candidate,
@@ -95,23 +95,44 @@ final class HabitTrackingServiceTests: XCTestCase {
         XCTAssertEqual(primaryEntries(for: habit, on: date).map(\.id), [completed.id])
     }
 
-    func testCommitRecoveryMissAppliesMinimumTitleAndPersists() throws {
+    /// Contestar es una decisión que se toma una sola vez: no puede quedar a merced del autosave.
+    func testCommitRecoveryMissPersistsImmediately() throws {
         let store = try TestStore()
         let date = TestFactory.date(day: 3)
         let habit = TestFactory.habit()
         store.insert(habit)
-        let candidate = RecoveryPromptCandidate(habit: habit, date: date, isWeeklyFlexibleMiss: false)
+        let candidate = RecoveryPromptCandidate(habit: habit, date: date)
 
         try HabitTrackingService.commitRecoveryMiss(
             candidate,
-            reason: nil,
-            minimumTitle: "Dos minutos",
+            reason: .lowEnergy,
             modelContext: store.context
         )
 
-        XCTAssertEqual(habit.minimumViableTitle, "Dos minutos")
         XCTAssertEqual(primaryEntries(for: habit, on: date).map(\.kind), [.missed])
+        XCTAssertEqual(primaryEntries(for: habit, on: date).first?.failureReasonKind, .lowEnergy)
         XCTAssertFalse(store.context.hasChanges)
+    }
+
+    /// La hoja contesta varios hábitos seguidos: cada uno pasa por el servicio y ninguno puede
+    /// tocar el día de los demás.
+    func testAnsweringOneRecoveryCandidateLeavesTheOthersUntouched() throws {
+        let store = try TestStore()
+        let date = TestFactory.date(day: 3)
+        let answered = TestFactory.habit(title: "Leer")
+        let untouched = TestFactory.habit(title: "Correr")
+        store.insert(answered)
+        store.insert(untouched)
+
+        try HabitTrackingService.commitRecoveryMiss(
+            RecoveryPromptCandidate(habit: answered, date: date),
+            reason: .forgot,
+            modelContext: store.context
+        )
+
+        XCTAssertEqual(answered.recoveryAnswer(on: date), .forgot)
+        XCTAssertNil(untouched.recoveryAnswer(on: date))
+        XCTAssertTrue(primaryEntries(for: untouched, on: date).isEmpty)
     }
 
     func testSlipReplacesPrimaryStateAndPreservesUrge() throws {

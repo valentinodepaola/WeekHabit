@@ -21,6 +21,9 @@ struct TodayViewData {
     let weeklyFreezes: [StreakFreeze]
     let tomorrowHabitsCount: Int
     let weeklyReviewWeekStart: Date?
+    /// Hábitos que ayer quedaron sin marcar. Lo consumen la auto-presentación de la hoja de
+    /// recuperación, el banner de reentrada y la semilla del roster de esa hoja.
+    let recoveryCandidates: [RecoveryPromptCandidate]
     /// Identidad de las secciones, para animar solo cuando un hábito cambia de lugar.
     let sectionSignature: String
 
@@ -53,6 +56,10 @@ struct TodayViewData {
         let tomorrow = AppCalendar.current.date(byAdding: .day, value: 1, to: referenceDate)
             ?? referenceDate
         self.tomorrowHabitsCount = habits.loggableToday(on: tomorrow).count
+
+        // Se calcula sobre `habits` y no sobre `todayHabits`: la agenda de ayer puede no ser la
+        // de hoy, y un hábito que hoy no toca pudo quedar pendiente ayer.
+        self.recoveryCandidates = habits.recoveryPromptCandidates(reference: referenceDate)
 
         self.weeklyReviewWeekStart = WeeklyReviewService.needsReview(
             reference: referenceDate,
