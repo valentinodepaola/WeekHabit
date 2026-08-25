@@ -332,7 +332,10 @@ Pantalla de uso diario. Es la referencia del patrón de estado de pantalla: `Tod
 - Slip con detonante y urge para hábitos de romper.
 - Sección de planes con `PlanAccordion`.
 - Celebración de hitos.
-- Prompt de recuperación tras un fallo, que puede crear la versión mínima en un tap.
+- Hoja de recuperación con **todos** los hábitos que ayer quedaron sin marcar: la lista abre el
+  formulario de razones de cada uno y vuelve a ella con la fila resuelta. Se auto-presenta una
+  vez por día natural; mientras queden pendientes, un banner en Hoy la reabre. Contestar es
+  opcional: cerrarla no escribe nada.
 - Pantalla de ayuda (`TodayHelpSheet`), abierta desde el "?" del header y presentada sola una
   vez, la primera vez que se llega a Hoy. No es un catálogo de funciones: explica las cinco
   formas de registrar el día que no se descubren solas —mínima, descanso, comodín, slip e

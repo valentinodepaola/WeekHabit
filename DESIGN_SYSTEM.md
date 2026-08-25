@@ -288,7 +288,7 @@ Icon badge = círculo 88×88 con fondo `accentMuted`, icono `36pt light` `accent
 
 ### 10.13 `WeeklyReviewBanner`
 
-[WeeklyReviewBanner.swift](WeekHabit/Views/Components/WeeklyReviewBanner.swift). Banner CTA tinted accent (8%) con border accent 22% — patrón para llamados a acción semanal/contextuales no destructivos.
+[WeeklyReviewBanner.swift](WeekHabit/Views/Components/WeeklyReviewBanner.swift). Banner CTA tinted accent (8%) con border accent 22% — patrón para llamados a acción semanal/contextuales no destructivos. `RecoveryPromptBanner` lo replica con el mismo tinte y radios: es el mismo patrón aplicado a un feature, no uno nuevo.
 
 ### 10.14 `WHCircleButton`
 
@@ -304,7 +304,7 @@ Cuando un componente sólo aplica a un feature, vive bajo `Views/<Feature>View/C
 
 | Feature | Componente | Notas |
 |---|---|---|
-| Today | `DailyProgressCard`, `PlanAccordion`, `TodayHabitComponent`, `FocusSessionLauncherCard`, `LongestStreakBanner`, `QuantityLogSheet`, `SlipLogSheet`, `UrgeLogSheet`, `RecoveryPromptView`, `ReplacementPromptView`, `TodayHelpSheet` | Fila accordion con barra accent 4pt en `leading`, ring 86pt en progreso diario. |
+| Today | `DailyProgressCard`, `PlanAccordion`, `TodayHabitComponent`, `FocusSessionLauncherCard`, `LongestStreakBanner`, `QuantityLogSheet`, `SlipLogSheet`, `UrgeLogSheet`, `RecoveryPromptSheet`, `RecoveryPromptListView`, `RecoveryPromptView`, `RecoveryPromptBanner`, `ReplacementPromptView`, `TodayHelpSheet` | Fila accordion con barra accent 4pt en `leading`, ring 86pt en progreso diario. |
 | Week | `WeekGridCell`, `WeekGridRow`, `WeekHeaderSection`, `DayColumn`, `StatTile`, `WeekGridLayout` | Celda 34pt con 12 estados visuales distintos. Layout en `WeekGridLayout` enum. |
 | HabitDetail | `CurrentStreakHeroCard`, `StreakBreakdownCard`, `StatTileView`, `WeekDotsCard`, `LastWeeksHeatmapCard`, `SlipTimelineCard`, `HabitExperimentStatusCard` | Hero color = `habit.habitColor`. |
 | Insights | `InsightsHeroCard`, `InsightConfidenceCard`, `InsightSummaryCard`, `RhythmExperimentCard`, `ActiveExperimentCard`, `ExperimentReviewCard`, `UrgePeakHoursCard`, `InsightProvisionalBadge`, `InsightsTrendBars` | Todas son cards con `bgElevated` + `appElevation(.low)`. |
