@@ -65,10 +65,10 @@ private struct RootView: View {
                     await refreshHabitRemindersIfNeeded()
                 }
             } else if oldValue == .active {
-                // Al salir de primer plano el widget pasa a ser lo único que el usuario ve
+                // Al salir de primer plano los widgets pasan a ser lo único que el usuario ve
                 // de la app. Ver `WidgetRefreshService` para por qué se refresca acá y no en
                 // cada mutación.
-                WidgetRefreshService.reloadTodayWidget()
+                WidgetRefreshService.reloadWidgets()
             }
         }
     }
