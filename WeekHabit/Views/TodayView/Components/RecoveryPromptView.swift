@@ -5,15 +5,14 @@
 
 import SwiftUI
 
+/// Formulario de razones de un hábito. Es la pantalla de detalle de `RecoveryPromptSheet`:
+/// cuando hay varios pendientes se llega empujándola desde la lista, y con uno solo es la raíz.
 struct RecoveryPromptView: View {
     let candidate: RecoveryPromptCandidate
     var referenceDate: Date = .now
     let onSave: (HabitFailureReason) -> Void
-    var onCreateMinimum: ((String) -> Void)? = nil
-    let onSkip: () -> Void
 
     @State private var selectedReason: HabitFailureReason?
-    @State private var minimumTitle: String = ""
 
     var body: some View {
         ScrollView {
@@ -26,10 +25,6 @@ struct RecoveryPromptView: View {
                     }
                 }
 
-                if shouldShowMinimumSuggestion {
-                    minimumSuggestionCard
-                }
-
                 actions
             }
             .padding(AppSpacing.l)
@@ -37,8 +32,8 @@ struct RecoveryPromptView: View {
         }
         .background(AppColor.bgCanvas)
         .onAppear {
-            if minimumTitle.isEmpty {
-                minimumTitle = suggestedMinimumTitle
+            if selectedReason == nil {
+                selectedReason = candidate.habit.recoveryAnswer(on: candidate.date)
             }
         }
     }
@@ -98,80 +93,19 @@ struct RecoveryPromptView: View {
     }
 
     private var actions: some View {
-        VStack(spacing: AppSpacing.s) {
-            WHButton(
-                title: "Guardar",
-                icon: "checkmark",
-                variant: .primary,
-                isDisabled: selectedReason == nil,
-                action: {
-                    guard let selectedReason else { return }
-                    onSave(selectedReason)
-                }
-            )
-
-            Button("Saltar") {
-                onSkip()
+        WHButton(
+            title: "Guardar",
+            icon: "checkmark",
+            variant: .primary,
+            isDisabled: selectedReason == nil,
+            action: {
+                guard let selectedReason else { return }
+                onSave(selectedReason)
             }
-            .font(AppFont.bodyEmphasis)
-            .foregroundStyle(AppColor.textSecondary)
-            .frame(maxWidth: .infinity, minHeight: 44)
-        }
-    }
-
-    private var minimumSuggestionCard: some View {
-        VStack(alignment: .leading, spacing: AppSpacing.m) {
-            HStack(alignment: .top, spacing: AppSpacing.s) {
-                Image(systemName: "sparkle")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(candidate.habit.habitColor)
-                    .frame(width: 28, height: 28)
-                    .background(candidate.habit.habitColor.opacity(0.12))
-                    .clipShape(Circle())
-
-                VStack(alignment: .leading, spacing: AppSpacing.xs) {
-                    Text("Crea una versión mínima")
-                        .font(AppFont.bodyEmphasis)
-                        .foregroundStyle(AppColor.textPrimary)
-
-                    Text("Para días difíciles: algo tan pequeño que todavía puedas marcar avance.")
-                        .font(AppFont.callout)
-                        .foregroundStyle(AppColor.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-
-            TextField("Ej: Leer una página", text: $minimumTitle)
-                .font(AppFont.body)
-                .padding(AppSpacing.m)
-                .background(AppColor.bgSunken)
-                .clipShape(RoundedRectangle(cornerRadius: AppRadius.m, style: .continuous))
-                .textInputAutocapitalization(.sentences)
-
-            WHButton(
-                title: "Crear versión mínima",
-                icon: "checkmark.circle",
-                variant: .secondary,
-                isDisabled: minimumTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-                action: {
-                    onCreateMinimum?(minimumTitle)
-                }
-            )
-        }
-        .padding(AppSpacing.m)
-        .background(candidate.habit.habitColor.opacity(0.08))
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.m, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: AppRadius.m, style: .continuous)
-                .strokeBorder(candidate.habit.habitColor.opacity(0.22), lineWidth: 1)
-        }
+        )
     }
 
     private var titleText: String {
-        if candidate.isWeeklyFlexibleMiss {
-            return "La semana pasada no cerraste \(candidate.habit.title). ¿Qué pasó?"
-        }
-
         if let yesterday = AppCalendar.current.date(
             byAdding: .day,
             value: -1,
@@ -187,18 +121,6 @@ struct RecoveryPromptView: View {
         AppCalendar.weekday(of: candidate.date)
             .displayName
             .lowercased(with: AppFormatters.esMXLocale)
-    }
-
-    private var shouldShowMinimumSuggestion: Bool {
-        guard onCreateMinimum != nil else { return false }
-        let current = candidate.habit.minimumViableTitle?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        return current.isEmpty
-    }
-
-    private var suggestedMinimumTitle: String {
-        let habitTitle = candidate.habit.title.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !habitTitle.isEmpty else { return "Hacer una versión mínima" }
-        return "Solo empezar \(AppFormatters.lowercased(habitTitle))"
     }
 
     private func rowBackground(for reason: HabitFailureReason) -> Color {
@@ -217,8 +139,7 @@ struct RecoveryPromptView: View {
 #Preview {
     let habit = Habit(title: "Leer", targetDaysPerWeek: 7, activeDaysOfWeek: Set(Weekday.ordered))
     return RecoveryPromptView(
-        candidate: RecoveryPromptCandidate(habit: habit, date: .now, isWeeklyFlexibleMiss: false),
-        onSave: { _ in },
-        onSkip: {}
+        candidate: RecoveryPromptCandidate(habit: habit, date: .now),
+        onSave: { _ in }
     )
 }

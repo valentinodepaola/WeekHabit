@@ -55,36 +55,80 @@ final class TodayScreenModelTests: XCTestCase {
 
     // MARK: - Prompt de recuperación
 
-    func testRecoveryPromptIsShownOnlyOncePerSession() {
+    /// La compuerta es por día natural, no por sesión: si el usuario ya cerró la hoja hoy, no
+    /// vuelve a aparecer sola aunque relance la app. La bandera de sesión anterior vivía en el
+    /// `@State` de la vista, que `TabView` conserva, así que solo se recreaba en un arranque en frío.
+    func testRecoveryPromptIsNotAutoPresentedTwiceTheSameDay() {
         let model = TodayScreenModel()
-        let habit = TestFactory.habit()
-        let candidate = RecoveryPromptCandidate(
-            habit: habit,
-            date: TestFactory.date(day: 1),
-            isWeeklyFlexibleMiss: false
-        )
+        let today = TestFactory.date(day: 20)
 
-        model.presentRecoveryPromptIfNeeded(candidate: candidate)
-        XCTAssertNotNil(model.sheetRoute)
+        XCTAssertTrue(
+            model.presentRecoveryPromptIfNeeded(
+                lastAutoPresentedDay: nil,
+                reference: today,
+                hasCandidates: true
+            )
+        )
+        XCTAssertEqual(model.sheetRoute?.id, expectedRouteID(for: today))
 
         model.sheetRoute = nil
-        model.presentRecoveryPromptIfNeeded(candidate: candidate)
+        XCTAssertFalse(
+            model.presentRecoveryPromptIfNeeded(
+                lastAutoPresentedDay: TestFactory.date(day: 20, hour: 8),
+                reference: today,
+                hasCandidates: true
+            )
+        )
+        XCTAssertNil(model.sheetRoute)
+    }
+
+    func testRecoveryPromptIsAutoPresentedAgainTheNextDay() {
+        let model = TodayScreenModel()
+        let tomorrow = TestFactory.date(day: 21)
+
+        XCTAssertTrue(
+            model.presentRecoveryPromptIfNeeded(
+                lastAutoPresentedDay: TestFactory.date(day: 20),
+                reference: tomorrow,
+                hasCandidates: true
+            )
+        )
+        XCTAssertEqual(model.sheetRoute?.id, expectedRouteID(for: tomorrow))
+    }
+
+    func testRecoveryPromptIsSkippedWithoutCandidates() {
+        let model = TodayScreenModel()
+
+        XCTAssertFalse(
+            model.presentRecoveryPromptIfNeeded(
+                lastAutoPresentedDay: nil,
+                reference: TestFactory.date(day: 20),
+                hasCandidates: false
+            )
+        )
         XCTAssertNil(model.sheetRoute)
     }
 
     func testRecoveryPromptIsSkippedWhenSomethingIsAlreadyPresented() {
         let model = TodayScreenModel()
-        let habit = TestFactory.habit()
-        let candidate = RecoveryPromptCandidate(
-            habit: habit,
-            date: TestFactory.date(day: 1),
-            isWeeklyFlexibleMiss: false
-        )
         model.coverRoute = .plan(.create)
 
-        model.presentRecoveryPromptIfNeeded(candidate: candidate)
+        XCTAssertFalse(
+            model.presentRecoveryPromptIfNeeded(
+                lastAutoPresentedDay: nil,
+                reference: TestFactory.date(day: 20),
+                hasCandidates: true
+            )
+        )
 
         XCTAssertNil(model.sheetRoute)
+    }
+
+    /// La ruta lleva la fecha y nada más: si su `id` dependiera de los candidatos, cambiaría al
+    /// contestar uno y SwiftUI reconstruiría la hoja a media navegación.
+    private func expectedRouteID(for reference: Date) -> String {
+        let day = AppCalendar.startOfDay(for: reference)
+        return "recoveryPrompt-\(day.timeIntervalSinceReferenceDate)"
     }
 
     // MARK: - Ayuda
@@ -100,12 +144,11 @@ final class TodayScreenModelTests: XCTestCase {
     /// la ayuda es perenne y puede esperar al próximo arranque.
     func testHelpCedesItsTurnToTheRecoveryPrompt() {
         let model = TodayScreenModel()
-        let candidate = RecoveryPromptCandidate(
-            habit: TestFactory.habit(),
-            date: TestFactory.date(day: 1),
-            isWeeklyFlexibleMiss: false
+        model.presentRecoveryPromptIfNeeded(
+            lastAutoPresentedDay: nil,
+            reference: TestFactory.date(day: 20),
+            hasCandidates: true
         )
-        model.presentRecoveryPromptIfNeeded(candidate: candidate)
         let presentedRoute = model.sheetRoute?.id
 
         XCTAssertFalse(model.presentHelpIfPossible())

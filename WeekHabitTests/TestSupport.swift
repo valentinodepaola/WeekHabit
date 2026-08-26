@@ -37,6 +37,7 @@ enum TestFactory {
     }
 
     static func habit(
+        title: String = "Test habit",
         schedule: HabitScheduleKind = .daily,
         activeDays: Set<Weekday>? = nil,
         targetDaysPerWeek: Int = 7,
@@ -47,7 +48,7 @@ enum TestFactory {
         createdAt: Date? = nil
     ) -> Habit {
         Habit(
-            title: "Test habit",
+            title: title,
             targetDaysPerWeek: targetDaysPerWeek,
             activeDaysOfWeek: activeDays ?? Set(Weekday.ordered),
             trackingKind: tracking,

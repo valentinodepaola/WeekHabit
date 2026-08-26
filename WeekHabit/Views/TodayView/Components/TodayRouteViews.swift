@@ -118,23 +118,16 @@ extension TodayView {
             .presentationDetents([.height(420), .medium])
             .presentationDragIndicator(.visible)
             .presentationBackground(AppColor.bgCanvas)
-        case .recoveryPrompt(let candidate):
-            RecoveryPromptView(
-                candidate: candidate,
+        case .recoveryPrompt:
+            // Los detents y el fondo los pone la hoja: dependen de si hay uno o varios
+            // pendientes, y ese conteo lo congela ella al abrirse.
+            RecoveryPromptSheet(
+                candidates: data.recoveryCandidates,
                 referenceDate: date,
-                onSave: { reason in
+                onSave: { candidate, reason in
                     persistRecoveryMiss(candidate, reason: reason)
-                },
-                onCreateMinimum: { title in
-                    createMinimumVersion(for: candidate, title: title)
-                },
-                onSkip: {
-                    persistRecoveryMiss(candidate, reason: nil)
                 }
             )
-            .presentationDetents([.height(570), .medium])
-            .presentationDragIndicator(.visible)
-            .presentationBackground(AppColor.bgCanvas)
         case .replacementPrompt(let breakHabit, let replacementHabit):
             ReplacementPromptView(
                 breakHabit: breakHabit,

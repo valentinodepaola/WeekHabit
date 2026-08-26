@@ -32,7 +32,6 @@ final class TodayScreenModel {
 
     var expandedPlans: Set<UUID> = []
     var latestFreezeExplainerMessage: String?
-    private(set) var didShowRecoveryPromptThisSession = false
 
     // MARK: - Confirmaciones como binding
 
@@ -87,17 +86,30 @@ final class TodayScreenModel {
         }
     }
 
-    /// Muestra el prompt de recuperación una vez por sesión, y solo con la pantalla libre.
-    func presentRecoveryPromptIfNeeded(candidate: @autoclosure () -> RecoveryPromptCandidate?) {
-        guard !didShowRecoveryPromptThisSession,
-              sheetRoute == nil,
-              coverRoute == nil,
-              let candidate = candidate() else {
-            return
+    /// Auto-presenta la hoja de recuperación una vez por **día natural**, y solo con la pantalla
+    /// libre. Devuelve si llegó a presentarla, para que la vista persista el día únicamente
+    /// cuando el usuario de verdad la vio.
+    ///
+    /// Antes era una bandera de sesión, pero vivía en el `@State` de `TodayView` y `TabView` lo
+    /// conserva: solo se recreaba en un arranque en frío, así que contestar cuatro pendientes
+    /// exigía cuatro relanzamientos. La fecha se guarda en la vista, que es quien tiene
+    /// `@AppStorage`; acá solo vive la decisión, que es lo que se puede probar.
+    @discardableResult
+    func presentRecoveryPromptIfNeeded(
+        lastAutoPresentedDay: Date?,
+        reference: Date,
+        hasCandidates: @autoclosure () -> Bool
+    ) -> Bool {
+        guard sheetRoute == nil, coverRoute == nil else { return false }
+
+        if let lastAutoPresentedDay, AppCalendar.isSameDay(lastAutoPresentedDay, reference) {
+            return false
         }
 
-        didShowRecoveryPromptThisSession = true
-        sheetRoute = .recoveryPrompt(candidate)
+        guard hasCandidates() else { return false }
+
+        sheetRoute = .recoveryPrompt(date: AppCalendar.startOfDay(for: reference))
+        return true
     }
 
     /// Muestra la propuesta de reemplazo una vez que la hoja actual terminó de cerrarse.

@@ -39,7 +39,7 @@ Además de la cobertura inicial, la suite ya cubre:
   - reutilización del plan existente en vez de crear un segundo;
   - alta y baja de hábitos de plantilla ligados al plan;
   - guardado diferido: las mutaciones quedan pendientes hasta `commit`.
-- `HabitTrackingService.commitRecoveryMiss`: aplica la versión mínima y persiste.
+- `HabitTrackingService.commitRecoveryMiss`: persiste de inmediato y no toca a los demás hábitos.
 - `PerformanceBaselineTests`, agregado en la Fase 2 del plan de mejoras. Ver abajo.
 - `AppCalendarTests`, agregado en la Fase 2.5: el calendario se cachea, y estas pruebas
   fijan que cachearlo no cambie lo que devuelven `startOfDay`, `weekday`, `weekRange` ni
@@ -54,7 +54,7 @@ Además de la cobertura inicial, la suite ya cubre:
     de los candidatos a sesión de enfoque conservando el orden, y estabilidad de la firma
     de sección.
   - `TodayScreenModelTests`: quién puede ocupar la pantalla y en qué orden — el hito tras su
-    retardo, el prompt de recuperación una vez por sesión, la ayuda cediéndole el turno, y las
+    retardo, la hoja de recuperación una vez por día natural, la ayuda cediéndole el turno, y las
     confirmaciones de borrado derivadas de su opcional.
 - `HelpCatalogTests`: el catálogo de la pantalla de ayuda. No prueba la vista, prueba el copy
   como dato: ids únicos, textos presentes, y —lo que de verdad protege— que la pantalla siga
@@ -235,7 +235,9 @@ regresión que devuelva un escaneo por día al dominio los rompe por orden de ma
 - El mínimo sostiene la racha sin contar como completado.
 - El descanso sostiene la racha sin incrementarla.
 - Un `.urge` no bloquea el prompt de recuperación.
-- Los hábitos flexibles evalúan recuperación sobre semanas cerradas.
+- Los hábitos flexibles evalúan recuperación solo sobre ayer, igual que el resto.
+- Un hábito flexible con su meta semanal cumplida no es candidato a recuperación.
+- El plural devuelve todos los pendientes de ayer, en el orden del receptor.
 
 ### Editor de planes
 

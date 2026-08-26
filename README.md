@@ -42,8 +42,9 @@ El código que app y widget comparten vive en `WeekHabitCore/`, una carpeta que 
 - **Vista de la semana** con grilla editable, registro retroactivo y consistencia.
 - **Rachas honestas**: desglose entre días hechos, descansos intencionales y comodines usados,
   más un comodín semanal que evita que un día perdido borre el progreso.
-- **Recuperación tras un fallo**: pregunta el motivo y ofrece crear una versión mínima en un
-  tap, en vez de romper la identidad que se está construyendo.
+- **Recuperación de lo que quedó sin marcar ayer**: una sola hoja con todos los pendientes
+  del día anterior, contestables uno por uno. Pregunta el motivo en vez de romper la
+  identidad que se está construyendo, y contestar siempre es opcional.
 - **Planes** que agrupan hábitos bajo una meta con motivación, resultado medible, hitos y
   cierre revisado al terminar.
 - **Sesiones de ritmo** con temporizador y secuencia ordenada de hábitos, arrastrable para

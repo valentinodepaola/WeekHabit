@@ -76,7 +76,6 @@ final class HabitDomainTests: XCTestCase {
 
         XCTAssertNotNil(candidate)
         XCTAssertTrue(AppCalendar.isSameDay(candidate?.date ?? reference, yesterday))
-        XCTAssertFalse(candidate?.isWeeklyFlexibleMiss ?? true)
     }
 
     func testFlexibleScheduleRecoveryPromptOnlyChecksYesterday() {
@@ -92,6 +91,50 @@ final class HabitDomainTests: XCTestCase {
 
         XCTAssertNotNil(candidate)
         XCTAssertTrue(AppCalendar.isSameDay(candidate?.date ?? reference, yesterday))
-        XCTAssertFalse(candidate?.isWeeklyFlexibleMiss ?? true)
+    }
+
+    /// La falla que abrió el issue: la hoja preguntaba por un solo hábito por arranque, elegido
+    /// por un `.max` que siempre empataba en fecha y terminaba premiando al `createdAt` mayor.
+    func testRecoveryPromptCandidatesReturnsEveryYesterdayMiss() {
+        let yesterday = TestFactory.date(day: 19)
+        let reference = TestFactory.date(day: 20)
+        let habits = (0..<3).map { _ in TestFactory.habit(createdAt: yesterday) }
+
+        let candidates = habits.recoveryPromptCandidates(reference: reference)
+
+        XCTAssertEqual(candidates.count, 3)
+        XCTAssertTrue(candidates.allSatisfy { AppCalendar.isSameDay($0.date, yesterday) })
+    }
+
+    /// El orden es el del receptor, que es el mismo con el que Hoy lista los hábitos: la lista se
+    /// lee como un espejo de ayer y no como un ranking por fecha de creación.
+    func testRecoveryPromptCandidatesPreserveReceiverOrder() {
+        let yesterday = TestFactory.date(day: 19)
+        let reference = TestFactory.date(day: 20)
+        let first = TestFactory.habit(title: "Leer", createdAt: yesterday)
+        let second = TestFactory.habit(title: "Correr", createdAt: yesterday)
+        let third = TestFactory.habit(title: "Meditar", createdAt: yesterday)
+
+        let candidates = [first, second, third].recoveryPromptCandidates(reference: reference)
+
+        XCTAssertEqual(candidates.map(\.habit.title), ["Leer", "Correr", "Meditar"])
+    }
+
+    /// `isScheduled(on:)` es verdadero todos los días para las agendas flexibles, así que sin
+    /// consultar la meta semanal un hábito ya cumplido aparecería en la lista acusando algo que
+    /// el usuario sí hizo.
+    func testFlexibleHabitThatMetWeeklyTargetIsNotACandidate() {
+        let reference = TestFactory.date(day: 20)
+        let habit = TestFactory.habit(
+            schedule: .timesPerWeek,
+            targetDaysPerWeek: 3,
+            createdAt: TestFactory.date(day: 16)
+        )
+        [16, 17, 18].forEach { day in
+            TestFactory.entry(.completed, habit: habit, date: TestFactory.date(day: day), value: 1)
+        }
+
+        XCTAssertNil(habit.recoveryPromptCandidate(before: reference))
+        XCTAssertTrue([habit].recoveryPromptCandidates(reference: reference).isEmpty)
     }
 }

@@ -25,7 +25,7 @@ enum TodaySheetRoute: Identifiable {
     case quantityLog(habit: Habit, date: Date)
     case slipLog(habit: Habit)
     case urgeLog(habit: Habit)
-    case recoveryPrompt(RecoveryPromptCandidate)
+    case recoveryPrompt(date: Date)
     case replacementPrompt(breakHabit: Habit, replacementHabit: Habit)
     case weeklyReview(weekStart: Date)
 
@@ -36,7 +36,8 @@ enum TodaySheetRoute: Identifiable {
         case .quantityLog(let habit, _): return "quantityLog-\(habit.id)"
         case .slipLog(let habit): return "slipLog-\(habit.id)"
         case .urgeLog(let habit): return "urgeLog-\(habit.id)"
-        case .recoveryPrompt(let candidate): return "recoveryPrompt-\(candidate.id)"
+        case .recoveryPrompt(let date):
+            return "recoveryPrompt-\(date.timeIntervalSinceReferenceDate)"
         case .replacementPrompt(let breakHabit, let replacementHabit):
             return "replacementPrompt-\(breakHabit.id)-\(replacementHabit.id)"
         case .weeklyReview(let weekStart):

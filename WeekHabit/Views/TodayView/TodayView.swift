@@ -29,11 +29,20 @@ struct TodayView: View {
     @AppStorage(OnceFlag.hasSeenFreezeExplainer.rawValue) var hasSeenFreezeExplainer = false
     @AppStorage(OnceFlag.hasSeenUrgeTooltip.rawValue) var hasSeenUrgeTooltip = false
     @AppStorage(OnceFlag.hasSeenTodayHelp.rawValue) var hasSeenTodayHelp = false
+    /// Último día en que la hoja de recuperación se auto-presentó, como intervalo desde la fecha
+    /// de referencia; `0` es "nunca". No cabe en `OnceFlag`: ese enum son banderas booleanas de
+    /// "ya lo vio una vez", y esta es una fecha que se renueva cada día.
+    @AppStorage("recoveryPromptLastAutoPresentedDay") var recoveryPromptLastAutoPresentedDay: Double = 0
 
     @State var model = TodayScreenModel()
     @Namespace var habitSectionNamespace
 
     var referenceDate: Date { Date() }
+
+    var lastRecoveryPromptDay: Date? {
+        guard recoveryPromptLastAutoPresentedDay > 0 else { return nil }
+        return Date(timeIntervalSinceReferenceDate: recoveryPromptLastAutoPresentedDay)
+    }
 
     var currentWeekday: Weekday {
         AppCalendar.weekday(of: referenceDate)
@@ -82,6 +91,16 @@ struct TodayView: View {
                         WeeklyReviewBanner(
                             weekRangeText: weekRangeText(for: weeklyReviewWeekStart),
                             onTap: { model.sheetRoute = .weeklyReview(weekStart: weeklyReviewWeekStart) }
+                        )
+                        .todayListRow(
+                            EdgeInsets(top: AppSpacing.s, leading: AppSpacing.l, bottom: AppSpacing.s, trailing: AppSpacing.l)
+                        )
+                    }
+
+                    if !data.recoveryCandidates.isEmpty {
+                        RecoveryPromptBanner(
+                            pendingCount: data.recoveryCandidates.count,
+                            onTap: { model.sheetRoute = .recoveryPrompt(date: AppCalendar.startOfDay(for: date)) }
                         )
                         .todayListRow(
                             EdgeInsets(top: AppSpacing.s, leading: AppSpacing.l, bottom: AppSpacing.s, trailing: AppSpacing.l)
@@ -174,9 +193,21 @@ struct TodayView: View {
             )
             .task {
                 applyWeeklyFreezes(reference: date)
-                model.presentRecoveryPromptIfNeeded(
-                    candidate: habits.recoveryPromptCandidate(reference: date)
-                )
+                // La hoja se auto-presenta una vez por día natural: si el usuario ya la cerró hoy,
+                // vuelve por el banner, no sola.
+                // Los candidatos se recalculan acá y no se leen de `data`: `data` es de este
+                // render, o sea de **antes** de `applyWeeklyFreezes`, y un día que el comodín
+                // acaba de cubrir ya no es un pendiente. Con el valor de `data` la hoja se abría
+                // con una lista vacía.
+                if model.presentRecoveryPromptIfNeeded(
+                    lastAutoPresentedDay: lastRecoveryPromptDay,
+                    reference: date,
+                    hasCandidates: !habits.recoveryPromptCandidates(reference: date).isEmpty
+                ) {
+                    recoveryPromptLastAutoPresentedDay = AppCalendar
+                        .startOfDay(for: date)
+                        .timeIntervalSinceReferenceDate
+                }
                 // La ayuda cede el turno: si la recuperación ya ocupó la hoja, el flag no se marca
                 // y vuelve a intentarlo en el próximo arranque.
                 if !hasSeenTodayHelp, model.presentHelpIfPossible() {
