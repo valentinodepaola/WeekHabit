@@ -15,8 +15,8 @@ xcodebuild -project WeekHabit.xcodeproj \
 
 ## Estado actual de la suite
 
-Última validación conocida (2026-08-24): **138 tests passed** en 21 suites, sobre
-`platform=iOS Simulator,name=iPhone 17 Pro`, sin fallos.
+Última validación conocida (2026-08-25): **156 tests passed** en 22 suites, sobre
+`platform=iOS Simulator,name=iPhone 17`, sin fallos.
 
 Además de la cobertura inicial, la suite ya cubre:
 
@@ -269,5 +269,6 @@ regresión que devuelva un escaneo por día al dominio los rompe por orden de ma
 | Blindaje y limpieza del seed de rendimiento | 113 |
 | Pantalla de ayuda — catálogo y precedencia de la hoja | 123 |
 | Widget de pendientes — `TodayWidgetSnapshot` y su resumen de una línea | 143 |
+| Widget "Año de constancia" — `YearHeatmapSnapshot` y `HeatmapMonthSegment` | 156 |
 
 El detalle de qué cerró cada fase vive en el historial de git.

@@ -56,11 +56,15 @@ struct ContentView: View {
                 .tag(2)
         }
         .tint(AppColor.accent)
-        // Sin esto, tocar el widget con la app suspendida en otra pestaña la reanudaría ahí:
-        // el usuario vendría de leer sus pendientes y aterrizaría en Insights.
+        // Sin esto, tocar un widget con la app suspendida en otra pestaña la reanudaría ahí.
+        // Cada widget lleva a donde el usuario puede actuar sobre lo que acaba de leer: los
+        // pendientes de hoy a Hoy, el mapa del año a Insights.
         .onOpenURL { url in
-            guard WidgetDeepLink.isToday(url) else { return }
-            selectedTab = 0
+            if WidgetDeepLink.isToday(url) {
+                selectedTab = 0
+            } else if WidgetDeepLink.isInsights(url) {
+                selectedTab = 2
+            }
         }
         .sheet(item: planPendingReviewBinding) { wrapper in
             PlanWrapUpView(plan: wrapper.plan)

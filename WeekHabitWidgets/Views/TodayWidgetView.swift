@@ -33,7 +33,7 @@ struct TodayWidgetView: View {
         case .snapshot(let snapshot):
             familyView(snapshot)
         case .unavailable:
-            TodayUnavailableView(isAccessory: isAccessory)
+            WidgetUnavailableView(isAccessory: isAccessory)
         }
     }
 
@@ -53,27 +53,5 @@ struct TodayWidgetView: View {
 
     private var isAccessory: Bool {
         family == .accessoryCircular || family == .accessoryRectangular
-    }
-}
-
-/// Estado honesto cuando no se pudo leer la base compartida.
-///
-/// No se dibuja un cero ni un anillo vacío: eso se vería igual que un día impecable. Se dice
-/// que falta abrir la app, que es lo único que resuelve el problema.
-struct TodayUnavailableView: View {
-    let isAccessory: Bool
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: AppSpacing.xs) {
-            Text(TodayWidgetCopy.unavailableHeadline)
-                .font(isAccessory ? .system(size: 15, weight: .semibold, design: .rounded) : AppFont.bodyEmphasis)
-                .foregroundStyle(isAccessory ? Color.primary : AppColor.textPrimary)
-
-            Text(TodayWidgetCopy.unavailableDetail)
-                .font(isAccessory ? .system(size: 11, design: .rounded) : AppFont.callout)
-                .foregroundStyle(isAccessory ? Color.primary.opacity(0.68) : AppColor.textSecondary)
-                .lineLimit(2)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }

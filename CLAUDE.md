@@ -154,17 +154,27 @@ Reminders:
 - Reminders are skipped for finished habits.
 - Reminder body prefers active plan motivation, then habit note, then fallback copy.
 
-Widget (`WeekHabitWidgets`):
+Widgets (`WeekHabitWidgets`):
 
-- One widget, four families: `accessoryCircular`, `accessoryRectangular`, `systemSmall`,
-  `systemMedium`. Read-only — it shows and opens the app, it does not log habits.
-- Everything it draws comes from `TodayWidgetSnapshot`, derived in one pass. Its four states
-  (`pending`, `allDone`, `rest`, `empty`) exist so an empty day never reads as a failure.
-- Copy lives in `TodayWidgetCopy`, never inline in a view.
-- The lock-screen families are **monochrome**: the system tints them, so they use no
-  `AppColor` token.
-- `WidgetRefreshService` reloads the timelines when the scene leaves `.active` — one place,
-  not one call per mutation.
+- **Two widgets, both read-only** — they show and open the app, they do not log habits. Both
+  derive everything they draw in one pass in a `WeekHabitCore/` value type (the views live in
+  the extension, out of the test target's reach), and both read the shared store read-only
+  (`WidgetStore` + `AppGroupStore.readOnlyConfiguration`). A read failure draws
+  `WidgetUnavailableView` ("open the app"), never a zero — or an empty grid — that would read
+  as a flawless day. Copy lives in a `*Copy` enum, never inline.
+- **Pendientes de hoy** — `accessoryCircular`, `accessoryRectangular`, `systemSmall`,
+  `systemMedium`. From `TodayWidgetSnapshot`; four states (`pending`, `allDone`, `rest`,
+  `empty`) so an empty day never reads as a failure. The lock-screen families are
+  **monochrome**: the system tints them, so they use no `AppColor` token. Opens Hoy.
+- **Año de constancia** — `systemLarge` only, **home screen only** (no `accessory*`). A
+  year-long GitHub-style grid, one square per day, aggregating every fixed-schedule habit; a
+  day's opacity is the fraction of that day's scheduled habits that were completed. From
+  `YearHeatmapSnapshot`: one `HabitDayIndex` per habit, four discrete `kind`s so "did nothing"
+  never looks like "nothing was due". Flexible habits are excluded; freeze/rest days drop out
+  of that habit's ratio. `HeatmapMonthSegment` (month grouping) is shared with the in-app
+  `LastWeeksHeatmapCard`. Opens Insights.
+- `WidgetRefreshService.reloadWidgets()` reloads all timelines when the scene leaves
+  `.active` — one place, not one call per mutation; a new widget inherits the refresh.
 
 Onboarding:
 

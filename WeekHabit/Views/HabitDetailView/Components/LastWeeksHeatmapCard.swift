@@ -128,34 +128,12 @@ private struct YearHeatmapBody: View {
     private let monthLabelSpacing: CGFloat = 6
     private let weekdayLabelWidth: CGFloat = 14
 
-    private var monthSegments: [MonthHeatmapSegment] {
-        let calendar = AppCalendar.current
-        var segments: [MonthHeatmapSegment] = []
-
-        for weekIndex in matrix.indices {
-            let weekStart = weekStarts.indices.contains(weekIndex)
-                ? weekStarts[weekIndex]
-                : Date()
-            let monthDate = calendar.date(byAdding: .day, value: 3, to: weekStart) ?? weekStart
-            let monthKey = monthIdentifier(for: monthDate)
-            let week = YearHeatmapWeek(id: weekIndex, states: matrix[weekIndex])
-
-            if let lastIndex = segments.indices.last, segments[lastIndex].id == monthKey {
-                segments[lastIndex].weeks.append(week)
-            } else {
-                segments.append(
-                    MonthHeatmapSegment(
-                        id: monthKey,
-                        label: monthLabel(for: monthDate),
-                        weeks: [week]
-                    )
-                )
-            }
-        }
-
-        return segments
+    /// La agrupación por mes se comparte con el widget "Año de constancia": ver
+    /// `HeatmapMonthSegment`.
+    private var monthSegments: [HeatmapMonthSegment] {
+        HeatmapMonthSegment.segments(forWeekStarts: weekStarts)
     }
-    
+
     var body: some View {
         HStack(alignment: .top, spacing: AppSpacing.s) {
             VStack(spacing: monthLabelSpacing) {
@@ -178,14 +156,16 @@ private struct YearHeatmapBody: View {
                                     .minimumScaleFactor(0.8)
 
                                 HStack(alignment: .top, spacing: cellSpacing) {
-                                    ForEach(segment.weeks) { week in
-                                        YearHeatmapWeekColumn(
-                                            weekStates: week.states,
-                                            cellSize: cellSize,
-                                            cellSpacing: cellSpacing,
-                                            color: color
-                                        )
-                                        .id(week.id)
+                                    ForEach(segment.weekIndices, id: \.self) { weekIndex in
+                                        if matrix.indices.contains(weekIndex) {
+                                            YearHeatmapWeekColumn(
+                                                weekStates: matrix[weekIndex],
+                                                cellSize: cellSize,
+                                                cellSpacing: cellSpacing,
+                                                color: color
+                                            )
+                                            .id(weekIndex)
+                                        }
                                     }
                                 }
                             }
@@ -204,15 +184,6 @@ private struct YearHeatmapBody: View {
         }
     }
 
-    private func monthIdentifier(for date: Date) -> String {
-        let components = AppCalendar.current.dateComponents([.year, .month], from: date)
-        return "\(components.year ?? 0)-\(components.month ?? 0)"
-    }
-
-    private func monthLabel(for date: Date) -> String {
-        AppFormatters.uppercasedString(from: date, format: "MMM")
-    }
-    
     private var weekdayLabels: some View {
         VStack(alignment: .center, spacing: cellSpacing) {
             ForEach(Weekday.ordered) { weekday in
@@ -226,17 +197,6 @@ private struct YearHeatmapBody: View {
         }
         .accessibilityHidden(true)
     }
-}
-
-private struct MonthHeatmapSegment: Identifiable {
-    let id: String
-    let label: String
-    var weeks: [YearHeatmapWeek]
-}
-
-private struct YearHeatmapWeek: Identifiable {
-    let id: Int
-    let states: [CellState]
 }
 
 private struct YearHeatmapWeekColumn: View {
