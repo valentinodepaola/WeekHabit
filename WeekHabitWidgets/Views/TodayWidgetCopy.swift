@@ -85,9 +85,6 @@ enum TodayWidgetCopy {
         return snapshot.hiddenPendingCount == 1 ? "y 1 más" : "y \(snapshot.hiddenPendingCount) más"
     }
 
-    static let unavailableHeadline = "Abre WeekHabit"
-    static let unavailableDetail = "Para poner al día lo que ves aquí"
-
     // MARK: - Privados
 
     /// Cuántos caracteres entran en la tercera línea de `accessoryRectangular`.

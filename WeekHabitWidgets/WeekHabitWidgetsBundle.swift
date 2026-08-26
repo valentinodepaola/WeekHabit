@@ -10,5 +10,6 @@ import WidgetKit
 struct WeekHabitWidgetsBundle: WidgetBundle {
     var body: some Widget {
         TodayWidget()
+        YearHeatmapWidget()
     }
 }

@@ -16,6 +16,19 @@ import SwiftData
 enum WidgetStore {
 
     static func loadSnapshot(referenceDate: Date = .now) throws -> TodayWidgetSnapshot {
+        TodayWidgetSnapshot(habits: try loadHabits(), referenceDate: referenceDate)
+    }
+
+    static func loadYearHeatmap(
+        referenceDate: Date = .now,
+        weeks: Int = YearHeatmapSnapshot.defaultWeeks
+    ) throws -> YearHeatmapSnapshot {
+        YearHeatmapSnapshot(habits: try loadHabits(), referenceDate: referenceDate, weeks: weeks)
+    }
+
+    /// Fetch compartido por los dos widgets, para que no puedan desincronizarse en qué leen ni
+    /// en qué orden.
+    private static func loadHabits() throws -> [Habit] {
         let schema = Schema(versionedSchema: SchemaV17.self)
         let container = try ModelContainer(
             for: schema,
@@ -28,8 +41,6 @@ enum WidgetStore {
         let descriptor = FetchDescriptor<Habit>(
             sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
         )
-        let habits = try context.fetch(descriptor)
-
-        return TodayWidgetSnapshot(habits: habits, referenceDate: referenceDate)
+        return try context.fetch(descriptor)
     }
 }

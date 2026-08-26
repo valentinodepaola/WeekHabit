@@ -17,8 +17,17 @@ enum WidgetDeepLink {
     /// leer en el widget.
     static let today = URL(string: "\(scheme)://today")
 
+    /// Lleva a Insights, que es donde el ritmo a largo plazo se explica. El widget "Año de
+    /// constancia" habla de eso, no de lo que falta hoy.
+    static let insights = URL(string: "\(scheme)://insights")
+
     /// True si la URL recibida es la del widget de hoy.
     static func isToday(_ url: URL) -> Bool {
         url.scheme == scheme && url.host == "today"
+    }
+
+    /// True si la URL recibida es la del widget del año.
+    static func isInsights(_ url: URL) -> Bool {
+        url.scheme == scheme && url.host == "insights"
     }
 }
