@@ -61,6 +61,9 @@ El código que app y widget comparten vive en `WeekHabitCore/`, una carpeta que 
   lista lo que empuja a actuar. En vez de traer al usuario, la lista va a donde ya mira.
   Distingue cuatro estados —con pendientes, día cerrado, descanso y sin hábitos— para que un
   día sin nada que hacer no se muestre como un cero que parece un fallo.
+- **Widget "Año de constancia"** en la pantalla de inicio (`systemLarge`): una grilla anual,
+  un cuadro por día, agregando todos los hábitos de día fijo. La opacidad de cada día es la
+  fracción de lo programado ese día que se cumplió, así se ve de un vistazo cómo viene el año.
 
 ## Cómo correrlo
 

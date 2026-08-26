@@ -77,7 +77,7 @@ WeekHabit/                  Solo la app
 WeekHabitWidgets/           Extensión de widget
   Views/                    Una vista por familia + copy y muestras
 Config/                     Entitlements del App Group e Info.plist de la extensión
-WeekHabitTests/             21 suites contra un ModelContainer en memoria
+WeekHabitTests/             23 suites contra un ModelContainer en memoria
 scripts/                    Seed de rendimiento y exportación de iconos
 ```
 
@@ -219,23 +219,51 @@ Reglas:
 - **No editar schemas viejos** para representar formas nuevas.
 - Un campo persistido nuevo también toca inicializadores y llamadores.
 
-## Widget de pendientes
+## Widgets
 
-La extensión `WeekHabitWidgets` muestra lo que falta hoy sin abrir la app, que es el problema
-que originó la feature: el usuario se olvida de entrar, y al entrar es cuando ver la lista lo
-empuja a actuar. En vez de traerlo, la lista va a donde ya mira.
+La extensión `WeekHabitWidgets` tiene dos widgets. Los dos son de **solo lectura** —muestran y
+abren la app, no marcan hábitos—, los dos derivan todo lo que dibujan en un value type de
+`WeekHabitCore/` para que `WeekHabitTests` lo alcance (la vista vive en la extensión, fuera del
+target de pruebas), y los dos leen la base compartida por el App Group
+`group.com.valentino.WeekHabit`: la app es la única que migra el esquema, la extensión abre el
+contenedor de solo lectura (`WidgetStore` + `AppGroupStore.readOnlyConfiguration`). Un fallo de
+lectura se dibuja con honestidad (`WidgetUnavailableView`: "abre la app"), nunca como un cero
+—o una grilla vacía— que se leería como un día impecable. El refresco está centralizado en
+`WidgetRefreshService.reloadWidgets()`, que se llama al salir de primer plano y cubre los dos
+con `reloadAllTimelines()`; cada timeline además se reconstruye sola a la medianoche siguiente.
+
+### Pendientes de hoy
+
+Muestra lo que falta hoy sin abrir la app, que es el problema que originó la feature: el
+usuario se olvida de entrar, y al entrar es cuando ver la lista lo empuja a actuar. En vez de
+traerlo, la lista va a donde ya mira.
 
 - **Familias:** `accessoryCircular` y `accessoryRectangular` en la pantalla de bloqueo,
   `systemSmall` y `systemMedium` en la de inicio.
 - **Cuatro estados:** con pendientes, día cerrado, descanso y sin hábitos. Son cuatro para que
   un día sin pendientes no se muestre como un cero: descansar es una decisión, no una falla.
-- **Solo lectura.** Tocarlo abre la app en Hoy; no se marcan hábitos desde el widget.
 - **Datos:** `TodayWidgetSnapshot` deriva todo en una pasada desde los hábitos, reutilizando
-  `todayPartition(on:)`. Vive en `WeekHabitCore/` para que las pruebas lo alcancen.
-- **Refresco:** al salir de primer plano, vía `WidgetRefreshService`; y por sí solo al cruzar
-  la medianoche.
-- La base se comparte por el App Group `group.com.valentino.WeekHabit`. La app es la única que
-  migra el esquema; la extensión abre el contenedor de solo lectura.
+  `todayPartition(on:)`. Tocarlo abre la app en Hoy (`WidgetDeepLink.today`).
+
+### Año de constancia
+
+Responde "cómo viene mi constancia" desde el inicio: una grilla anual estilo GitHub, un cuadro
+por día, **agregando todos los hábitos de día fijo**. La opacidad de cada día es la fracción de
+lo programado ese día que se cumplió.
+
+- **Familia:** solo `systemLarge`, solo pantalla de inicio. El año se parte en dos tiras de 26
+  semanas apiladas para que la celda siga siendo legible; sin `ScrollView`.
+- **Datos:** `YearHeatmapSnapshot` (`WeekHabitCore/`) construye un `HabitDayIndex` por hábito y
+  lo consulta en las 52×7 fechas. Por día produce `scheduledCount`, `completedCount`,
+  `intensity` y un `kind`: `.done(level:)` en cuatro baldes discretos, `.scheduledNothingDone`,
+  `.nothingScheduled` y `.outOfRange` (antes del primer hábito o en el futuro). Así "no hice
+  nada" nunca se ve igual que "no había nada".
+- **Exclusiones:** los hábitos flexibles (`.timesPerWeek`) no entran —darían siete días al
+  100% por un registro—; un día protegido por comodín o marcado como descanso sale del
+  numerador y del denominador de ese hábito.
+- **Layout compartido:** `HeatmapMonthSegment` agrupa las semanas por mes; lo usan este widget
+  y el heatmap anual in-app (`LastWeeksHeatmapCard`) para leerse como el mismo objeto.
+- Tocarlo abre la app en Insights (`WidgetDeepLink.insights`).
 
 ## Lógica de dominio
 
