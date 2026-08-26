@@ -115,7 +115,7 @@ struct YearHeatmapLargeView: View {
     /// Deriva el lado de la celda para que las dos tiras entren en el espacio real, acotado a
     /// un rango legible. Así funciona igual en un iPhone SE y en un iPad sin números mágicos.
     private func cellSize(in size: CGSize) -> CGFloat {
-        let widthBudget = size.width - weekdayGutter
+        let widthBudget = size.width - weekdayGutter - AppSpacing.s
             - CGFloat(columnsPerStrip - 1) * cellSpacing
             - CGFloat(maxMonthGaps) * monthSpacing
         let fromWidth = widthBudget / CGFloat(columnsPerStrip)

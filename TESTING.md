@@ -15,7 +15,7 @@ xcodebuild -project WeekHabit.xcodeproj \
 
 ## Estado actual de la suite
 
-Última validación conocida (2026-08-25): **156 tests passed** en 23 suites, sobre
+Última validación conocida (2026-08-25): **156 tests passed** en 22 suites, sobre
 `platform=iOS Simulator,name=iPhone 17`, sin fallos.
 
 Además de la cobertura inicial, la suite ya cubre:

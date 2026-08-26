@@ -24,7 +24,7 @@ struct WidgetUnavailableView: View {
                 .foregroundStyle(isAccessory ? Color.primary.opacity(0.68) : AppColor.textSecondary)
                 .lineLimit(2)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 

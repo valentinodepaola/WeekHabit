@@ -63,8 +63,6 @@ struct YearHeatmapSnapshot: Equatable {
     /// Promedio de `intensity` sobre `trackedDays`. Es la métrica del encabezado.
     let completionRate: Double
 
-    var weekStarts: [Date] { weeks.map(\.start) }
-
     // MARK: - Derivación
 
     init(
@@ -212,9 +210,9 @@ struct YearHeatmapSnapshot: Equatable {
 
     // MARK: - Privados
 
-    /// Cuatro niveles discretos y no una opacidad continua: a ~9 pt de celda, dos días con
-    /// 60% y 70% se ven iguales; los pasos discretos se distinguen. Nunca nivel 0 para
-    /// `intensity > 0` —cualquier avance real tiene que verse—.
+    /// Cero más tres niveles discretos de `.done`, y no una opacidad continua: a ~6 pt de
+    /// celda, dos días con 60% y 70% se ven iguales; los pasos discretos se distinguen. Nunca
+    /// nivel 0 para `intensity > 0` —cualquier avance real tiene que verse—.
     private static func kind(scheduled: Int, intensity: Double) -> YearHeatmapDayKind {
         guard scheduled > 0 else { return .nothingScheduled }
         guard intensity > 0 else { return .scheduledNothingDone }

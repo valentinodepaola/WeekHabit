@@ -24,6 +24,7 @@ struct YearHeatmapWidgetView: View {
             YearHeatmapLargeView(snapshot: snapshot)
         case .unavailable:
             WidgetUnavailableView()
+                .frame(maxHeight: .infinity, alignment: .topLeading)
         }
     }
 }

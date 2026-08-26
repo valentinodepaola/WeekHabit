@@ -32,7 +32,12 @@ enum YearHeatmapAppearance {
 
     /// Un borde tenue —y solo él— separa "programado y no hice nada" de "no había nada": a
     /// tamaño de celda, un contorno se lee antes que un segundo tono de gris casi igual.
+    ///
+    /// `textTertiary` y no `divider`: contra `bgSunken`, `divider` da 1.1:1 en modo claro
+    /// —invisible a este tamaño de celda—, mientras que `textTertiary` da 2.6:1 en claro y
+    /// 3.8:1 en oscuro. `divider` es el token "correcto" para una separación estructural, pero
+    /// acá el borde tiene que competir visualmente con el propio fondo, no solo delimitarlo.
     static func border(for kind: YearHeatmapDayKind) -> Color {
-        kind == .scheduledNothingDone ? AppColor.divider : .clear
+        kind == .scheduledNothingDone ? AppColor.textTertiary : .clear
     }
 }

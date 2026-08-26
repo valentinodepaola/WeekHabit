@@ -77,7 +77,7 @@ WeekHabit/                  Solo la app
 WeekHabitWidgets/           Extensión de widget
   Views/                    Una vista por familia + copy y muestras
 Config/                     Entitlements del App Group e Info.plist de la extensión
-WeekHabitTests/             23 suites contra un ModelContainer en memoria
+WeekHabitTests/             22 suites contra un ModelContainer en memoria
 scripts/                    Seed de rendimiento y exportación de iconos
 ```
 
@@ -255,7 +255,7 @@ lo programado ese día que se cumplió.
   semanas apiladas para que la celda siga siendo legible; sin `ScrollView`.
 - **Datos:** `YearHeatmapSnapshot` (`WeekHabitCore/`) construye un `HabitDayIndex` por hábito y
   lo consulta en las 52×7 fechas. Por día produce `scheduledCount`, `completedCount`,
-  `intensity` y un `kind`: `.done(level:)` en cuatro baldes discretos, `.scheduledNothingDone`,
+  `intensity` y un `kind`: `.done(level:)` en tres baldes discretos, `.scheduledNothingDone`,
   `.nothingScheduled` y `.outOfRange` (antes del primer hábito o en el futuro). Así "no hice
   nada" nunca se ve igual que "no había nada".
 - **Exclusiones:** los hábitos flexibles (`.timesPerWeek`) no entran —darían siete días al
