@@ -15,7 +15,7 @@ xcodebuild -project WeekHabit.xcodeproj \
 
 ## Estado actual de la suite
 
-Última validación conocida (2026-09-23): **173 tests passed** en 23 suites, sobre
+Última validación conocida (2026-09-23): **183 tests passed** en 24 suites, sobre
 `platform=iOS Simulator,name=iPhone 17`, sin fallos.
 
 Además de la cobertura inicial, la suite ya cubre:
@@ -82,6 +82,9 @@ Además de la cobertura inicial, la suite ya cubre:
   un hábito flexible con la meta semanal cumplida o uno terminado no cuentan. También el copy
   (singular/plural, "y N más", "la 1:00") y cuándo la sugerencia de hora tiene datos que la
   sostengan.
+- `FocusSessionActivityTests`: lo que arma la Live Activity de la Sesión de ritmo —hora de fin,
+  fechas del `ContentState`, conteo y copy compartido— y que una sesión a la que la app vuelve
+  tarde se cierre a su hora y no a la del regreso.
 
 ## Línea base de rendimiento
 
@@ -276,5 +279,6 @@ regresión que devuelva un escaneo por día al dominio los rompe por orden de ma
 | Widget de pendientes — `TodayWidgetSnapshot` y su resumen de una línea | 143 |
 | Widget "Año de constancia" — `YearHeatmapSnapshot` y `HeatmapMonthSegment` | 156 |
 | Aviso diario — `dailyNoticeOccurrences` y la sugerencia de hora | 173 |
+| Live Activity de la Sesión de ritmo — atributos, hora de fin y cierre a su hora | 183 |
 
 El detalle de qué cerró cada fase vive en el historial de git.

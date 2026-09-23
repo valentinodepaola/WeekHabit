@@ -232,6 +232,10 @@ lectura se dibuja con honestidad (`WidgetUnavailableView`: "abre la app"), nunca
 `WidgetRefreshService.reloadWidgets()`, que se llama al salir de primer plano y cubre los dos
 con `reloadAllTimelines()`; cada timeline además se reconstruye sola a la medianoche siguiente.
 
+La extensión aloja además la **Live Activity de la Sesión de ritmo** (`FocusSessionLiveActivity`),
+que no es un widget con timeline sino una actividad que la app abre y cierra; se describe en
+`FocusSessionView`.
+
 ### Pendientes de hoy
 
 Muestra lo que falta hoy sin abrir la app, que es el problema que originó la feature: el
@@ -313,6 +317,7 @@ Trece servicios en `Services/`, todos `enum` sin estado con métodos `static` qu
 | `OnboardingSetupService` | Plan inicial y hábitos de plantilla del onboarding |
 | `HabitReminderService` | Notificaciones locales por hábito y weekday activo |
 | `DailyNoticeService` | Aviso diario Time Sensitive con lo que queda del día (no persiste) |
+| `FocusSessionActivityService` | Live Activity y aviso de fin de la Sesión de ritmo (no persiste) |
 | `PerformanceSeedService` | **Solo DEBUG.** Crear y borrar el dataset sintético de 5 hábitos × 365 días |
 
 `HabitReminderService` arma el cuerpo del recordatorio con la motivación del plan activo,
@@ -425,6 +430,16 @@ Flujo full-screen con tres fases: `setup` (duración y hábitos), `running` (tim
 proporcional a su tiempo, se toca para ajustar la duración y se arrastra desde una manija para
 reordenar. El modelo vive en `FocusSequence`. Al completar la revisión se crean o actualizan
 `HabitEntry` con `source: .focusSession`, `completedAt` real y `focusSessionID`.
+
+Mientras corre, `FocusSessionActivityService` muestra una **Live Activity** en la pantalla
+bloqueada y la Isla Dinámica (`FocusSessionLiveActivity`, en la extensión) y, si la sesión tiene
+duración, agenda un aviso Time Sensitive para la hora de fin. Con el teléfono bloqueado la app
+no corre: la cuenta regresiva la anima el sistema con las fechas del `ContentState`, y al pasar
+la hora de fin la actividad dice "Terminó". Las dos cosas se van al pasar a revisión o al
+cancelar, y `RootView` limpia al arrancar las que quedaron de una app cerrada a la fuerza. Si
+la app vuelve tarde, la sesión igual se cierra a su hora (`reviewReference(observedAt:)`): de
+ahí sale el `completedAt` de los hábitos. Con el interruptor de silencio activado el aviso de
+fin vibra pero no suena.
 
 ### `HabitDetailView`
 

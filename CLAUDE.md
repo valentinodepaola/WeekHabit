@@ -186,6 +186,15 @@ Widgets (`WeekHabitWidgets`):
   `LastWeeksHeatmapCard`. Opens Insights.
 - `WidgetRefreshService.reloadWidgets()` reloads all timelines when the scene leaves
   `.active` — one place, not one call per mutation; a new widget inherits the refresh.
+- **Live Activity de la Sesión de ritmo** — `FocusSessionLiveActivity` (lock screen + Dynamic
+  Island), registered in the same bundle. The contract `FocusSessionActivityAttributes` lives in
+  `WeekHabitCore/Models/Support/` (`nonisolated`: the system encodes it off the main thread).
+  The app can't update it while locked, so everything that moves is drawn by the system from
+  the `ContentState` dates (`Text(timerInterval:)`, `ProgressView(timerInterval:)`); past
+  `staleDate` it reads "Terminó". `FocusSessionActivityService` starts it with the session,
+  ends it on review/cancel, and schedules a Time Sensitive end notice for timed sessions
+  (it vibrates but does not ring with the silent switch on). `RootView` calls `endOrphans()`
+  at launch. No button and no `widgetURL`: tapping opens the app where the session is.
 
 Onboarding:
 

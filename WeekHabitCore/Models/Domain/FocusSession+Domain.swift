@@ -15,6 +15,21 @@ extension FocusSession {
         return Swift.max(0, durationSeconds - elapsedSeconds(reference: reference))
     }
 
+    /// Cuándo termina una sesión con duración. `nil` en una sesión libre.
+    var scheduledEndDate: Date? {
+        durationSeconds.map { startedAt.addingTimeInterval(TimeInterval($0)) }
+    }
+
+    /// El momento en que la sesión pasa a revisión.
+    ///
+    /// Si la app vuelve de segundo plano después del fin, la vista se entera tarde. La sesión
+    /// igual terminó a su hora, y es esa la que tiene que quedar en `endedAt`: de ahí sale el
+    /// `completedAt` de los hábitos que se marquen.
+    func reviewReference(observedAt date: Date) -> Date {
+        guard let scheduledEndDate else { return date }
+        return Swift.min(date, scheduledEndDate)
+    }
+
     func progress(reference: Date = .now) -> Double? {
         guard let durationSeconds, durationSeconds > 0 else { return nil }
         return Swift.min(1, Double(elapsedSeconds(reference: reference)) / Double(durationSeconds))

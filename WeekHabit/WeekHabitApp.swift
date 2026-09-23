@@ -60,6 +60,9 @@ private struct RootView: View {
             }
         }
         .task {
+            // Al arrancar ninguna vista tiene una sesión de ritmo en memoria: si la app se cerró
+            // a la fuerza con una en marcha, su Live Activity y su aviso quedaron huérfanos.
+            await FocusSessionActivityService.endOrphans()
             await refreshHabitRemindersIfNeeded()
         }
         .onChange(of: scenePhase) { oldValue, newValue in
