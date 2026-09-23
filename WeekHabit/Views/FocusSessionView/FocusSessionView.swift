@@ -186,7 +186,10 @@ struct FocusSessionView: View {
         VStack(alignment: .leading, spacing: AppSpacing.l) {
             FocusTimerRing(
                 timeText: runningTimeText,
-                subtitle: selectedHabitIDs.count == 1 ? "1 hábito en enfoque" : "\(selectedHabitIDs.count) hábitos en enfoque",
+                subtitle: FocusSessionCopy.focusSubtitle(
+                    habitCount: selectedHabitIDs.count,
+                    isSequenced: isSequenced
+                ),
                 remainingFraction: remainingFraction
             )
             .padding(.vertical, AppSpacing.l)
@@ -288,8 +291,9 @@ struct FocusSessionView: View {
     private func startSession() {
         let startedAt = Date()
 
+        let startedSession: FocusSession
         do {
-            session = try FocusSessionEditorService.start(
+            startedSession = try FocusSessionEditorService.start(
                 selectedHabitIDs: selectedHabitIDs,
                 durationSeconds: sessionDurationSeconds,
                 startedAt: startedAt,
@@ -300,7 +304,13 @@ struct FocusSessionView: View {
             return
         }
 
+        session = startedSession
         now = startedAt
+
+        let isSequenced = isSequenced
+        Task {
+            await FocusSessionActivityService.start(session: startedSession, isSequenced: isSequenced)
+        }
 
         withAnimation(AppMotion.respectful(AppMotion.smooth, reduceMotion)) {
             phase = .running
@@ -309,7 +319,8 @@ struct FocusSessionView: View {
 
     private func finishSession(reference: Date) {
         guard phase == .running else { return }
-        session?.finishForReview(reference: reference)
+        session?.finishForReview(reference: session?.reviewReference(observedAt: reference) ?? reference)
+        endActivity()
         AppHaptics.play(.focusClosed)
 
         // Cierre invertido: todos preseleccionados, el usuario desmarca lo que faltó.
@@ -386,7 +397,17 @@ struct FocusSessionView: View {
 
     private func cancelAndDismiss() {
         session?.cancel(reference: .now)
+        endActivity()
         dismiss()
+    }
+
+    /// La Live Activity y el aviso de fin sobran en cuanto el usuario está de vuelta en la
+    /// sesión: al pasar a revisión o al cancelar.
+    private func endActivity() {
+        guard let sessionID = session?.id else { return }
+        Task {
+            await FocusSessionActivityService.end(sessionID: sessionID)
+        }
     }
 }
 
