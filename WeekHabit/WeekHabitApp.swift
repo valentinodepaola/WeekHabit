@@ -41,6 +41,9 @@ private struct RootView: View {
     @AppStorage("weeklyReviewWeekdayRaw") private var weeklyReviewWeekdayRaw: Int = Weekday.sunday.rawValue
     @AppStorage("weeklyReviewHour") private var weeklyReviewHour: Int = 19
     @AppStorage("weeklyReviewMinute") private var weeklyReviewMinute: Int = 0
+    @AppStorage(DailyNoticeService.isEnabledKey) private var isDailyNoticeEnabled = false
+    @AppStorage(DailyNoticeService.hourKey) private var dailyNoticeHour = DailyNotice.defaultHour
+    @AppStorage(DailyNoticeService.minuteKey) private var dailyNoticeMinute = DailyNotice.defaultMinute
     @Environment(\.scenePhase) private var scenePhase
 
     @Query(sort: \Habit.createdAt, order: .reverse)
@@ -69,6 +72,11 @@ private struct RootView: View {
                 // de la app. Ver `WidgetRefreshService` para por qué se refresca acá y no en
                 // cada mutación.
                 WidgetRefreshService.reloadWidgets()
+                // Y el aviso diario se recalcula con lo registrado en esta visita: si el día
+                // quedó cerrado, el de hoy se cancela antes de que suene.
+                Task {
+                    await refreshDailyNoticeIfNeeded()
+                }
             }
         }
     }
@@ -80,6 +88,19 @@ private struct RootView: View {
             weekday: Weekday(rawValue: weeklyReviewWeekdayRaw) ?? .sunday,
             hour: weeklyReviewHour,
             minute: weeklyReviewMinute
+        )
+        await refreshDailyNoticeIfNeeded()
+    }
+
+    private func refreshDailyNoticeIfNeeded() async {
+        guard hasCompletedAppOnboarding else { return }
+        // En segundo plano no hay dónde mostrar el error: la pantalla de avisos lo muestra
+        // cuando el usuario cambia algo, que es cuando puede hacer algo al respecto.
+        try? await DailyNoticeService.refresh(
+            habits: habits,
+            isEnabled: isDailyNoticeEnabled,
+            hour: dailyNoticeHour,
+            minute: dailyNoticeMinute
         )
     }
 }
