@@ -48,7 +48,8 @@ El código que app y widget comparten vive en `WeekHabitCore/`, una carpeta que 
 - **Planes** que agrupan hábitos bajo una meta con motivación, resultado medible, hitos y
   cierre revisado al terminar.
 - **Sesiones de ritmo** con temporizador y secuencia ordenada de hábitos, arrastrable para
-  reordenar.
+  reordenar. Mientras corren, la cuenta regresiva sigue visible en la pantalla bloqueada y en
+  la Isla Dinámica (Live Activity), y al terminar llega un aviso urgente.
 - **Insights de 30 días**: consistencia, confianza del ritmo, mejor día, hora punta, hábito que
   necesita atención, horas pico de impulsos y experimentos de ritmo de 7 días con aplicar,
   mantener o revertir.
