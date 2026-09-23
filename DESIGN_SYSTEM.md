@@ -292,13 +292,17 @@ Icon badge = círculo 88×88 con fondo `accentMuted`, icono `36pt light` `accent
 
 ### 10.14 `WHCircleButton`
 
-[WHCircleButton.swift](WeekHabit/Views/Components/WHCircleButton.swift). Botón circular **secundario** de los encabezados: `bgElevated` + borde `divider`, icono en `textPrimary`. 40pt por defecto (`size` ajustable). Usado en el header de Semana (leyenda, ‹ ›) y en el de Hoy (ayuda). El "+" relleno de acento **no** es este componente: sigue inline en cada header porque es la acción principal de su pantalla.
+[WHCircleButton.swift](WeekHabit/Views/Components/WHCircleButton.swift). Botón circular **secundario** de los encabezados: `bgElevated` + borde `divider`, icono en `textPrimary`. 40pt por defecto (`size` ajustable). Usado en el header de Semana (leyenda, ‹ ›) y en el de Hoy (aviso diario y ayuda). El "+" relleno de acento **no** es este componente: sigue inline en cada header porque es la acción principal de su pantalla.
 
-### 10.15 `IconButton` (legacy)
+### 10.15 `NotificationPermissionBanner`
+
+[NotificationPermissionBanner.swift](WeekHabit/Views/Components/NotificationPermissionBanner.swift). Banner de permiso de notificaciones: ícono en círculo tintado, título, explicación y un `WHButton` secundario compacto, sobre `bgSunken` al 60% con radio `m`. Cubre los estados `.notDetermined` (pedir permiso, tinte accent) y `.denied` (abrir Ajustes con `openSettings()`, tinte warning). Lo usan `HabitReminderSection` y `DailyNoticeView`; no se envuelve en otra `WHCard` porque ya trae su fondo.
+
+### 10.16 `IconButton` (legacy)
 
 [IconButton.swift](WeekHabit/Views/Components/IconButton.swift). FAB circular o pill ancha — usado en `HabitDetailView` topBar. **Para nuevos botones usa `WHButton`**; este componente queda por compatibilidad.
 
-### 10.16 Componentes específicos de feature
+### 10.17 Componentes específicos de feature
 
 Cuando un componente sólo aplica a un feature, vive bajo `Views/<Feature>View/Components/`. Catálogo destacado:
 

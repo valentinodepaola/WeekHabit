@@ -15,7 +15,7 @@ xcodebuild -project WeekHabit.xcodeproj \
 
 ## Estado actual de la suite
 
-Última validación conocida (2026-08-25): **156 tests passed** en 22 suites, sobre
+Última validación conocida (2026-09-23): **173 tests passed** en 23 suites, sobre
 `platform=iOS Simulator,name=iPhone 17`, sin fallos.
 
 Además de la cobertura inicial, la suite ya cubre:
@@ -77,6 +77,11 @@ Además de la cobertura inicial, la suite ya cubre:
   archivan y cuáles no, que el plan quede marcado como revisado, y que **el cierre quede
   escrito y no pendiente** (`hasChanges == false`). Esa última es la que importa: mientras
   `reviewedAt` sea nil, `ContentView` vuelve a abrir la hoja de cierre.
+- `DailyNoticeTests`: la regla de silencio del aviso diario. No hay aviso para un día cerrado,
+  descansado o sin nada programado, ni para hoy si la hora ya pasó; la ventana cubre 7 días;
+  un hábito flexible con la meta semanal cumplida o uno terminado no cuentan. También el copy
+  (singular/plural, "y N más", "la 1:00") y cuándo la sugerencia de hora tiene datos que la
+  sostengan.
 
 ## Línea base de rendimiento
 
@@ -270,5 +275,6 @@ regresión que devuelva un escaneo por día al dominio los rompe por orden de ma
 | Pantalla de ayuda — catálogo y precedencia de la hoja | 123 |
 | Widget de pendientes — `TodayWidgetSnapshot` y su resumen de una línea | 143 |
 | Widget "Año de constancia" — `YearHeatmapSnapshot` y `HeatmapMonthSegment` | 156 |
+| Aviso diario — `dailyNoticeOccurrences` y la sugerencia de hora | 173 |
 
 El detalle de qué cerró cada fase vive en el historial de git.

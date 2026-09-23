@@ -121,6 +121,7 @@ Common flows:
 
 - `TodayView` creates/edits/deletes habits and plans.
 - `TodayView` presents `CreateHabitView`, `PlanFlowView`, `CreatePlanView`, and `FocusSessionView`.
+- The bell in `TodayHeaderSection` opens `DailyNoticeView` (the daily notice settings) as a sheet.
 - `WeekView` opens `HabitDetailView` and logs manual/retroactive entries.
 - `InsightsView` edits suggested habits and manages rhythm experiments.
 - `HabitDetailView` presents `CreateHabitView` for editing.
@@ -153,6 +154,16 @@ Reminders:
 - `HabitReminderService` schedules local notifications per active weekday.
 - Reminders are skipped for finished habits.
 - Reminder body prefers active plan motivation, then habit note, then fallback copy.
+- **Daily notice** (`DailyNoticeService`, "te quedan N hábitos hoy") is opt-in, independent of
+  any habit, and the **only** `.timeSensitive` notification (entitlement in
+  `Config/WeekHabit.entitlements`): per-habit reminders keep the default level on purpose.
+  It is scheduled as one-off requests for the next 7 days (`daily-notice:<yyyy-MM-dd>`), not
+  a repeating one, so a closed day stays silent. `RootView` recomputes it on entering **and**
+  leaving `.active`; since logging only happens in-app, that keeps every count exact. The
+  rule lives in `dailyNoticeOccurrences` (`Domain/HabitCollection+DailyNotice.swift`).
+- The notice hour is always the user's: the picker starts at a fixed 20:00, and the
+  `peakHour()`-based suggestion only shows next to it, with enough data, as a tap-to-apply hint.
+- Preferences are `@AppStorage` (keys in `DailyNoticeService`), like the weekly review.
 
 Widgets (`WeekHabitWidgets`):
 
