@@ -312,11 +312,21 @@ Trece servicios en `Services/`, todos `enum` sin estado con métodos `static` qu
 | `HabitExperimentService` | Iniciar, mantener y revertir experimentos |
 | `OnboardingSetupService` | Plan inicial y hábitos de plantilla del onboarding |
 | `HabitReminderService` | Notificaciones locales por hábito y weekday activo |
+| `DailyNoticeService` | Aviso diario Time Sensitive con lo que queda del día (no persiste) |
 | `PerformanceSeedService` | **Solo DEBUG.** Crear y borrar el dataset sintético de 5 hábitos × 365 días |
 
 `HabitReminderService` arma el cuerpo del recordatorio con la motivación del plan activo,
 si no la nota del hábito, si no un texto de respaldo, y no programa nada para hábitos
 terminados.
+
+`DailyNoticeService` agenda el **aviso diario**: "te quedan N hábitos hoy", con hasta dos
+nombres. Es opt-in, no depende de ningún hábito y es la única notificación `.timeSensitive`
+de la app, así que llega aunque haya un modo de concentración activo. Para que no reclame un
+día ya cerrado se agenda como avisos sueltos para los próximos 7 días, no como uno repetido,
+y `RootView` los recalcula al entrar y al salir de primer plano. Como registrar solo se puede
+desde la app, ese refresco basta para que el conteo sea exacto. Si el usuario no abre la app
+en más de 7 días, el aviso deja de llegar. La regla vive en `dailyNoticeOccurrences`
+(`HabitCollection+DailyNotice.swift`), con pruebas en `DailyNoticeTests`.
 
 ## Pantallas y flujos
 
@@ -421,6 +431,15 @@ reordenar. El modelo vive en `FocusSequence`. Al completar la revisión se crean
 Detalle analítico: experimento activo o pendiente, racha actual y mejor racha, desglose honesto
 de la racha (días hechos, descansos intencionales y comodines usados), progreso semanal, dots
 de la semana, heatmap de 52 semanas, información de cantidad y edición del hábito.
+
+### `DailyNoticeView`
+
+Se abre desde la campana del header de Hoy. Tiene el mismo flujo de permiso de tres estados que
+el recordatorio por hábito (`NotificationPermissionBanner`, compartido), un toggle y la hora.
+El selector arranca siempre en 20:00. Si hay datos suficientes (readiness de Insights y al
+menos 5 completados confiables en la franja), aparece al lado la franja en que el usuario
+suele completar sus hábitos, con un botón para usarla. Si "Notificaciones urgentes" está
+apagado en Ajustes, lo dice.
 
 ### `WeeklyReviewView`
 

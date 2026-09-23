@@ -54,6 +54,9 @@ El código que app y widget comparten vive en `WeekHabitCore/`, una carpeta que 
   mantener o revertir.
 - **Revisión semanal** con una decisión por hábito y una reflexión escrita.
 - **Recordatorios locales** por día activo, con la motivación del plan como cuerpo.
+- **Aviso diario** opcional con lo que queda del día ("te quedan 3 hábitos hoy"), a la hora
+  que elige el usuario. Es la única notificación urgente de la app, así que llega aunque haya
+  un modo de concentración activo, y no llega si el día ya está cerrado.
 - **Una hoja de ayuda** en Hoy, que explica las cinco formas de registrar el día que no se
   descubren solas: versión mínima, descanso, comodín, slip e impulso.
 - **Widget de pendientes** en la pantalla de bloqueo y en la de inicio, en cuatro tamaños.

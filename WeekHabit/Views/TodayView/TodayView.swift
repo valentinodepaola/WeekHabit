@@ -77,6 +77,7 @@ struct TodayView: View {
                 List {
                     TodayHeaderSection(
                         dateTitle: currentDateTitle,
+                        onNoticesTap: { model.sheetRoute = .dailyNotice },
                         onHelpTap: {
                             hasSeenTodayHelp = true
                             model.sheetRoute = .help
