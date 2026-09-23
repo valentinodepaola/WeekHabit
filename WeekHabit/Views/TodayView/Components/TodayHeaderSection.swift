@@ -7,6 +7,7 @@ import SwiftUI
 
 struct TodayHeaderSection: View {
     let dateTitle: String
+    let onNoticesTap: () -> Void
     let onHelpTap: () -> Void
     let onCreateTap: () -> Void
 
@@ -25,6 +26,9 @@ struct TodayHeaderSection: View {
             .frame(maxWidth: .infinity, alignment: .leading)
 
             HStack(spacing: AppSpacing.s) {
+                WHCircleButton(systemName: "bell", action: onNoticesTap)
+                    .accessibilityLabel("Aviso diario")
+
                 WHCircleButton(systemName: "questionmark", action: onHelpTap)
                     .accessibilityLabel("Qué puedo hacer")
 
