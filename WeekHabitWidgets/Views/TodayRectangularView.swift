@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import WidgetKit
 
 /// `accessoryRectangular` — 172 × 76 en la pantalla de bloqueo.
 ///
@@ -45,8 +46,6 @@ struct TodayRectangularView: View {
 }
 
 #if DEBUG
-import WidgetKit
-
 #Preview("Rectangular · pendientes", as: .accessoryRectangular) {
     TodayWidget()
 } timeline: {
