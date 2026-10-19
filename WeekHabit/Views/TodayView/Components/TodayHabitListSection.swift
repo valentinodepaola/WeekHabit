@@ -174,6 +174,9 @@ struct TodayHabitListSection: View {
             habit: habit,
             metadata: habit.todayCompletionMetadata(reference: referenceDate),
             isMinimumCompleted: habit.isMinimumCompleted(on: referenceDate) && !habit.isCompleted(on: referenceDate),
+            weeklyRestNotice: habit.restsOnMetWeeklyTarget(on: referenceDate)
+                ? habit.weeklyTargetRestNotice(reference: referenceDate)
+                : nil,
             onOpenDetail: { actions.openDetail(habit) }
         ) {
             actions.toggleCompletion(habit)

@@ -26,9 +26,15 @@ struct StreakBreakdown {
 
 extension Habit {
     func currentStreak(reference: Date = .now) -> Int {
+        streak(endingAt: reference, reference: reference)
+    }
+
+    /// Cuenta hacia atrás desde `endingAt`. `reference` es el día real de la consulta: decide
+    /// qué semana sigue en curso para las agendas flexibles, aunque el conteo empiece antes.
+    private func streak(endingAt start: Date, reference: Date) -> Int {
         let index = HabitDayIndex(self)
         var streak = 0
-        var cursor = AppCalendar.startOfDay(for: reference)
+        var cursor = AppCalendar.startOfDay(for: start)
         let calendar = AppCalendar.current
         var scannedDays = 0
 
@@ -38,7 +44,7 @@ extension Habit {
                     streak += 1
                 } else if index.isMinimumCompleted(on: cursor) {
                     streak += 1
-                } else if !index.preservesStreakWithoutCompletion(on: cursor) {
+                } else if !preservesStreak(on: cursor, reference: reference, index: index) {
                     break
                 }
             }
@@ -71,7 +77,7 @@ extension Habit {
                     skippedDays += 1
                 } else if index.isFreezeProtected(on: cursor) {
                     frozenDays += 1
-                } else {
+                } else if !isCoveredByWeeklyTarget(on: cursor, reference: reference, index: index) {
                     break
                 }
             }
@@ -103,7 +109,7 @@ extension Habit {
                 to: AppCalendar.startOfDay(for: reference)
             ) ?? reference
 
-            return currentStreak(reference: yesterday)
+            return streak(endingAt: yesterday, reference: reference)
         }
 
         return currentStreak(reference: reference)
@@ -129,7 +135,7 @@ extension Habit {
                 } else if index.isMinimumCompleted(on: cursor) {
                     running += 1
                     best = max(best, running)
-                } else if index.preservesStreakWithoutCompletion(on: cursor) {
+                } else if preservesStreak(on: cursor, reference: reference, index: index) {
                     best = max(best, running)
                 } else {
                     running = 0
@@ -148,6 +154,32 @@ extension Habit {
 
     func preservesStreakWithoutCompletion(on date: Date) -> Bool {
         isSkipped(on: date) || isFreezeProtected(on: date)
+    }
+
+    /// En una agenda flexible la meta es de la semana, no del día: un día sin marca no rompe
+    /// la racha si su semana cumplió la meta o, en la semana en curso, si todavía se puede
+    /// cumplir. Una semana que terminó sin la meta sí la rompe, igual que en el resto.
+    func isCoveredByWeeklyTarget(on date: Date, reference: Date, index: HabitDayIndex) -> Bool {
+        guard isFlexibleSchedule else { return false }
+
+        let completed = completedDaysThisWeek(reference: date, index: index)
+        if completed >= targetDaysPerWeek { return true }
+
+        let week = AppCalendar.weekRange(containing: date)
+        let referenceDay = AppCalendar.startOfDay(for: reference)
+        guard week.contains(referenceDay) else { return false }
+
+        let remaining = weekDays(in: week)
+            .filter { $0 >= referenceDay && isLoggable(on: $0) && !index.isCompleted(on: $0) }
+            .count
+        return completed + remaining >= targetDaysPerWeek
+    }
+
+    /// Un día sin marca que no rompe la racha: descanso, comodín o día que la meta semanal
+    /// de una agenda flexible no necesitaba.
+    private func preservesStreak(on date: Date, reference: Date, index: HabitDayIndex) -> Bool {
+        index.preservesStreakWithoutCompletion(on: date)
+            || isCoveredByWeeklyTarget(on: date, reference: reference, index: index)
     }
 }
 

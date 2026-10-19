@@ -137,4 +137,98 @@ final class HabitDomainTests: XCTestCase {
         XCTAssertNil(habit.recoveryPromptCandidate(before: reference))
         XCTAssertTrue([habit].recoveryPromptCandidates(reference: reference).isEmpty)
     }
+
+    // MARK: - Rachas de agendas flexibles
+
+    /// El caso del issue 56: 6 de 6 de lunes a sábado, el domingo sobra. El lunes la racha
+    /// tiene que seguir, porque la semana cumplió su meta.
+    func testFlexibleHabitKeepsStreakAfterMeetingWeeklyTargetWithASpareDay() {
+        let habit = TestFactory.habit(
+            schedule: .timesPerWeek,
+            targetDaysPerWeek: 6,
+            createdAt: TestFactory.date(day: 1)
+        )
+        (1...6).forEach { day in
+            TestFactory.entry(.completed, habit: habit, date: TestFactory.date(day: day), value: 1)
+        }
+        let sunday = TestFactory.date(day: 7)
+        let nextMonday = TestFactory.date(day: 8)
+
+        XCTAssertEqual(habit.currentStreak(reference: sunday), 6)
+        XCTAssertEqual(habit.displayStreak(reference: nextMonday), 6)
+    }
+
+    func testFlexibleHabitRestDayMidWeekKeepsStreakWhileTargetIsReachable() {
+        let habit = TestFactory.habit(
+            schedule: .timesPerWeek,
+            targetDaysPerWeek: 3,
+            createdAt: TestFactory.date(day: 1)
+        )
+        [1, 3, 4].forEach { day in
+            TestFactory.entry(.completed, habit: habit, date: TestFactory.date(day: day), value: 1)
+        }
+
+        XCTAssertEqual(habit.currentStreak(reference: TestFactory.date(day: 4)), 3)
+    }
+
+    /// Fuera de alcance del issue: una semana que terminó sin la meta sigue cortando la racha.
+    func testFlexibleWeekThatMissedItsTargetStillBreaksStreak() {
+        let habit = TestFactory.habit(
+            schedule: .timesPerWeek,
+            targetDaysPerWeek: 3,
+            createdAt: TestFactory.date(day: 1)
+        )
+        [1, 8, 9].forEach { day in
+            TestFactory.entry(.completed, habit: habit, date: TestFactory.date(day: day), value: 1)
+        }
+
+        XCTAssertEqual(habit.currentStreak(reference: TestFactory.date(day: 9)), 2)
+    }
+
+    func testFlexibleCurrentWeekBreaksStreakOnceTargetIsOutOfReach() {
+        let habit = TestFactory.habit(
+            schedule: .timesPerWeek,
+            targetDaysPerWeek: 6,
+            createdAt: TestFactory.date(day: 1)
+        )
+        [1, 4].forEach { day in
+            TestFactory.entry(.completed, habit: habit, date: TestFactory.date(day: day), value: 1)
+        }
+
+        // El jueves solo quedan viernes, sábado y domingo: 2 + 3 no llegan a 6.
+        XCTAssertEqual(habit.currentStreak(reference: TestFactory.date(day: 4)), 1)
+    }
+
+    /// `displayStreak` cuenta desde ayer cuando hoy sigue abierto, pero ayer ya pasó: no
+    /// puede contarse como un día que todavía alcanza para la meta.
+    func testDisplayStreakDoesNotTreatYesterdayAsStillReachable() {
+        let habit = TestFactory.habit(
+            schedule: .timesPerWeek,
+            targetDaysPerWeek: 6,
+            createdAt: TestFactory.date(day: 1)
+        )
+        (1...4).forEach { day in
+            TestFactory.entry(.completed, habit: habit, date: TestFactory.date(day: day), value: 1)
+        }
+
+        // Domingo sin marcar: 4 hechos + el domingo no llegan a 6.
+        XCTAssertEqual(habit.displayStreak(reference: TestFactory.date(day: 7)), 0)
+    }
+
+    func testFlexibleSpareDaysKeepBestStreakAndBreakdownAcrossWeeks() {
+        let habit = TestFactory.habit(
+            schedule: .timesPerWeek,
+            targetDaysPerWeek: 6,
+            createdAt: TestFactory.date(day: 1)
+        )
+        (Array(1...6) + Array(8...13)).forEach { day in
+            TestFactory.entry(.completed, habit: habit, date: TestFactory.date(day: day), value: 1)
+        }
+        let secondSunday = TestFactory.date(day: 14)
+
+        XCTAssertEqual(habit.bestStreak(reference: secondSunday), 12)
+        let breakdown = habit.currentStreakBreakdown(reference: secondSunday)
+        XCTAssertEqual(breakdown.completedDays, 12)
+        XCTAssertEqual(breakdown.protectedDays, 0)
+    }
 }
