@@ -144,17 +144,6 @@ enum IdentityReinforcementCopy {
         }
     }
 
-    static func longestBannerCaption(for habit: Habit?, allSameStreak: Bool) -> String {
-        if allSameStreak { return "TODOS EN RITMO" }
-
-        switch habit?.direction {
-        case .break:
-            return "ELIGIENDO DISTINTO"
-        case .build, .none:
-            return "QUIÉN ESTÁS SIENDO"
-        }
-    }
-
     static func longestBannerTitle(for habit: Habit?, streakDays: Int, allSameStreak: Bool) -> String {
         let dayWord = streakDays == 1 ? "día" : "días"
         if allSameStreak {
