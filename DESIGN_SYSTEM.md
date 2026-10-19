@@ -122,8 +122,8 @@ Escala 4pt en [AppSpacing.swift](WeekHabitCore/Extensions/AppSpacing.swift). **T
 
 | Token | pt | Uso |
 |---|---|---|
-| `xs` | 6 | Chips internos pequeños. |
-| `s` | 10 | Badges, toggles de día, celdas de la semana (`WeekGridCell`), toggle de completado en `TodayHabitComponent`. |
+| `xs` | 6 | Chips internos pequeños, casilla de completado de las filas de Hoy. |
+| `s` | 10 | Badges, toggles de día, celdas de la semana (`WeekGridCell`). |
 | `m` | 14 | Inputs, cards pequeñas, banners (review banner, freeze banner). |
 | `l` | 20 | **Cards principales** (default de `WHCard`), filas de hábito, plan accordion, StatTile. |
 | `xl` | 28 | Sheets, hero containers, TabBar. |
@@ -429,7 +429,7 @@ Patrón triple en filas (Today, Week, plan rows):
 
 ### 13.5 Filas / cards con identidad de hábito
 
-Patrón estándar en `TodayHabitComponent`, `WeekGridRow`, `PlanAccordion`:
+Patrón estándar en `WeekGridRow`, `PlanAccordion` (las filas de Hoy van en grupo, ver 13.6):
 
 - Fondo: `AppColor.bgElevated`.
 - Radio: `AppRadius.l` (`continuous`).
@@ -438,12 +438,25 @@ Patrón estándar en `TodayHabitComponent`, `WeekGridRow`, `PlanAccordion`:
 - Elevation: `.low`.
 - **Acento vertical** opcional (plan accordion, week row): `Rectangle().fill(habitColor).frame(width: 4)` como overlay leading.
 
-### 13.6 Toggle de completado (`TodayHabitComponent`)
+### 13.6 Filas de hábito en Hoy (`TodayHabitGroup`)
 
-- Square 34pt con `RoundedRectangle(cornerRadius: AppRadius.s)`.
-- Llenado `habit.habitColor` al completar; `opacity(0.55)` para versión mínima; `opacity(0.10)` para skipped.
-- Press feedback: scale 0.92 vía `DragGesture(minimumDistance: 0)` (no `ButtonStyle` porque convive con `Menu` de versión mínima).
-- Símbolo: `checkmark` (build) / `xmark` (break) / `pause.circle.fill` (skipped) con `.symbolEffect(.bounce, value:)`.
+Cada sección de Hoy (pendientes, completados, slips, descansos) se lee como **un solo grupo**:
+una tarjeta con separadores entre filas, sin aire entre ellas. Cada hábito sigue siendo su
+propia fila de la `List`, porque las acciones al deslizar solo funcionan así; el grupo lo
+dibuja el fondo de cada fila con `todayGroupedRow(_:tone:)`.
+
+- Fondo `bgElevated` (completados: `TodayGroupTone.muted`), radio `AppRadius.l` solo en la
+  primera y la última fila, borde 1pt `divider` y separador que empieza después de la casilla.
+- La lista no separa sus filas (`listRowSpacing(0)`): el aire entre bloques lo pone cada fila
+  suelta en `todayListRow`, y el de después de un grupo, su última fila.
+- Pendiente: ~64pt. Casilla de 26pt (`AppRadius.xs`) con zona de toque de 44, borde `divider`
+  vacía, ícono del hábito de 30pt y la racha al final de la línea del subtítulo.
+- Completado: ~52pt y una línea. Título tachado y, a la derecha, `todayCompletionDetail`: la
+  hora (con reloj si vino de una sesión de ritmo), "Registrado después", "Versión mínima" o
+  "Meta semanal · N de M". Lo que no quedó hecho por completo hoy no se tacha.
+- Casilla: llenado `habitColor` al completar; `opacity(0.55)` para versión mínima; `opacity(0.12)`
+  con `pause.fill` para descanso; en cantidades, el borde se llena con el avance del día.
+  Press feedback: scale 0.92 vía `DragGesture(minimumDistance: 0)`.
 
 ### 13.7 Estados visuales del Week grid
 
