@@ -9,7 +9,8 @@ import SwiftUI
 
 struct TodayCompletedHabitRow: View {
     let habit: Habit
-    let metadata: String
+    /// Lo que va a la derecha: la hora, o por qué está en completados.
+    let detail: TodayCompletionDetail
     var isMinimumCompleted: Bool = false
     /// Presente cuando el hábito descansa porque ya cumplió su meta semanal: el toque muestra
     /// este aviso en lugar de registrar.
@@ -23,19 +24,22 @@ struct TodayCompletedHabitRow: View {
         weeklyRestNotice != nil
     }
 
+    /// Fila de un completado dentro de su grupo en Hoy: una sola línea. El fondo lo pone el grupo.
     var body: some View {
-        HStack(alignment: .center, spacing: AppSpacing.m) {
+        HStack(alignment: .center, spacing: AppSpacing.xs) {
             Button(action: handleToggle) {
                 Image(systemName: "checkmark")
-                    .font(.system(size: 14, weight: .bold))
+                    .font(.system(size: 12, weight: .bold))
                     .foregroundStyle(restsOnWeeklyTarget ? habit.habitColor : .white)
-                    .frame(width: 32, height: 32)
+                    .frame(width: 24, height: 24)
                     .background(toggleFill)
-                    .clipShape(RoundedRectangle(cornerRadius: AppRadius.s, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: AppRadius.xs, style: .continuous))
                     .overlay {
-                        RoundedRectangle(cornerRadius: AppRadius.s, style: .continuous)
+                        RoundedRectangle(cornerRadius: AppRadius.xs, style: .continuous)
                             .strokeBorder(toggleBorder, lineWidth: 1)
                     }
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel(toggleAccessibilityLabel)
@@ -50,23 +54,29 @@ struct TodayCompletedHabitRow: View {
                     .presentationCompactAdaptation(.popover)
             }
 
-            HStack(spacing: AppSpacing.m) {
-                VStack(alignment: .leading, spacing: AppSpacing.xxs) {
-                    Text(habit.title)
-                        .font(AppFont.bodyEmphasis)
-                        .foregroundStyle(isMinimumCompleted ? AppColor.textPrimary.opacity(0.72) : AppColor.textSecondary)
-                        .strikethrough(!isMinimumCompleted && !restsOnWeeklyTarget, color: AppColor.textSecondary)
-                        .lineLimit(1)
+            HStack(spacing: AppSpacing.s) {
+                Text(habit.title)
+                    .font(AppFont.bodyEmphasis)
+                    .foregroundStyle(isStruckThrough ? AppColor.textSecondary : AppColor.textPrimary.opacity(0.72))
+                    .strikethrough(isStruckThrough, color: AppColor.textSecondary)
+                    .lineLimit(1)
 
-                    Text(metadata)
-                        .font(AppFont.label)
-                        .foregroundStyle(AppColor.textTertiary)
-                        .lineLimit(1)
+                Spacer(minLength: AppSpacing.s)
+
+                HStack(spacing: AppSpacing.xs) {
+                    if detail.isFocusSession {
+                        Image(systemName: "timer")
+                            .font(.system(size: 10, weight: .semibold))
+                            .accessibilityLabel("Sesión de ritmo")
+                    }
+
+                    Text(detail.text)
+                        .monospacedDigit()
                 }
-
-                Spacer(minLength: 0)
-
-                completedIconBadge
+                .font(AppFont.label)
+                .foregroundStyle(AppColor.textTertiary)
+                .lineLimit(1)
+                .fixedSize()
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
@@ -77,18 +87,15 @@ struct TodayCompletedHabitRow: View {
             .accessibilityAddTraits(.isButton)
             .accessibilityHint("Ver detalle")
         }
-        .padding(.horizontal, AppSpacing.l)
-        .padding(.vertical, AppSpacing.m)
-        .frame(maxWidth: .infinity, minHeight: 68, alignment: .leading)
-        .background(isMinimumCompleted ? AppColor.bgElevated.opacity(0.88) : AppColor.bgElevated.opacity(0.72))
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous)
-                .strokeBorder(
-                    isMinimumCompleted ? habit.habitColor.opacity(0.28) : AppColor.divider.opacity(0.7),
-                    lineWidth: 1
-                )
-        }
+        .padding(.leading, AppSpacing.xs)
+        .padding(.trailing, AppSpacing.l)
+        .padding(.vertical, AppSpacing.xs)
+        .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
+    }
+
+    /// Solo se tacha lo que quedó hecho hoy por completo.
+    private var isStruckThrough: Bool {
+        !isMinimumCompleted && !restsOnWeeklyTarget
     }
 
     private func handleToggle() {
@@ -119,18 +126,5 @@ struct TodayCompletedHabitRow: View {
             return "\(habit.title): meta de la semana cumplida"
         }
         return isMinimumCompleted ? "Marcar completo \(habit.title)" : "Desmarcar \(habit.title)"
-    }
-
-    private var completedIconBadge: some View {
-        ZStack {
-            Circle()
-                .fill(habit.habitColor.opacity(0.14))
-
-            Image(systemName: habit.iconName)
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(habit.habitColor)
-        }
-        .frame(width: 38, height: 38)
-        .accessibilityHidden(true)
     }
 }

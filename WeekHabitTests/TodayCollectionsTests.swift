@@ -289,8 +289,8 @@ final class TodayCollectionsTests: XCTestCase {
             "Ya cumpliste 6 de 6 esta semana. Vuelve a contar el lunes."
         )
         XCTAssertEqual(
-            habit.todayCompletionMetadata(reference: sunday),
-            "Meta de la semana cumplida · 6 de 6"
+            habit.todayCompletionDetail(reference: sunday),
+            TodayCompletionDetail(text: "Meta semanal · 6 de 6")
         )
     }
 
@@ -327,5 +327,61 @@ final class TodayCollectionsTests: XCTestCase {
 
         XCTAssertFalse(habit.restsOnMetWeeklyTarget(on: nextMonday))
         XCTAssertTrue([habit].pendingToday(on: nextMonday).contains { $0 === habit })
+    }
+
+    // MARK: - Fila de completados
+
+    func testCompletionDetailShowsTheTimeOfATodayMark() {
+        let day = TestFactory.date(day: 3, hour: 7)
+        let habit = TestFactory.habit(createdAt: TestFactory.date(day: 1))
+        TestFactory.entry(.completed, habit: habit, date: day, value: 1)
+
+        XCTAssertEqual(habit.todayCompletionDetail(reference: day), TodayCompletionDetail(text: "07:00"))
+    }
+
+    func testCompletionDetailMarksAFocusSession() {
+        let day = TestFactory.date(day: 3, hour: 17)
+        let habit = TestFactory.habit(createdAt: TestFactory.date(day: 1))
+        TestFactory.entry(.completed, habit: habit, date: day, value: 1).source = .focusSession
+
+        XCTAssertEqual(
+            habit.todayCompletionDetail(reference: day),
+            TodayCompletionDetail(text: "17:00", isFocusSession: true)
+        )
+    }
+
+    /// Lo marcado desde Semana dice que se registró después en lugar de una hora.
+    func testCompletionDetailNamesAManualMark() {
+        let day = TestFactory.date(day: 3)
+        let habit = TestFactory.habit(createdAt: TestFactory.date(day: 1))
+        TestFactory.entry(.completed, habit: habit, date: day, value: 1).source = .manual
+
+        XCTAssertEqual(habit.todayCompletionDetail(reference: day), TodayCompletionDetail(text: "Registrado después"))
+    }
+
+    func testCompletionDetailNamesTheMinimumVersion() {
+        let day = TestFactory.date(day: 3)
+        let habit = TestFactory.habit(createdAt: TestFactory.date(day: 1))
+        habit.minimumViableTitle = "1 página"
+        TestFactory.entry(.minimum, habit: habit, date: day)
+
+        XCTAssertEqual(habit.todayCompletionDetail(reference: day), TodayCompletionDetail(text: "Versión mínima"))
+    }
+
+    // MARK: - Avance de cantidad
+
+    func testQuantityProgressTextOnlyShowsAPartialDay() {
+        let day = TestFactory.date(day: 3)
+        let habit = TestFactory.habit(tracking: .quantity, targetValue: 5, createdAt: TestFactory.date(day: 1))
+        habit.measurementUnit = .minutes
+
+        XCTAssertNil(habit.todayQuantityProgressText(on: day))
+
+        TestFactory.entry(.completed, habit: habit, date: day, value: 2)
+        XCTAssertEqual(habit.todayQuantityProgressText(on: day), "2 de 5 min")
+        XCTAssertEqual(habit.todayQuantityProgress(on: day), 0.4, accuracy: 0.001)
+
+        TestFactory.entry(.completed, habit: habit, date: day, value: 3)
+        XCTAssertNil(habit.todayQuantityProgressText(on: day))
     }
 }

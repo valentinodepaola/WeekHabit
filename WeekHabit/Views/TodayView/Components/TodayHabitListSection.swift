@@ -68,8 +68,16 @@ struct TodayHabitListSection: View {
                     EdgeInsets(top: AppSpacing.s, leading: AppSpacing.l, bottom: 0, trailing: AppSpacing.l)
                 )
 
-            ForEach(pendingHabits) { habit in
+            // Fuera del grupo y arriba de él: dentro rompería el ritmo de las filas y se
+            // deslizaría junto con una de ellas.
+            if showsUrgeExplainer, let urgeHabit = firstBreakHabitForUrgeExplainer {
+                TodayUrgeExplainer(color: urgeHabit.habitColor, onDismiss: onDismissUrgeExplainer)
+                    .todayListRow()
+            }
+
+            ForEach(Array(pendingHabits.enumerated()), id: \.element.id) { index, habit in
                 pendingRow(habit)
+                    .todayGroupedRow(TodayGroupPosition(index: index, count: pendingHabits.count))
             }
 
             FocusSessionLauncherCard(
@@ -83,8 +91,9 @@ struct TodayHabitListSection: View {
                     .padding(.top, AppSpacing.xl)
                     .todayListRow()
 
-                ForEach(completedHabits) { habit in
+                ForEach(Array(completedHabits.enumerated()), id: \.element.id) { index, habit in
                     completedRow(habit)
+                        .todayGroupedRow(TodayGroupPosition(index: index, count: completedHabits.count), tone: .muted)
                 }
             }
 
@@ -93,8 +102,9 @@ struct TodayHabitListSection: View {
                     .padding(.top, AppSpacing.xl)
                     .todayListRow()
 
-                ForEach(slippedHabits) { habit in
+                ForEach(Array(slippedHabits.enumerated()), id: \.element.id) { index, habit in
                     slipRow(habit)
+                        .todayGroupedRow(TodayGroupPosition(index: index, count: slippedHabits.count))
                 }
             }
 
@@ -103,8 +113,9 @@ struct TodayHabitListSection: View {
                     .padding(.top, AppSpacing.xl)
                     .todayListRow()
 
-                ForEach(skippedHabits) { habit in
+                ForEach(Array(skippedHabits.enumerated()), id: \.element.id) { index, habit in
                     skippedRow(habit)
+                        .todayGroupedRow(TodayGroupPosition(index: index, count: skippedHabits.count))
                 }
             }
 
@@ -133,14 +144,11 @@ struct TodayHabitListSection: View {
             onUrge: habit.isBreakHabit ? { actions.openUrgeLog(habit) } : nil,
             onSlip: habit.isBreakHabit ? { actions.openSlipLog(habit) } : nil,
             onMinimum: { actions.markMinimum(habit) },
-            onOpenDetail: { actions.openDetail(habit) },
-            showsUrgeExplainer: showsUrgeExplainer && firstBreakHabitIDForUrgeExplainer == habit.id,
-            onDismissUrgeExplainer: onDismissUrgeExplainer
+            onOpenDetail: { actions.openDetail(habit) }
         ) {
             actions.toggleCompletion(habit)
         }
         .todayHabitSectionMotion(habit.id, in: namespace, reduceMotion: reduceMotion)
-        .todayListRow()
         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
             Button {
                 actions.toggleRest(habit)
@@ -165,14 +173,14 @@ struct TodayHabitListSection: View {
         }
     }
 
-    private var firstBreakHabitIDForUrgeExplainer: UUID? {
-        pendingHabits.first(where: { $0.isBreakHabit })?.id
+    private var firstBreakHabitForUrgeExplainer: Habit? {
+        pendingHabits.first(where: { $0.isBreakHabit })
     }
 
     private func completedRow(_ habit: Habit) -> some View {
         TodayCompletedHabitRow(
             habit: habit,
-            metadata: habit.todayCompletionMetadata(reference: referenceDate),
+            detail: habit.todayCompletionDetail(reference: referenceDate),
             isMinimumCompleted: habit.isMinimumCompleted(on: referenceDate) && !habit.isCompleted(on: referenceDate),
             weeklyRestNotice: habit.restsOnMetWeeklyTarget(on: referenceDate)
                 ? habit.weeklyTargetRestNotice(reference: referenceDate)
@@ -182,7 +190,6 @@ struct TodayHabitListSection: View {
             actions.toggleCompletion(habit)
         }
         .todayHabitSectionMotion(habit.id, in: namespace, reduceMotion: reduceMotion)
-        .todayListRow()
         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
             Button {
                 actions.toggleRest(habit)
@@ -216,7 +223,6 @@ struct TodayHabitListSection: View {
             onOpenDetail: { actions.openDetail(habit) }
         )
         .todayHabitSectionMotion(habit.id, in: namespace, reduceMotion: reduceMotion)
-        .todayListRow()
         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
             Button {
                 actions.undoSlip(habit)
@@ -249,7 +255,6 @@ struct TodayHabitListSection: View {
             actions.toggleCompletion(habit)
         }
         .todayHabitSectionMotion(habit.id, in: namespace, reduceMotion: reduceMotion)
-        .todayListRow()
         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
             Button {
                 actions.toggleRest(habit)
