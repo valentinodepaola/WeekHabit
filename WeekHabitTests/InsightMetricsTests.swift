@@ -30,12 +30,12 @@ final class InsightMetricsTests: XCTestCase {
         addEntry(.minimum, to: habit, on: TestFactory.date(day: 15), source: .today)
         addEntry(.completed, to: habit, on: TestFactory.date(day: 30), source: .focusSession)
 
-        let snapshot = [habit].globalInsightSnapshot(reference: reference)
+        let snapshot = [habit].insightSnapshot(for: .month, reference: reference)
 
         XCTAssertEqual(snapshot.current.scheduled, 30)
         XCTAssertEqual(snapshot.current.completed, 2)
-        XCTAssertEqual(snapshot.previous.scheduled, 30)
-        XCTAssertEqual(snapshot.previous.completed, 1)
+        XCTAssertEqual(snapshot.comparison?.baseline.scheduled, 30)
+        XCTAssertEqual(snapshot.comparison?.baseline.completed, 1)
         XCTAssertEqual(snapshot.trend.count, 12)
         XCTAssertEqual(snapshot.minimumDays, 1)
         XCTAssertEqual(snapshot.deltaPercentagePoints, 3)

@@ -5,7 +5,7 @@
 
 import Foundation
 
-struct HabitCompletionStats {
+struct HabitCompletionStats: Equatable {
     let completed: Int
     let scheduled: Int
 
@@ -20,13 +20,34 @@ struct HabitCompletionStats {
 }
 
 struct GlobalInsightSnapshot {
+    let period: InsightPeriod
+    /// La tasa grande de la tarjeta. En `.all` es la de todo el historial.
     let current: HabitCompletionStats
-    let previous: HabitCompletionStats
-    let trend: [Double]
+    /// `nil` cuando no hay contra qué comparar todavía: la tarjeta oculta el chip.
+    let comparison: InsightComparison?
+    let trend: [InsightTrendBar]
+    let granularity: InsightTrendGranularity
+    /// Días que cubre el periodo. En `.week` es la semana completa, aunque no haya terminado.
+    let range: ClosedRange<Date>
     let minimumDays: Int
 
     var deltaPercentagePoints: Int {
-        Int(((current.ratio - previous.ratio) * 100).rounded())
+        comparison?.deltaPercentagePoints ?? 0
+    }
+
+    /// Rango para mostrar junto al título: "12 – 18 oct", "16 sep – 15 oct", "desde nov 2025".
+    var rangeText: String {
+        switch period {
+        case .week, .month:
+            let calendar = AppCalendar.current
+            let sameMonth = calendar.component(.month, from: range.lowerBound) == calendar.component(.month, from: range.upperBound)
+            let start = AppFormatters.string(from: range.lowerBound, format: sameMonth ? "d" : "d MMM")
+            let end = AppFormatters.string(from: range.upperBound, format: "d MMM")
+            return "\(start) – \(end)"
+        case .all:
+            let format = granularity == .month ? "MMM yyyy" : "d MMM"
+            return "desde \(AppFormatters.string(from: range.lowerBound, format: format))"
+        }
     }
 }
 

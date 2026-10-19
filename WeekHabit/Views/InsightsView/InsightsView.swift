@@ -18,11 +18,13 @@ struct InsightsView: View {
 
     @State private var habitRoute: HabitRoute?
 
+    @AppStorage(InsightPeriod.storageKey) private var period: InsightPeriod = .month
+
     private var referenceDate: Date { .now }
 
     private var snapshot: GlobalInsightSnapshot {
         AppPerformance.measure("Insights snapshot") {
-            habits.globalInsightSnapshot(reference: referenceDate)
+            habits.insightSnapshot(for: period, reference: referenceDate)
         }
     }
 
@@ -95,7 +97,11 @@ struct InsightsView: View {
                         if habits.isEmpty {
                             emptyState
                         } else {
-                            InsightsHeroCard(snapshot: snapshot, readiness: readiness)
+                            InsightsHeroCard(
+                                snapshot: snapshot,
+                                readiness: readiness,
+                                periodSelection: $period.animation(AppMotion.respectful(AppMotion.smooth, reduceMotion))
+                            )
 
                             if readiness.isReady {
                                 InsightConfidenceCard(confidence: confidence)
@@ -150,6 +156,9 @@ struct InsightsView: View {
                     .padding(.bottom, AppSpacing.xl)
                 }
             }
+            .onChange(of: period) {
+                AppHaptics.play(.selection)
+            }
             .fullScreenCover(item: $habitRoute) { route in
                 switch route {
                 case .edit(let habit):
@@ -165,16 +174,10 @@ struct InsightsView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: AppSpacing.xs) {
-            Text("ÚLTIMOS 30 DÍAS")
-                .font(AppFont.label)
-                .foregroundStyle(AppColor.textTertiary)
-
-            Text("Tu ritmo")
-                .font(AppFont.title)
-                .foregroundStyle(AppColor.textPrimary)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        Text("Tu ritmo")
+            .font(AppFont.title)
+            .foregroundStyle(AppColor.textPrimary)
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var warmupCard: some View {

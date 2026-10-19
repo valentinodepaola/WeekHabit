@@ -9,7 +9,8 @@ struct InsightsHeroCard: View {
     let snapshot: GlobalInsightSnapshot
     var readiness: InsightReadiness? = nil
     var title: String = "CONSISTENCIA GLOBAL"
-    var trendCaption: String = "Cada barra resume una parte de los últimos 30 días; más alta significa más cumplimiento."
+    /// Cuando llega, la tarjeta muestra el selector Semana / Mes / Todo y el rango de fechas.
+    var periodSelection: Binding<InsightPeriod>? = nil
 
     private var consistencyText: String {
         snapshot.current.scheduled == 0 ? "—" : "\(snapshot.current.percentage)%"
@@ -25,6 +26,17 @@ struct InsightsHeroCard: View {
         snapshot.deltaPercentagePoints >= 0 ? AppColor.success : AppColor.warning
     }
 
+    /// El primer día de la semana: un solo día todavía no dice nada del ritmo semanal.
+    private var isWeekJustStarting: Bool {
+        snapshot.period == .week && snapshot.trend.filter { !$0.isPending }.count <= 1
+    }
+
+    /// Semanas de historial cuando todavía no alcanzan para comparar el primer mes.
+    private var shortHistoryWeeks: Int? {
+        guard snapshot.period == .all, snapshot.granularity == .week, snapshot.trend.count < 9 else { return nil }
+        return snapshot.trend.count
+    }
+
     private var message: String {
         if let readiness, !readiness.isReady {
             return "La gráfica ya reacciona a tus marcas, pero todavía estoy juntando contexto."
@@ -35,16 +47,32 @@ struct InsightsHeroCard: View {
         guard snapshot.current.scheduled > 0 else {
             return "Marca algunos hábitos para empezar a leer tu ritmo."
         }
-        if snapshot.previous.scheduled == 0 {
+        guard snapshot.comparison != nil else {
+            if isWeekJustStarting {
+                return "La semana apenas empieza."
+            }
+            if let weeks = shortHistoryWeeks {
+                let span = weeks == 1 ? "1 semana" : "\(weeks) semanas"
+                return "Llevas \(span). Al cumplir dos meses te muestro cuánto cambiaste."
+            }
             return "Ya tengo una base para empezar a comparar tu ritmo."
         }
-        if snapshot.deltaPercentagePoints > 0 {
-            return "Has mejorado frente a los 30 días anteriores."
+
+        let delta = snapshot.deltaPercentagePoints
+        switch snapshot.period {
+        case .week:
+            if delta > 0 { return "Vas mejor que la semana pasada." }
+            if delta < 0 { return "Tu ritmo cambió frente a la semana pasada." }
+            return "Te mantuviste igual que la semana pasada."
+        case .month:
+            if delta > 0 { return "Has mejorado frente a los 30 días anteriores." }
+            if delta < 0 { return "Tu ritmo cambió frente al periodo anterior." }
+            return "Te mantuviste estable frente al periodo anterior."
+        case .all:
+            if delta > 0 { return "Has mejorado desde tu primer mes." }
+            if delta < 0 { return "Tu ritmo cambió desde tu primer mes." }
+            return "Te mantuviste estable desde tu primer mes."
         }
-        if snapshot.deltaPercentagePoints < 0 {
-            return "Tu ritmo cambió frente al periodo anterior."
-        }
-        return "Te mantuviste estable frente al periodo anterior."
     }
 
     private var encouragement: String {
@@ -54,9 +82,26 @@ struct InsightsHeroCard: View {
                 : "Faltan \(readiness.remainingDays) días para activar Insights."
         }
         if snapshot.current.scheduled == 0 { return "Empieza suave." }
+        if snapshot.comparison == nil && isWeekJustStarting { return "Lo que marques hoy ya cuenta." }
         return snapshot.deltaPercentagePoints >= 0
             ? "Sigue así."
             : "Volvamos con un paso pequeño."
+    }
+
+    private var trendCaption: String {
+        switch snapshot.granularity {
+        case .day:
+            let base = "Cada barra es un día de esta semana; más alta significa más cumplimiento."
+            return snapshot.trend.contains(where: \.isPending)
+                ? base + " Los días que faltan quedan punteados."
+                : base
+        case .monthSlice:
+            return "Cada barra resume una parte de los últimos 30 días; más alta significa más cumplimiento."
+        case .week:
+            return "Cada barra es una semana desde que empezaste; más alta significa más cumplimiento."
+        case .month:
+            return "Cada barra es un mes desde que empezaste; más alta significa más cumplimiento."
+        }
     }
 
     var body: some View {
@@ -70,6 +115,25 @@ struct InsightsHeroCard: View {
                 if readiness?.isProvisional == true {
                     InsightProvisionalBadge()
                 }
+
+                if periodSelection != nil {
+                    Spacer(minLength: AppSpacing.s)
+
+                    Text(snapshot.rangeText)
+                        .font(AppFont.label)
+                        .foregroundStyle(AppColor.textTertiary)
+                        .lineLimit(1)
+                        .monospacedDigit()
+                }
+            }
+
+            if let periodSelection {
+                Picker("Periodo", selection: periodSelection) {
+                    ForEach(InsightPeriod.allCases) { period in
+                        Text(period.title).tag(period)
+                    }
+                }
+                .pickerStyle(.segmented)
             }
 
             HStack(alignment: .firstTextBaseline, spacing: AppSpacing.s) {
@@ -79,8 +143,9 @@ struct InsightsHeroCard: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
                     .monospacedDigit()
+                    .contentTransition(.numericText())
 
-                if snapshot.previous.scheduled > 0 {
+                if snapshot.comparison != nil {
                     Text(deltaText)
                         .font(AppFont.label)
                         .foregroundStyle(deltaColor)
@@ -102,7 +167,7 @@ struct InsightsHeroCard: View {
             }
             .fixedSize(horizontal: false, vertical: true)
 
-            InsightsTrendBars(values: snapshot.trend)
+            InsightsTrendBars(bars: snapshot.trend)
                 .padding(.top, AppSpacing.xs)
 
             if snapshot.minimumDays > 0 {
@@ -156,13 +221,23 @@ struct InsightsHeroCard: View {
 }
 
 #Preview {
+    @Previewable @State var period: InsightPeriod = .month
+
     InsightsHeroCard(
         snapshot: GlobalInsightSnapshot(
+            period: .month,
             current: HabitCompletionStats(completed: 12, scheduled: 17),
-            previous: HabitCompletionStats(completed: 10, scheduled: 17),
-            trend: [0.2, 0.3, 0.15, 0.35, 0.28, 0.5, 0.62, 0.4, 0.55, 0.82, 0.75, 0.88],
+            comparison: InsightComparison(
+                baseline: HabitCompletionStats(completed: 10, scheduled: 17),
+                recent: HabitCompletionStats(completed: 12, scheduled: 17)
+            ),
+            trend: [0.2, 0.3, 0.15, 0.35, 0.28, 0.5, 0.62, 0.4, 0.55, 0.82, 0.75, 0.88]
+                .map { InsightTrendBar(value: $0) },
+            granularity: .monthSlice,
+            range: Date.now.addingTimeInterval(-29 * 86_400)...Date.now,
             minimumDays: 3
-        )
+        ),
+        periodSelection: $period
     )
     .padding()
     .background(AppColor.bgCanvas)
