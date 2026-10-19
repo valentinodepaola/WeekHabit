@@ -122,7 +122,11 @@ Common flows:
 - `TodayView` creates/edits/deletes habits and plans.
 - `TodayView` presents `CreateHabitView`, `PlanFlowView`, `CreatePlanView`, and `FocusSessionView`.
 - The bell in `TodayHeaderSection` opens `DailyNoticeView` (the daily notice settings) as a sheet.
-- `WeekView` opens `HabitDetailView` and logs manual/retroactive entries.
+- `WeekView` opens `HabitDetailView` and logs manual/retroactive entries, but only in edit
+  mode: it always opens read-only, the "Editar"/"Listo" capsule in the month row turns editing
+  on, and it turns off again when the tab is left or the app leaves `.active` (`ContentView`
+  passes `isSelectedTab`). A read-only tap logs nothing; it bounces "Editar". The grid cell's
+  `Interaction` (`.decorative`, `.readOnly`, `.editable`) drives taps and VoiceOver traits.
 - `InsightsView` edits suggested habits and manages rhythm experiments.
 - `HabitDetailView` presents `CreateHabitView` for editing.
 
@@ -140,7 +144,7 @@ Habit tracking:
   streak if its week met the target or, in the current week, the target is still reachable
   (`isCoveredByWeeklyTarget`). A finished week that missed the target still breaks it.
 - In Hoy, a flexible habit resting on a met weekly target (`restsOnMetWeeklyTarget`) does not
-  log on tap: it shows a popover notice instead. Week view can still log any day.
+  log on tap: it shows a popover notice instead. Week view can still log any day in edit mode.
 
 Insights:
 
