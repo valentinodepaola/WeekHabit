@@ -63,12 +63,21 @@ struct TodayFailure: Identifiable {
 }
 
 extension View {
+    /// Fila suelta de Hoy (encabezado, avisos, tarjetas). La lista no separa sus filas, para
+    /// que los grupos de hábitos queden pegados; el aire entre bloques lo pone cada fila abajo.
     func todayListRow(
         _ insets: EdgeInsets = EdgeInsets(top: 0, leading: AppSpacing.l, bottom: 0, trailing: AppSpacing.l)
     ) -> some View {
         listRowBackground(Color.clear)
             .listRowSeparator(.hidden)
-            .listRowInsets(insets)
+            .listRowInsets(
+                EdgeInsets(
+                    top: insets.top,
+                    leading: insets.leading,
+                    bottom: insets.bottom + AppSpacing.m,
+                    trailing: insets.trailing
+                )
+            )
     }
 
     @ViewBuilder

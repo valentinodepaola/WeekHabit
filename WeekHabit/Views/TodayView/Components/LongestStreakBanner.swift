@@ -12,13 +12,6 @@ struct LongestStreakBanner: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    private var caption: String {
-        IdentityReinforcementCopy.longestBannerCaption(
-            for: habit,
-            allSameStreak: allSameStreak
-        )
-    }
-
     private var titleText: String {
         IdentityReinforcementCopy.longestBannerTitle(
             for: habit,
@@ -28,36 +21,31 @@ struct LongestStreakBanner: View {
     }
 
     var body: some View {
+        // Una línea: el título ya dice qué tramo es ("· 4 días eligiendo distinto").
         HStack(spacing: AppSpacing.m) {
             ZStack {
                 Circle()
-                    .fill(Color.white.opacity(0.18))
+                    .fill(Color.white.opacity(0.22))
                 Image(systemName: "flame.fill")
-                    .font(.system(size: 22, weight: .semibold))
+                    .font(AppFont.iconSmall)
                     .foregroundStyle(.white)
             }
-            .frame(width: 52, height: 52)
+            .frame(width: 32, height: 32)
 
-            VStack(alignment: .leading, spacing: AppSpacing.xxs) {
-                Text(AppFormatters.uppercased(caption))
-                    .font(AppFont.label)
-                    .foregroundStyle(.white)
-                    .tracking(0.8)
-                Text(titleText)
-                    .font(AppFont.bodyEmphasis)
-                    .foregroundStyle(.white)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.leading)
-                    .animation(AppMotion.respectful(AppMotion.smooth, reduceMotion), value: titleText)
-            }
+            Text(titleText)
+                .font(AppFont.callout.weight(.semibold))
+                .foregroundStyle(.white)
+                .lineLimit(2)
+                .multilineTextAlignment(.leading)
+                .animation(AppMotion.respectful(AppMotion.smooth, reduceMotion), value: titleText)
 
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, AppSpacing.l)
-        .padding(.vertical, AppSpacing.m)
-        .frame(maxWidth: .infinity, minHeight: 76, alignment: .leading)
+        .padding(.horizontal, AppSpacing.m)
+        .padding(.vertical, AppSpacing.s)
+        .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: AppRadius.l)
+            RoundedRectangle(cornerRadius: AppRadius.m)
                 .fill(
                     LinearGradient(
                         colors: [

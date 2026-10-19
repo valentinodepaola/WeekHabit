@@ -147,10 +147,13 @@ struct TodayView: View {
                     }
                 }
                 .listStyle(.plain)
-                .listRowSpacing(AppSpacing.m)
+                // Sin espacio entre filas: los hábitos de una sección forman un solo grupo.
+                .listRowSpacing(0)
                 .scrollContentBackground(.hidden)
                 .scrollIndicators(.hidden)
                 .contentMargins(.bottom, AppSpacing.xl, for: .scrollContent)
+                .frame(maxWidth: TodayGroupLayout.maxListWidth)
+                .frame(maxWidth: .infinity)
             }
             .navigationDestination(item: $model.selectedHabit) { habit in
                 HabitDetailView(habit: habit)

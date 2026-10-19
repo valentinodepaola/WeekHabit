@@ -16,16 +16,16 @@ struct TodayHabitComponent: View {
     var onSlip: (() -> Void)? = nil
     var onMinimum: (() -> Void)? = nil
     var onOpenDetail: (() -> Void)? = nil
-    var showsUrgeExplainer: Bool = false
-    var onDismissUrgeExplainer: (() -> Void)? = nil
     let onToggle: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isPressing: Bool = false
 
+    /// Fila de un hábito dentro de su grupo en Hoy. El fondo, las esquinas y el separador
+    /// los pone el grupo (`todayGroupedRow`); aquí solo va el contenido.
     var body: some View {
-        VStack(alignment: .leading, spacing: AppSpacing.m) {
-            HStack(alignment: .center, spacing: AppSpacing.m) {
+        VStack(alignment: .leading, spacing: AppSpacing.xs) {
+            HStack(alignment: .center, spacing: AppSpacing.xs) {
                 completeToggle
 
                 HStack(spacing: AppSpacing.m) {
@@ -33,7 +33,7 @@ struct TodayHabitComponent: View {
 
                     Spacer(minLength: AppSpacing.s)
 
-                    iconColumn
+                    iconBadge
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
@@ -51,74 +51,57 @@ struct TodayHabitComponent: View {
             }
 
             if shouldShowBreakActions {
-                if showsUrgeExplainer {
-                    urgeExplainer
-                        .padding(.leading, secondaryActionLeadingPadding)
-                }
-
                 breakActions
                     .padding(.leading, secondaryActionLeadingPadding)
             }
         }
-        .padding(.horizontal, AppSpacing.l)
-        .padding(.vertical, AppSpacing.l)
-        .frame(maxWidth: .infinity, minHeight: 94, alignment: .leading)
-        .background(AppColor.bgElevated)
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous)
-                .strokeBorder(isSkipped ? habit.habitColor.opacity(0.38) : AppColor.divider, lineWidth: 1)
-        }
-        .appElevation(.low)
+        .padding(.leading, AppSpacing.xs)
+        .padding(.trailing, AppSpacing.m)
+        .padding(.vertical, AppSpacing.s)
+        .frame(maxWidth: .infinity, minHeight: 64, alignment: .leading)
     }
 
     private var textContent: some View {
-        VStack(alignment: .leading, spacing: AppSpacing.xs) {
+        VStack(alignment: .leading, spacing: AppSpacing.xxs) {
             Text(habit.title)
                 .font(AppFont.bodyEmphasis)
                 .foregroundStyle(AppColor.textPrimary)
                 .lineLimit(1)
 
-            VStack(alignment: .leading, spacing: AppSpacing.xxs) {
-                if isMinimumCompleted, let trimmedMinimumTitle {
-                    Text("Versión mínima · \(trimmedMinimumTitle)")
-                        .font(AppFont.label)
-                        .foregroundStyle(AppColor.textSecondary)
-                        .lineLimit(1)
-                } else if isSkipped {
-                    Text("Descanso intencional")
-                        .font(AppFont.label)
-                        .foregroundStyle(habit.habitColor)
-                        .lineLimit(1)
-                } else if let trimmedCue {
-                    cueLine(trimmedCue)
-                }
+            // Una sola línea: lo que más dice del día y, al final, la racha.
+            HStack(alignment: .firstTextBaseline, spacing: AppSpacing.xs) {
+                subtitle
 
-                if let experimentSubtitle {
-                    Text(experimentSubtitle)
-                        .font(AppFont.label)
-                        .foregroundStyle(AppColor.info)
-                        .lineLimit(2)
-                } else if shouldShowScheduleFallback {
-                    Text(scheduleFallbackText)
-                        .font(AppFont.label)
-                        .foregroundStyle(AppColor.textTertiary)
-                        .lineLimit(1)
+                if streakCount > 0 {
+                    streakIndicator
                 }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private var iconColumn: some View {
-        VStack(alignment: .trailing, spacing: AppSpacing.xs) {
-            iconBadge
-
-            if streakCount > 0 {
-                streakIndicator
-            }
+    @ViewBuilder
+    private var subtitle: some View {
+        if isMinimumCompleted, let trimmedMinimumTitle {
+            subtitleText("Versión mínima · \(trimmedMinimumTitle)", color: AppColor.textSecondary)
+        } else if isSkipped {
+            subtitleText("Descanso intencional", color: habit.habitColor)
+        } else if let experimentSubtitle {
+            subtitleText(experimentSubtitle, color: AppColor.info)
+        } else if let quantityProgressText {
+            subtitleText(quantityProgressText, color: AppColor.textSecondary)
+        } else if let trimmedCue {
+            cueLine(trimmedCue)
+        } else {
+            subtitleText(scheduleFallbackText, color: AppColor.textSecondary)
         }
-        .frame(width: 44, alignment: .trailing)
+    }
+
+    private func subtitleText(_ text: String, color: Color) -> some View {
+        Text(text)
+            .font(AppFont.label)
+            .foregroundStyle(color)
+            .lineLimit(1)
     }
 
     private var iconBadge: some View {
@@ -127,10 +110,10 @@ struct TodayHabitComponent: View {
                 .fill(habit.habitColor.opacity(0.14))
 
             Image(systemName: habit.iconName)
-                .font(.system(size: 18, weight: .semibold))
+                .font(AppFont.iconSmall)
                 .foregroundStyle(habit.habitColor)
         }
-        .frame(width: 38, height: 38)
+        .frame(width: 30, height: 30)
         .accessibilityHidden(true)
     }
 
@@ -143,23 +126,26 @@ struct TodayHabitComponent: View {
             Text(cue)
                 .font(AppFont.label)
                 .foregroundStyle(AppColor.textSecondary)
-                .lineLimit(2)
+                .lineLimit(1)
         }
-        .padding(.top, 1)
     }
 
     private var streakIndicator: some View {
-        HStack(spacing: AppSpacing.xs) {
+        HStack(spacing: AppSpacing.xxs) {
+            Text("·")
+                .accessibilityHidden(true)
+
             Image(systemName: "flame.fill")
                 .font(.system(size: 10, weight: .semibold))
 
             Text("\(streakCount)")
-                .font(AppFont.micro)
                 .monospacedDigit()
         }
-        .foregroundStyle(streakColor)
+        .font(AppFont.label)
+        .foregroundStyle(AppColor.warning)
+        .fixedSize()
+        .accessibilityElement(children: .ignore)
         .accessibilityLabel(streakAccessibilityLabel)
-        .opacity(streakCount == 0 ? 0.5 : 1)
     }
 
     private var completeToggle: some View {
@@ -174,31 +160,42 @@ struct TodayHabitComponent: View {
 
     private var toggleVisual: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: AppRadius.s, style: .continuous)
+            RoundedRectangle(cornerRadius: AppRadius.xs, style: .continuous)
                 .fill(toggleFill)
-                .frame(width: 34, height: 34)
                 .overlay {
-                    RoundedRectangle(cornerRadius: AppRadius.s, style: .continuous)
-                        .strokeBorder(toggleBorderColor, lineWidth: 1)
+                    RoundedRectangle(cornerRadius: AppRadius.xs, style: .continuous)
+                        .strokeBorder(toggleBorderColor, lineWidth: 1.5)
+                }
+                .overlay {
+                    // Avance de un hábito de cantidad: el borde se llena con el color del hábito.
+                    if quantityProgress > 0, quantityProgress < 1 {
+                        ClockwiseRoundedSquare(cornerRadius: AppRadius.xs)
+                            .inset(by: 0.75)
+                            .trim(from: 0, to: quantityProgress)
+                            .stroke(habit.habitColor, style: StrokeStyle(lineWidth: 1.5, lineCap: .round))
+                    }
                 }
             if isCompleted {
                 Image(systemName: habit.isBreakHabit ? "xmark" : "checkmark")
-                    .font(.system(size: 14, weight: .bold))
+                    .font(.system(size: 12, weight: .bold))
                     .foregroundStyle(.white)
                     .symbolEffect(.bounce, value: isCompleted)
             } else if isMinimumCompleted {
                 Image(systemName: "checkmark")
-                    .font(.system(size: 14, weight: .bold))
+                    .font(.system(size: 12, weight: .bold))
                     .foregroundStyle(.white)
                     .symbolEffect(.bounce, value: isMinimumCompleted)
             } else if isSkipped {
-                Image(systemName: "pause.circle.fill")
-                    .font(.system(size: 16, weight: .semibold))
+                Image(systemName: "pause.fill")
+                    .font(.system(size: 10, weight: .bold))
                     .foregroundStyle(habit.habitColor)
                     .symbolEffect(.pulse, value: isSkipped)
             }
         }
+        .frame(width: 26, height: 26)
         .scaleEffect(toggleScale)
+        .frame(width: 44, height: 44)
+        .contentShape(Rectangle())
     }
 
     private var minimumAction: some View {
@@ -241,42 +238,6 @@ struct TodayHabitComponent: View {
             VStack(alignment: .leading, spacing: AppSpacing.s) {
                 breakActionButtons
             }
-        }
-    }
-
-    private var urgeExplainer: some View {
-        HStack(alignment: .top, spacing: AppSpacing.s) {
-            Image(systemName: "waveform.path.ecg")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(habit.habitColor)
-                .frame(width: 24, height: 24)
-                .background(habit.habitColor.opacity(0.12))
-                .clipShape(Circle())
-
-            Text("Registra un impulso cuando aparezcan ganas de hacerlo. Eso ayuda a encontrar patrones sin contarlo como slip.")
-                .font(AppFont.micro)
-                .foregroundStyle(AppColor.textSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-
-            Spacer(minLength: 0)
-
-            if let onDismissUrgeExplainer {
-                Button(action: onDismissUrgeExplainer) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundStyle(AppColor.textTertiary)
-                        .frame(width: 24, height: 24)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Ocultar explicación de impulso")
-            }
-        }
-        .padding(AppSpacing.s)
-        .background(habit.habitColor.opacity(0.08))
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.m, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: AppRadius.m, style: .continuous)
-                .strokeBorder(habit.habitColor.opacity(0.20), lineWidth: 1)
         }
     }
 
@@ -365,16 +326,12 @@ struct TodayHabitComponent: View {
         trimmedMinimumTitle != nil && !isCompleted && !isMinimumCompleted && !isSkipped && onMinimum != nil
     }
 
-    private var shouldShowScheduleFallback: Bool {
-        trimmedCue == nil && !isMinimumCompleted
-    }
-
     private var shouldShowBreakActions: Bool {
         habit.isBreakHabit && !isCompleted && !isSkipped && (onSlip != nil || onUrge != nil)
     }
 
     private var secondaryActionLeadingPadding: CGFloat {
-        34 + AppSpacing.m
+        44 + AppSpacing.xs
     }
 
     private var scheduleFallbackText: String {
@@ -398,9 +355,9 @@ struct TodayHabitComponent: View {
             return habit.habitColor.opacity(0.55)
         }
         if isSkipped {
-            return habit.habitColor.opacity(0.10)
+            return habit.habitColor.opacity(0.12)
         }
-        return AppColor.bgElevated
+        return Color.clear
     }
 
     private var toggleBorderColor: Color {
@@ -442,8 +399,12 @@ struct TodayHabitComponent: View {
         )
     }
 
-    private var streakColor: Color {
-        streakCount > 0 ? AppColor.warning : AppColor.textTertiary
+    private var quantityProgressText: String? {
+        habit.todayQuantityProgressText(on: referenceDate)
+    }
+
+    private var quantityProgress: Double {
+        habit.todayQuantityProgress(on: referenceDate)
     }
 
     private var experimentSubtitle: String? {
@@ -458,5 +419,35 @@ struct TodayHabitComponent: View {
         }
 
         return "Prueba activa · \(activeExperiment.daySummary)"
+    }
+}
+
+/// Contorno de la casilla que empieza arriba al centro y avanza como las manecillas, para que
+/// el avance de un hábito de cantidad se lea como un reloj al recortarlo con `trim`.
+private struct ClockwiseRoundedSquare: InsettableShape {
+    let cornerRadius: CGFloat
+    var insetAmount: CGFloat = 0
+
+    func path(in rect: CGRect) -> Path {
+        let r = rect.insetBy(dx: insetAmount, dy: insetAmount)
+        let radius = min(cornerRadius, r.width / 2, r.height / 2)
+        var path = Path()
+        path.move(to: CGPoint(x: r.midX, y: r.minY))
+        path.addLine(to: CGPoint(x: r.maxX - radius, y: r.minY))
+        path.addArc(tangent1End: CGPoint(x: r.maxX, y: r.minY), tangent2End: CGPoint(x: r.maxX, y: r.minY + radius), radius: radius)
+        path.addLine(to: CGPoint(x: r.maxX, y: r.maxY - radius))
+        path.addArc(tangent1End: CGPoint(x: r.maxX, y: r.maxY), tangent2End: CGPoint(x: r.maxX - radius, y: r.maxY), radius: radius)
+        path.addLine(to: CGPoint(x: r.minX + radius, y: r.maxY))
+        path.addArc(tangent1End: CGPoint(x: r.minX, y: r.maxY), tangent2End: CGPoint(x: r.minX, y: r.maxY - radius), radius: radius)
+        path.addLine(to: CGPoint(x: r.minX, y: r.minY + radius))
+        path.addArc(tangent1End: CGPoint(x: r.minX, y: r.minY), tangent2End: CGPoint(x: r.minX + radius, y: r.minY), radius: radius)
+        path.closeSubpath()
+        return path
+    }
+
+    func inset(by amount: CGFloat) -> ClockwiseRoundedSquare {
+        var shape = self
+        shape.insetAmount += amount
+        return shape
     }
 }

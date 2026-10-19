@@ -5,6 +5,13 @@
 
 import Foundation
 
+/// Texto de la derecha en la fila de un completado de Hoy.
+struct TodayCompletionDetail: Equatable {
+    let text: String
+    /// La marca vino de una sesión de ritmo: la fila lo acompaña con un reloj.
+    var isFocusSession: Bool = false
+}
+
 enum CellState: Equatable {
     case completed
     case minimum
@@ -146,9 +153,9 @@ extension Habit {
         "\(completedDaysThisWeek(reference: reference)) de \(targetDaysPerWeek)"
     }
 
-    /// Copy mostrada bajo la fila de un hábito completado en Hoy.
-    /// Incluye hora y fuente de la marca, o describe la versión mínima si aplica.
-    func todayCompletionMetadata(reference: Date) -> String {
+    /// Lo que muestra a la derecha la fila de un completado en Hoy: la hora de la marca, o
+    /// por qué está en completados cuando no es una marca normal de hoy.
+    func todayCompletionDetail(reference: Date) -> TodayCompletionDetail {
         let entriesForDay = entries.filter {
             AppCalendar.isSameDay($0.date, reference)
         }
@@ -167,29 +174,44 @@ extension Habit {
             .first
 
         guard let entry = completedEntry ?? minimumEntry else {
-            return "Meta de la semana cumplida · \(weeklyTargetProgressText(reference: reference))"
+            return TodayCompletionDetail(text: "Meta semanal · \(weeklyTargetProgressText(reference: reference))")
         }
 
         if entry.kind == .minimum {
-            let title = minimumViableTitle?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            return title.isEmpty ? "Versión mínima" : "Versión mínima · \(title)"
+            return TodayCompletionDetail(text: "Versión mínima")
         }
 
-        let sourceText: String
-        switch entry.source {
-        case .today:
-            sourceText = "marca confiable"
-        case .focusSession:
-            sourceText = "sesión de ritmo"
-        case .manual:
-            sourceText = "registrado después"
+        // Lo registrado desde Semana no tiene una hora que valga la pena mostrar.
+        if entry.source == .manual {
+            return TodayCompletionDetail(text: "Registrado después")
         }
 
         guard let completedAt = entry.completedAt else {
-            return sourceText
+            return TodayCompletionDetail(text: "Hecho", isFocusSession: entry.source == .focusSession)
         }
 
-        return "\(AppFormatters.string(from: completedAt, format: "HH:mm")) · \(sourceText)"
+        return TodayCompletionDetail(
+            text: AppFormatters.string(from: completedAt, format: "HH:mm"),
+            isFocusSession: entry.source == .focusSession
+        )
+    }
+
+    /// Avance de un hábito de cantidad que va a medias hoy ("2 de 5 min"). Sin avance, o con
+    /// la meta cumplida, no hay nada que contar.
+    func todayQuantityProgressText(on date: Date) -> String? {
+        guard trackingKind == .quantity else { return nil }
+        let total = totalValue(on: date)
+        guard total > 0, total < sessionTargetValue else { return nil }
+
+        let value = "\(Self.formattedQuantity(total)) de \(Self.formattedQuantity(sessionTargetValue))"
+        let unit = unitDisplayText
+        return unit.isEmpty ? value : "\(value) \(unit)"
+    }
+
+    /// Fracción del avance de cantidad de hoy, de 0 a 1, para dibujarla en la casilla.
+    func todayQuantityProgress(on date: Date) -> Double {
+        guard trackingKind == .quantity else { return 0 }
+        return min(1, totalValue(on: date) / sessionTargetValue)
     }
 
     /// Copy mostrada bajo la fila de un slip registrado en Hoy.

@@ -14,19 +14,21 @@ struct TodaySlipHabitRow: View {
     let onUndo: () -> Void
     var onOpenDetail: (() -> Void)? = nil
 
+    /// Fila de un slip dentro de su grupo en Hoy. El fondo lo pone el grupo.
     var body: some View {
-        HStack(alignment: .center, spacing: AppSpacing.m) {
-            HStack(alignment: .center, spacing: AppSpacing.m) {
+        HStack(alignment: .center, spacing: AppSpacing.xs) {
+            HStack(alignment: .center, spacing: AppSpacing.xs) {
                 Image(systemName: "arrow.counterclockwise")
-                    .font(.system(size: 14, weight: .bold))
+                    .font(.system(size: 11, weight: .bold))
                     .foregroundStyle(AppColor.warning)
-                    .frame(width: 32, height: 32)
+                    .frame(width: 26, height: 26)
                     .background(AppColor.warning.opacity(0.13))
-                    .clipShape(RoundedRectangle(cornerRadius: AppRadius.s, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: AppRadius.xs, style: .continuous))
                     .overlay {
-                        RoundedRectangle(cornerRadius: AppRadius.s, style: .continuous)
-                            .strokeBorder(AppColor.warning.opacity(0.34), lineWidth: 1)
+                        RoundedRectangle(cornerRadius: AppRadius.xs, style: .continuous)
+                            .strokeBorder(AppColor.warning.opacity(0.34), lineWidth: 1.5)
                     }
+                    .frame(width: 44, height: 44)
 
                 VStack(alignment: .leading, spacing: AppSpacing.xxs) {
                     Text(habit.title)
@@ -37,7 +39,7 @@ struct TodaySlipHabitRow: View {
                     Text(metadata)
                         .font(AppFont.label)
                         .foregroundStyle(AppColor.textSecondary)
-                        .lineLimit(2)
+                        .lineLimit(1)
                 }
 
                 Spacer(minLength: 0)
@@ -75,14 +77,9 @@ struct TodaySlipHabitRow: View {
                 .accessibilityLabel("Deshacer slip de \(habit.title)")
             }
         }
-        .padding(.horizontal, AppSpacing.l)
-        .padding(.vertical, AppSpacing.m)
-        .frame(maxWidth: .infinity, minHeight: 76, alignment: .leading)
-        .background(AppColor.bgElevated)
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous)
-                .strokeBorder(AppColor.warning.opacity(0.20), lineWidth: 1)
-        }
+        .padding(.leading, AppSpacing.xs)
+        .padding(.trailing, AppSpacing.m)
+        .padding(.vertical, AppSpacing.s)
+        .frame(maxWidth: .infinity, minHeight: 64, alignment: .leading)
     }
 }
