@@ -14,9 +14,12 @@ struct WeekGridRow: View {
     let daysInWeek: [Date]
     let referenceDate: Date
     let today: Date
+    /// En lectura las celdas no registran: el toque solo llama a `onReadOnlyTap`.
+    var isEditing: Bool = false
     let onSelectHabit: () -> Void
     let onToggle: (Date) -> Void
     let onSkip: (Date) -> Void
+    var onReadOnlyTap: () -> Void = {}
 
     private var habitColor: Color { habit.habitColor }
     private var completedCount: Int { habit.completedDaysThisWeek(reference: referenceDate) }
@@ -64,7 +67,9 @@ struct WeekGridRow: View {
                     WeekGridCell(
                         state: cellState(for: date),
                         habitColor: habitColor,
-                        onTap: { onToggle(date) },
+                        interaction: isEditing ? .editable : .readOnly,
+                        dayLabel: dayLabel(for: date),
+                        onTap: { isEditing ? onToggle(date) : onReadOnlyTap() },
                         onSkip: { onSkip(date) }
                     )
                     .overlay {
@@ -77,6 +82,13 @@ struct WeekGridRow: View {
             .padding(WeekGridLayout.trayInnerPadding)
             .background(AppColor.bgSunken.opacity(0.6))
             .clipShape(RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous))
+            .overlay {
+                // Señal de que la bandeja está lista para corregir: acento suave, nunca gris.
+                RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous)
+                    .strokeBorder(AppColor.accent.opacity(0.45), lineWidth: 1.5)
+                    .opacity(isEditing ? 1 : 0)
+                    .allowsHitTesting(false)
+            }
             .padding(.horizontal, WeekGridLayout.trayOuterInset)
         }
         .padding(.vertical, AppSpacing.l)
@@ -93,6 +105,12 @@ struct WeekGridRow: View {
         .clipShape(RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous))
         .appElevation(.low)
         .padding(.vertical, 2)
+    }
+
+    /// "Lunes 12": lo que VoiceOver lee antes del estado de la celda.
+    private func dayLabel(for date: Date) -> String {
+        AppFormatters.string(from: date, format: "EEEE d")
+            .capitalized(with: AppFormatters.esMXLocale)
     }
 
     /// Continúa la banda vertical de "hoy" que arranca en el strip de días.

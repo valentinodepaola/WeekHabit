@@ -352,7 +352,7 @@ producto.
 | Tag | Vista | Rol |
 |---|---|---|
 | 0 | `TodayView` | Registro del día, planes, sesión de ritmo |
-| 1 | `WeekView` | Grilla semanal editable |
+| 1 | `WeekView` | Grilla semanal, en modo lectura hasta tocar Editar |
 | 2 | `InsightsView` | Métricas, tendencias y experimentos |
 
 `ContentView` también presenta dos hojas por su cuenta: `PlanWrapUpView` cuando hay un plan
@@ -407,8 +407,10 @@ abrir la hoja.
 
 ### `WeekView`
 
-Grilla semanal editable con navegación entre semanas, logging retroactivo (`source: .manual`),
-resumen de completados/meta/consistencia y leyenda on-demand desde el botón `?`. Los estados
+Grilla semanal con navegación entre semanas, logging retroactivo (`source: .manual`),
+resumen de completados/meta/consistencia y leyenda on-demand desde el botón `?`. Se abre
+siempre en modo lectura: marcar, registrar cantidad y el descanso solo funcionan después de
+tocar "Editar", y la edición se apaga al cambiar de pestaña o mandar la app a segundo plano. Los estados
 de celda están agrupados en cuatro familias visuales: hecho, pausa con intención, señal útil
 y vacío.
 

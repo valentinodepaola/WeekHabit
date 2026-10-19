@@ -73,13 +73,35 @@ struct WeekGridCell: View {
         }
     }
 
+    /// Qué puede hacer la persona con la celda.
+    enum Interaction {
+        /// Muestra de la leyenda y la galería: no recibe toques.
+        case decorative
+        /// Semana en modo lectura: se lee como información y el toque no registra nada,
+        /// solo avisa dónde se activa la edición.
+        case readOnly
+        /// Semana en modo edición: marca, registra cantidad y ofrece el descanso.
+        case editable
+    }
+
     let state: State
     let habitColor: Color
-    var isInteractive: Bool = true
+    var interaction: Interaction = .editable
+    /// Día de la celda para VoiceOver ("Lunes 12"). Sin él, solo se lee el estado.
+    var dayLabel: String? = nil
     let onTap: () -> Void
     let onSkip: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var isEditable: Bool {
+        interaction == .editable
+    }
+
+    /// Los días futuros e inactivos no admiten registro ni en modo edición.
+    private var acceptsEntries: Bool {
+        state != .inactive && state != .future
+    }
 
     var body: some View {
         Button(action: onTap) {
@@ -139,20 +161,37 @@ struct WeekGridCell: View {
             .frame(width: WeekGridLayout.cellSize, height: WeekGridLayout.cellSize)
             .contentShape(RoundedRectangle(cornerRadius: AppRadius.s, style: .continuous))
         }
-        .buttonStyle(WeekGridCellButtonStyle())
-        .disabled(isInteractive && (state == .inactive || state == .future))
-        .allowsHitTesting(isInteractive)
+        .buttonStyle(WeekGridCellButtonStyle(isPressable: isEditable))
+        .disabled(isEditable && !acceptsEntries)
+        .allowsHitTesting(interaction != .decorative)
         .contextMenu {
-            if isInteractive && state != .inactive && state != .future {
+            if isEditable && acceptsEntries {
                 Button {
                     onSkip()
                 } label: {
-                    Label(state == .skipped ? "Quitar descanso" : "Descanso intencional", systemImage: "pause.circle")
+                    Label(skipActionTitle, systemImage: "pause.circle")
                 }
             }
         }
         .frame(maxWidth: .infinity)
-        .accessibilityLabel(accessibilityLabel)
+        .accessibilityLabel(fullAccessibilityLabel)
+        // Fuera de edición la celda es información, no un botón.
+        .accessibilityRemoveTraits(isEditable ? [] : .isButton)
+        .accessibilityActions {
+            // El menú contextual cuesta encontrarlo con VoiceOver; el descanso va también aquí.
+            if isEditable && acceptsEntries {
+                Button(skipActionTitle, action: onSkip)
+            }
+        }
+    }
+
+    private var skipActionTitle: String {
+        state == .skipped ? "Quitar descanso" : "Descanso intencional"
+    }
+
+    private var fullAccessibilityLabel: String {
+        guard let dayLabel else { return accessibilityLabel }
+        return "\(dayLabel), \(AppFormatters.lowercased(accessibilityLabel))"
     }
 
     @ViewBuilder
@@ -230,11 +269,15 @@ struct WeekGridCell: View {
                         .strokeBorder(habitColor.opacity(0.5), style: StrokeStyle(lineWidth: 1, dash: [2.5, 2]))
                 }
         case .pending:
+            // En edición el contorno se marca más: es la celda que se espera tocar.
             RoundedRectangle(cornerRadius: AppRadius.s)
                 .fill(habitColor.opacity(0.10))
                 .overlay {
                     RoundedRectangle(cornerRadius: AppRadius.s)
-                        .strokeBorder(habitColor.opacity(0.22), lineWidth: 1)
+                        .strokeBorder(
+                            habitColor.opacity(isEditable ? 0.6 : 0.22),
+                            lineWidth: isEditable ? 1.5 : 1
+                        )
                 }
         case .inactive:
             RoundedRectangle(cornerRadius: AppRadius.s)
@@ -300,12 +343,16 @@ enum WeekGridCellFamily: CaseIterable, Identifiable {
 }
 
 private struct WeekGridCellButtonStyle: ButtonStyle {
+    /// Solo en modo edición la celda se hunde al presionarla: en lectura no promete un cambio.
+    var isPressable: Bool = true
+
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.92 : 1)
-            .opacity(configuration.isPressed ? 0.82 : 1)
-            .animation(AppMotion.respectful(AppMotion.snap, reduceMotion), value: configuration.isPressed)
+        let isPressed = isPressable && configuration.isPressed
+        return configuration.label
+            .scaleEffect(isPressed ? 0.92 : 1)
+            .opacity(isPressed ? 0.82 : 1)
+            .animation(AppMotion.respectful(AppMotion.snap, reduceMotion), value: isPressed)
     }
 }

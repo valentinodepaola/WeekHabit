@@ -7,8 +7,12 @@ import SwiftUI
 import SwiftData
 
 struct WeekView: View {
+    /// Si Semana es la pestaña visible. Al dejar de serlo, la edición se apaga.
+    var isSelectedTab: Bool = true
+
     @Environment(\.modelContext) private var modelContext
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
 
     @Query(sort: \Habit.createdAt, order: .reverse)
     private var habits: [Habit]
@@ -22,6 +26,9 @@ struct WeekView: View {
     @AppStorage("weeklyReviewWeekdayRaw") private var weeklyReviewWeekdayRaw: Int = Weekday.sunday.rawValue
 
     @State private var weekOffset: Int = 0
+    /// Semana se abre en modo lectura: las celdas solo registran con la edición activa.
+    @State private var isEditingRecords = false
+    @State private var editNudge = 0
     @State private var selectedHabit: Habit?
     @State private var coverRoute: WeekCoverRoute?
     @State private var sheetRoute: WeekSheetRoute?
@@ -120,6 +127,8 @@ struct WeekView: View {
                         monthYearLabel: monthYearLabel,
                         weekNumber: weekNumber,
                         weekOffset: $weekOffset,
+                        isEditing: $isEditingRecords,
+                        editNudge: editNudge,
                         onShowLegend: { sheetRoute = .legend },
                         onCreate: { sheetRoute = .createMenu }
                     )
@@ -139,6 +148,15 @@ struct WeekView: View {
                 }
                 .task {
                     applyWeeklyFreezes(reference: .now)
+                }
+                // Volver a Semana siempre es seguro: la edición no sobrevive a salir de la
+                // pestaña ni a mandar la app a segundo plano. Abrir el detalle de un hábito no
+                // la apaga, por eso no se usa `onDisappear`.
+                .onChange(of: isSelectedTab) { _, isSelected in
+                    if !isSelected { isEditingRecords = false }
+                }
+                .onChange(of: scenePhase) { _, phase in
+                    if phase != .active { isEditingRecords = false }
                 }
             }
         }
@@ -201,9 +219,11 @@ struct WeekView: View {
                         daysInWeek: daysInWeek,
                         referenceDate: referenceDate,
                         today: .now,
+                        isEditing: isEditingRecords,
                         onSelectHabit: { selectedHabit = habit },
                         onToggle: { date in toggleCompletion(for: habit, on: date) },
-                        onSkip: { date in toggleRest(for: habit, on: date) }
+                        onSkip: { date in toggleRest(for: habit, on: date) },
+                        onReadOnlyTap: nudgeEditButton
                     )
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
@@ -361,6 +381,13 @@ struct WeekView: View {
 
         AppHaptics.play(.selection)
         applyWeeklyFreezes(reference: .now)
+    }
+
+    /// Un toque en modo lectura no registra nada: vibra suave y hace rebotar "Editar"
+    /// para mostrar dónde se activa la edición, sin texto que regañe.
+    private func nudgeEditButton() {
+        AppHaptics.play(.selection)
+        editNudge += 1
     }
 
     private func toggleRest(for habit: Habit, on date: Date) {

@@ -9,6 +9,9 @@ struct WeekHeaderSection: View {
     var monthYearLabel: String
     var weekNumber: Int
     @Binding var weekOffset: Int
+    @Binding var isEditing: Bool
+    /// Cada cambio hace rebotar "Editar": lo dispara un toque en la cuadrícula en modo lectura.
+    var editNudge: Int = 0
     var onShowLegend: (() -> Void)? = nil
     var onCreate: (() -> Void)? = nil
 
@@ -26,21 +29,26 @@ struct WeekHeaderSection: View {
 
                 Spacer(minLength: 0)
 
-                // Vive en la fila del mes para no quitarle espacio al título, y siempre
-                // ocupa su lugar (solo se desvanece) para que la cabecera no salte de alto.
-                Button("Hoy") {
-                    withAnimation(AppMotion.respectful(AppMotion.smooth, reduceMotion)) {
-                        weekOffset = 0
+                // "Hoy" y "Editar" viven en la fila del mes para no quitarle espacio al
+                // título. "Editar" queda fijo en la orilla y "Hoy" siempre ocupa su lugar
+                // (solo se desvanece), así nada salta al cambiar de semana.
+                HStack(spacing: AppSpacing.s) {
+                    Button("Hoy") {
+                        withAnimation(AppMotion.respectful(AppMotion.smooth, reduceMotion)) {
+                            weekOffset = 0
+                        }
                     }
+                    .font(AppFont.label)
+                    .foregroundStyle(AppColor.accent)
+                    .padding(.horizontal, AppSpacing.m)
+                    .padding(.vertical, AppSpacing.xs)
+                    .background(AppColor.accentMuted, in: Capsule())
+                    .opacity(isViewingOtherWeek ? 1 : 0)
+                    .allowsHitTesting(isViewingOtherWeek)
+                    .accessibilityHidden(!isViewingOtherWeek)
+
+                    editButton
                 }
-                .font(AppFont.label)
-                .foregroundStyle(AppColor.accent)
-                .padding(.horizontal, AppSpacing.m)
-                .padding(.vertical, AppSpacing.xs)
-                .background(AppColor.accentMuted, in: Capsule())
-                .opacity(isViewingOtherWeek ? 1 : 0)
-                .allowsHitTesting(isViewingOtherWeek)
-                .accessibilityHidden(!isViewingOtherWeek)
             }
 
             HStack(spacing: AppSpacing.m) {
@@ -93,5 +101,39 @@ struct WeekHeaderSection: View {
         .padding(.horizontal, AppSpacing.l)
         .padding(.top, AppSpacing.l)
         .padding(.bottom, AppSpacing.l)
+    }
+
+    private var editButton: some View {
+        Button {
+            withAnimation(AppMotion.respectful(AppMotion.smooth, reduceMotion)) {
+                isEditing.toggle()
+            }
+            AppHaptics.play(.selection)
+        } label: {
+            HStack(spacing: AppSpacing.xs) {
+                Image(systemName: isEditing ? "checkmark" : "pencil")
+                    .font(.system(size: 11, weight: .bold))
+                Text(isEditing ? "Listo" : "Editar")
+            }
+            .font(AppFont.label)
+            // Sobre el acento, el fondo de la pantalla da contraste en claro y en oscuro.
+            .foregroundStyle(isEditing ? AppColor.bgCanvas : AppColor.textPrimary)
+            .padding(.horizontal, AppSpacing.m)
+            .padding(.vertical, AppSpacing.xs)
+            .background(isEditing ? AppColor.accent : AppColor.bgElevated, in: Capsule())
+            .overlay {
+                Capsule()
+                    .strokeBorder(isEditing ? Color.clear : AppColor.divider, lineWidth: 1)
+            }
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .phaseAnimator([1.0, 1.12], trigger: editNudge) { content, scale in
+            content.scaleEffect(reduceMotion ? 1 : scale)
+        } animation: { _ in
+            AppMotion.snap
+        }
+        .accessibilityLabel(isEditing ? "Terminar edición" : "Editar registros")
+        .accessibilityAddTraits(isEditing ? .isSelected : [])
     }
 }
