@@ -150,6 +150,12 @@ Insights:
 
 - `.today` and `.focusSession` entries are trusted.
 - `.manual` entries are useful for history but not trusted as rhythm evidence.
+- The hero card has a Semana / Mes / Todo selector (`InsightPeriod`, persisted with
+  `@AppStorage(InsightPeriod.storageKey)`, default Mes). `insightSnapshot(for:reference:)`
+  builds each period; the other Insights cards stay on 30 days. Semana leaves the days still
+  to come pending (`InsightTrendBar.value == nil`, drawn dashed, never as a zero) and skips
+  the comparison on its first day. Todo uses one bar per week up to 26 weeks, then one per
+  month (initials up to 18 months, then only January with the year), and compares the first 30 days against the last 30 only once they don't overlap.
 
 Plans:
 

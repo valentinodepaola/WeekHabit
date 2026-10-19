@@ -88,7 +88,7 @@ Escala disciplinada de **8 niveles** (ver [AppFont.swift](WeekHabitCore/Extensio
 
 ### Patrones tipográficos recurrentes
 
-- **Eyebrow label** (sobre títulos hero): `AppFont.label`, `textCase(.uppercase)` o `.uppercased(with: es_MX)`, `tracking(0.6–1.2)`, color `textTertiary`. Ejemplo: `"ÚLTIMOS 30 DÍAS"`, `"HOY"`, `"MAÑANA"`.
+- **Eyebrow label** (sobre títulos hero): `AppFont.label`, `textCase(.uppercase)` o `.uppercased(with: es_MX)`, `tracking(0.6–1.2)`, color `textTertiary`. Ejemplo: `"LUNES 19 DE OCTUBRE"`, `"HOY"`, `"MAÑANA"`.
 - **Headline italic + accent.** Empty states usan un fragmento en italic con color accent dentro del headline: `Text("Hoy toca ") + Text("descansar").italic().foregroundColor(.accent)`.
 - **Números** siempre con `.monospacedDigit()`. Cuando cambien, agregar `.contentTransition(.numericText())`.
 
@@ -382,7 +382,7 @@ struct FeatureView: View {
 
 Layout consistente en Today, Week, Insights, CreateHabit:
 
-1. **Eyebrow** (`AppFont.label` mayúsculas, `textTertiary`, `tracking(0.6–1.2)`) — fecha actual, "ÚLTIMOS 30 DÍAS", "MAÑANA", "MES YYYY".
+1. **Eyebrow** (`AppFont.label` mayúsculas, `textTertiary`, `tracking(0.6–1.2)`) — fecha actual, "MAÑANA", "MES YYYY". Opcional: Insights no lleva, porque su periodo vive en la tarjeta principal.
 2. **Title** (`AppFont.title` serif, `textPrimary`) — "Hoy", "Tu ritmo", "Semana N".
 3. **Acción a la derecha**, opcional: FAB "+" circular 42pt (`AppColor.accent`, foreground white, `appElevation(.low)`).
 
