@@ -277,7 +277,7 @@ Puro cálculo de solo lectura sobre las entidades, en `Models/Domain/` y `Models
 |---|---|
 | `Habit+Scheduling` | Agenda, pausas, fechas de fin, días registrables, recorrido de semanas |
 | `Habit+Completion` | Estado diario, cantidades, progreso semanal, ratios |
-| `Habit+Streaks` | Racha actual, de exhibición, mejor racha y desglose honesto |
+| `Habit+Streaks` | Racha actual, de exhibición, mejor racha y desglose honesto. En agendas flexibles, un día sin marca no rompe la racha si la meta semanal se cumplió o todavía se puede cumplir |
 | `Habit+Freezes` | Protección por comodín y candidatos de la semana |
 | `Habit+Recovery` | Candidatos a prompt de recuperación |
 | `Habit+Presentation` | Copy derivado, formato de cantidades, matriz del heatmap |

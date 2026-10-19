@@ -136,6 +136,11 @@ Habit tracking:
 - Quantity habits open `QuantityLogSheet`.
 - A habit is completed when `totalValue(on:) >= sessionTargetValue`.
 - Flexible schedules use `HabitScheduleKind.timesPerWeek`.
+- Flexible streaks follow the weekly target, not the day: an unmarked day does not break the
+  streak if its week met the target or, in the current week, the target is still reachable
+  (`isCoveredByWeeklyTarget`). A finished week that missed the target still breaks it.
+- In Hoy, a flexible habit resting on a met weekly target (`restsOnMetWeeklyTarget`) does not
+  log on tap: it shows a popover notice instead. Week view can still log any day.
 
 Insights:
 
