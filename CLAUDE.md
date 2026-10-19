@@ -166,6 +166,10 @@ Reminders:
 - **Daily notice** (`DailyNoticeService`, "te quedan N hábitos hoy") is opt-in, independent of
   any habit, and the **only** `.timeSensitive` notification (entitlement in
   `Config/WeekHabit.entitlements`): per-habit reminders keep the default level on purpose.
+  Only Release carries that entitlement. Debug signs with `Config/WeekHabit-Debug.entitlements`
+  (App Group only) because a free personal team cannot provision Time Sensitive, so a Debug
+  build installs on a device; there, time-sensitive notices arrive at the normal level.
+  Keep both files in sync for anything else.
   It is scheduled as one-off requests for the next 7 days (`daily-notice:<yyyy-MM-dd>`), not
   a repeating one, so a closed day stays silent. `RootView` recomputes it on entering **and**
   leaving `.active`; since logging only happens in-app, that keeps every count exact. The
