@@ -136,6 +136,16 @@ extension Habit {
         return String(format: "%.1f", value)
     }
 
+    /// Aviso al tocar en Hoy un hábito que descansa porque ya cumplió su meta semanal. La
+    /// semana siempre empieza en lunes (`AppCalendar`).
+    func weeklyTargetRestNotice(reference: Date) -> String {
+        "Ya cumpliste \(weeklyTargetProgressText(reference: reference)) esta semana. Vuelve a contar el lunes."
+    }
+
+    private func weeklyTargetProgressText(reference: Date) -> String {
+        "\(completedDaysThisWeek(reference: reference)) de \(targetDaysPerWeek)"
+    }
+
     /// Copy mostrada bajo la fila de un hábito completado en Hoy.
     /// Incluye hora y fuente de la marca, o describe la versión mínima si aplica.
     func todayCompletionMetadata(reference: Date) -> String {
@@ -157,7 +167,7 @@ extension Habit {
             .first
 
         guard let entry = completedEntry ?? minimumEntry else {
-            return "Meta semanal alcanzada"
+            return "Meta de la semana cumplida · \(weeklyTargetProgressText(reference: reference))"
         }
 
         if entry.kind == .minimum {

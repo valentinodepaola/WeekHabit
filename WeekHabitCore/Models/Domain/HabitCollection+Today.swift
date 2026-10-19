@@ -20,6 +20,17 @@ extension Habit {
         }
         return index.isCompleted(on: date) || index.isMinimumCompleted(on: date)
     }
+
+    /// Está en completados solo porque la meta semanal ya se cumplió: hoy no tiene marca
+    /// propia y no hace falta. Hoy no registra nada al tocarlo, porque un toque normal
+    /// sumaría un día de más y el siguiente lo borraría sin que la fila cambie.
+    func restsOnMetWeeklyTarget(on date: Date) -> Bool {
+        let index = HabitDayIndex(self)
+        return isFlexibleSchedule
+            && completedDaysThisWeek(reference: date, index: index) >= targetDaysPerWeek
+            && !index.isCompleted(on: date)
+            && !index.isMinimumCompleted(on: date)
+    }
 }
 
 extension Sequence where Element == Habit {

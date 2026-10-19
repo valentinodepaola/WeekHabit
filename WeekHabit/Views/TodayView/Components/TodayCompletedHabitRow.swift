@@ -11,32 +11,51 @@ struct TodayCompletedHabitRow: View {
     let habit: Habit
     let metadata: String
     var isMinimumCompleted: Bool = false
+    /// Presente cuando el hábito descansa porque ya cumplió su meta semanal: el toque muestra
+    /// este aviso en lugar de registrar.
+    var weeklyRestNotice: String? = nil
     var onOpenDetail: (() -> Void)? = nil
     let onToggle: () -> Void
 
+    @State private var showsWeeklyRestNotice = false
+
+    private var restsOnWeeklyTarget: Bool {
+        weeklyRestNotice != nil
+    }
+
     var body: some View {
         HStack(alignment: .center, spacing: AppSpacing.m) {
-            Button(action: onToggle) {
+            Button(action: handleToggle) {
                 Image(systemName: "checkmark")
                     .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(restsOnWeeklyTarget ? habit.habitColor : .white)
                     .frame(width: 32, height: 32)
-                    .background(isMinimumCompleted ? habit.habitColor.opacity(0.55) : habit.habitColor)
+                    .background(toggleFill)
                     .clipShape(RoundedRectangle(cornerRadius: AppRadius.s, style: .continuous))
                     .overlay {
                         RoundedRectangle(cornerRadius: AppRadius.s, style: .continuous)
-                            .strokeBorder(isMinimumCompleted ? habit.habitColor : Color.clear, lineWidth: 1)
+                            .strokeBorder(toggleBorder, lineWidth: 1)
                     }
             }
             .buttonStyle(.plain)
-            .accessibilityLabel(isMinimumCompleted ? "Marcar completo \(habit.title)" : "Desmarcar \(habit.title)")
+            .accessibilityLabel(toggleAccessibilityLabel)
+            .accessibilityHint(weeklyRestNotice ?? "")
+            .popover(isPresented: $showsWeeklyRestNotice) {
+                Text(weeklyRestNotice ?? "")
+                    .font(AppFont.callout)
+                    .foregroundStyle(AppColor.textPrimary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(idealWidth: 240)
+                    .padding(AppSpacing.m)
+                    .presentationCompactAdaptation(.popover)
+            }
 
             HStack(spacing: AppSpacing.m) {
                 VStack(alignment: .leading, spacing: AppSpacing.xxs) {
                     Text(habit.title)
                         .font(AppFont.bodyEmphasis)
                         .foregroundStyle(isMinimumCompleted ? AppColor.textPrimary.opacity(0.72) : AppColor.textSecondary)
-                        .strikethrough(!isMinimumCompleted, color: AppColor.textSecondary)
+                        .strikethrough(!isMinimumCompleted && !restsOnWeeklyTarget, color: AppColor.textSecondary)
                         .lineLimit(1)
 
                     Text(metadata)
@@ -70,6 +89,36 @@ struct TodayCompletedHabitRow: View {
                     lineWidth: 1
                 )
         }
+    }
+
+    private func handleToggle() {
+        guard restsOnWeeklyTarget else {
+            onToggle()
+            return
+        }
+        AppHaptics.play(.selection)
+        showsWeeklyRestNotice = true
+    }
+
+    private var toggleFill: Color {
+        if restsOnWeeklyTarget {
+            return habit.habitColor.opacity(0.14)
+        }
+        return isMinimumCompleted ? habit.habitColor.opacity(0.55) : habit.habitColor
+    }
+
+    private var toggleBorder: Color {
+        if restsOnWeeklyTarget {
+            return habit.habitColor.opacity(0.5)
+        }
+        return isMinimumCompleted ? habit.habitColor : Color.clear
+    }
+
+    private var toggleAccessibilityLabel: String {
+        if restsOnWeeklyTarget {
+            return "\(habit.title): meta de la semana cumplida"
+        }
+        return isMinimumCompleted ? "Marcar completo \(habit.title)" : "Desmarcar \(habit.title)"
     }
 
     private var completedIconBadge: some View {

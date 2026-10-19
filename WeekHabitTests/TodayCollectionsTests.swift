@@ -263,4 +263,69 @@ final class TodayCollectionsTests: XCTestCase {
         assertPartitionMatchesIndividualFunctions(empty, on: day)
         XCTAssertEqual(empty.todayPartition(on: day).progress, 0)
     }
+
+    // MARK: - Meta semanal cumplida
+
+    private func sixOfSixHabit() -> Habit {
+        let habit = TestFactory.habit(
+            schedule: .timesPerWeek,
+            targetDaysPerWeek: 6,
+            createdAt: TestFactory.date(day: 1)
+        )
+        (1...6).forEach { day in
+            TestFactory.entry(.completed, habit: habit, date: TestFactory.date(day: day), value: 1)
+        }
+        return habit
+    }
+
+    func testFlexibleHabitRestsOnMetWeeklyTargetOnItsSpareDay() {
+        let habit = sixOfSixHabit()
+        let sunday = TestFactory.date(day: 7)
+
+        XCTAssertTrue(habit.restsOnMetWeeklyTarget(on: sunday))
+        XCTAssertTrue([habit].completedToday(on: sunday).contains { $0 === habit })
+        XCTAssertEqual(
+            habit.weeklyTargetRestNotice(reference: sunday),
+            "Ya cumpliste 6 de 6 esta semana. Vuelve a contar el lunes."
+        )
+        XCTAssertEqual(
+            habit.todayCompletionMetadata(reference: sunday),
+            "Meta de la semana cumplida · 6 de 6"
+        )
+    }
+
+    /// El día que cierra la meta tiene su propia marca: tocarlo sí debe poder deshacerla.
+    func testDayThatClosedTheWeeklyTargetDoesNotRest() {
+        let habit = sixOfSixHabit()
+
+        XCTAssertFalse(habit.restsOnMetWeeklyTarget(on: TestFactory.date(day: 6)))
+    }
+
+    func testDailyHabitNeverRestsOnWeeklyTarget() {
+        let habit = TestFactory.habit(createdAt: TestFactory.date(day: 1))
+        (1...6).forEach { day in
+            TestFactory.entry(.completed, habit: habit, date: TestFactory.date(day: day), value: 1)
+        }
+
+        XCTAssertFalse(habit.restsOnMetWeeklyTarget(on: TestFactory.date(day: 7)))
+    }
+
+    /// Si desde Semana se quita un día anterior, la meta deja de estar cumplida y el hábito
+    /// vuelve a pendientes, donde sí se puede marcar.
+    func testRemovingAPastEntryLetsTheHabitBeMarkedAgain() {
+        let habit = sixOfSixHabit()
+        let sunday = TestFactory.date(day: 7)
+        habit.entries.removeAll { AppCalendar.isSameDay($0.date, TestFactory.date(day: 3)) }
+
+        XCTAssertFalse(habit.restsOnMetWeeklyTarget(on: sunday))
+        XCTAssertTrue([habit].pendingToday(on: sunday).contains { $0 === habit })
+    }
+
+    func testFlexibleHabitIsPendingAgainOnNextMonday() {
+        let habit = sixOfSixHabit()
+        let nextMonday = TestFactory.date(day: 8)
+
+        XCTAssertFalse(habit.restsOnMetWeeklyTarget(on: nextMonday))
+        XCTAssertTrue([habit].pendingToday(on: nextMonday).contains { $0 === habit })
+    }
 }
