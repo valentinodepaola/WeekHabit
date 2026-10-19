@@ -54,9 +54,18 @@ final class PerformanceBaselineTests: XCTestCase {
             "Insights snapshot",
             ceiling: Ceiling.insightSnapshot,
             smallLabel: "\(Size.fewHabits) hábitos",
-            small: { _ = few.habits.globalInsightSnapshot(reference: self.reference) },
+            small: { _ = few.habits.insightSnapshot(for: .month, reference: self.reference) },
             largeLabel: "\(Size.manyHabits) hábitos",
-            large: { _ = many.habits.globalInsightSnapshot(reference: self.reference) }
+            large: { _ = many.habits.insightSnapshot(for: .month, reference: self.reference) }
+        )
+
+        measureScaling(
+            "Insights snapshot · todo el historial",
+            ceiling: Ceiling.insightSnapshot,
+            smallLabel: "\(Size.fewHabits) hábitos",
+            small: { _ = few.habits.insightSnapshot(for: .all, reference: self.reference) },
+            largeLabel: "\(Size.manyHabits) hábitos",
+            large: { _ = many.habits.insightSnapshot(for: .all, reference: self.reference) }
         )
 
         measureScaling(

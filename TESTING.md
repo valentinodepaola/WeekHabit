@@ -15,7 +15,7 @@ xcodebuild -project WeekHabit.xcodeproj \
 
 ## Estado actual de la suite
 
-Última validación conocida (2026-09-23): **183 tests passed** en 24 suites, sobre
+Última validación conocida (2026-10-19): **207 tests passed** en 25 suites, sobre
 `platform=iOS Simulator,name=iPhone 17`, sin fallos.
 
 Además de la cobertura inicial, la suite ya cubre:
@@ -33,6 +33,10 @@ Además de la cobertura inicial, la suite ya cubre:
   - `attentionHabit`;
   - `urgePeakHourInsight`;
   - sugerencias de experimentos y orden por prioridad.
+- Snapshot por periodo de la tarjeta principal de Insights (`InsightPeriodSnapshotTests`):
+  - semana en jueves con días en espera, y en lunes sin comparación;
+  - mes con 12 tramos y etiquetas en los extremos;
+  - todo con barras por semana o por mes según el largo del historial, y sus etiquetas.
 - `OnboardingSetupService`, agregado en la Fase 1 del plan de mejoras:
   - título de respaldo y motivación nula cuando el texto viene vacío;
   - normalización de espacios y fecha de fin a 30 días en start-of-day;

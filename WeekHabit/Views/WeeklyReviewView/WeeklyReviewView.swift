@@ -86,8 +86,7 @@ struct WeeklyReviewView: View {
                                 InsightsHeroCard(
                                     snapshot: snapshot,
                                     readiness: readiness,
-                                    title: "CONSISTENCIA DE LA SEMANA",
-                                    trendCaption: "Cada barra resume un día de esta semana."
+                                    title: "CONSISTENCIA DE LA SEMANA"
                                 )
 
                                 InsightConfidenceCard(confidence: confidence)

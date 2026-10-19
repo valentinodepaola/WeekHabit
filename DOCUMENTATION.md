@@ -284,7 +284,7 @@ Puro cálculo de solo lectura sobre las entidades, en `Models/Domain/` y `Models
 | `HabitDayIndex` | Índice de entradas y comodines por día normalizado |
 | `HabitCollection+Today` | Particiones del día y `TodayPartition` |
 | `Habit+InsightMetrics` | Métricas de 30 días, confianza, fallos, mejor día/hora |
-| `HabitCollection+InsightSnapshot` | Snapshot global, readiness, confianza |
+| `HabitCollection+InsightSnapshot` | Snapshot por periodo (semana, mes, todo), readiness, confianza |
 | `HabitCollection+InsightContexts` | Mejor día/hora, hábito de atención, top consistente, urges |
 | `HabitCollection+ExperimentSuggestions` | Sugerencias de experimentos y su scoring |
 | `HabitExperiment+Domain` | Aplicar, mantener, revertir, cancelar, revisar |
@@ -416,9 +416,11 @@ y vacío.
 
 ### `InsightsView`
 
-Ventana de 30 días: snapshot global, confianza del ritmo, mejor día y hora punta, hábito más
-consistente y hábito que necesita atención, horas pico de impulsos, y experimentos de ritmo de
-7 días con aplicar / mantener / revertir.
+La tarjeta principal tiene un selector Semana / Mes / Todo (`InsightPeriod`, guardado con
+`@AppStorage`, abre en Mes) que cambia la gráfica, el porcentaje y la comparación. El resto
+de las tarjetas usa una ventana de 30 días: confianza del ritmo, mejor día y hora punta, hábito
+más consistente y hábito que necesita atención, horas pico de impulsos, y experimentos de ritmo
+de 7 días con aplicar / mantener / revertir.
 
 En DEBUG, al final del scroll hay una card `PerformanceSeedToolsCard` con una sola acción
 contextual sobre `PerformanceSeedService`: crear el dataset sintético si no existe, o
