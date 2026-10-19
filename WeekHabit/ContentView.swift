@@ -43,7 +43,7 @@ struct ContentView: View {
                 }
                 .tag(0)
 
-            WeekView()
+            WeekView(isSelectedTab: selectedTab == 1)
                 .tabItem {
                     Label(TabItems.week.description, systemImage: TabItems.week.icon)
                 }

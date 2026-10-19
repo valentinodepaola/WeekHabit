@@ -210,7 +210,7 @@ struct ComponentsGalleryView: View {
                                     WeekGridCell(
                                         state: state,
                                         habitColor: AppColor.accent,
-                                        isInteractive: false,
+                                        interaction: .decorative,
                                         onTap: {},
                                         onSkip: {}
                                     )

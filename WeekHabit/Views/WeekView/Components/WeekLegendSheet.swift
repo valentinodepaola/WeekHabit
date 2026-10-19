@@ -65,7 +65,7 @@ struct WeekLegendSheet: View {
             WeekGridCell(
                 state: state,
                 habitColor: sampleColor,
-                isInteractive: false,
+                interaction: .decorative,
                 onTap: {},
                 onSkip: {}
             )
