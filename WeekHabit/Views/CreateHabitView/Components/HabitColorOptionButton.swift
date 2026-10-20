@@ -35,3 +35,13 @@ struct HabitColorOptionButton: View {
         .buttonStyle(.plain)
     }
 }
+
+#Preview {
+    HStack(spacing: 12) {
+        HabitColorOptionButton(colorHex: HabitAppearance.colorHexes[0], isSelected: true) {}
+        HabitColorOptionButton(colorHex: HabitAppearance.colorHexes[1], isSelected: false) {}
+    }
+    .frame(width: 120)
+    .padding()
+    .background(AppColor.bgCanvas)
+}

@@ -29,3 +29,11 @@ struct HabitColorGrid: View {
         }
     }
 }
+
+#Preview {
+    @Previewable @State var selectedColorHex = HabitAppearance.defaultColorHex
+
+    HabitColorGrid(selectedColorHex: $selectedColorHex)
+        .padding()
+        .background(AppColor.bgCanvas)
+}

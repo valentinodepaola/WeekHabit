@@ -41,3 +41,23 @@ struct HabitOptionButton: View {
         .buttonStyle(.plain)
     }
 }
+
+#Preview {
+    VStack(spacing: 10) {
+        HabitOptionButton(
+            title: "Diario",
+            subtitle: "Todos los días",
+            icon: "sun.max.fill",
+            isSelected: true
+        ) {}
+
+        HabitOptionButton(
+            title: "Días específicos",
+            subtitle: "Elige L, M, X...",
+            icon: "calendar.badge.checkmark",
+            isSelected: false
+        ) {}
+    }
+    .padding()
+    .background(AppColor.bgCanvas)
+}

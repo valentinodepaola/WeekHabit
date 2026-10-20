@@ -30,3 +30,11 @@ struct PlanMeasurableSection: View {
         }
     }
 }
+
+#Preview {
+    @Previewable @State var measurableOutcome = ""
+
+    PlanMeasurableSection(measurableOutcome: $measurableOutcome)
+        .padding()
+        .background(AppColor.bgCanvas)
+}

@@ -57,3 +57,21 @@ struct PlanBasicInfoSection: View {
         }
     }
 }
+
+#Preview("Vacío") {
+    @Previewable @State var planName = ""
+    @Previewable @State var motivation = ""
+
+    PlanBasicInfoSection(planName: $planName, motivation: $motivation)
+        .padding()
+        .background(AppColor.bgCanvas)
+}
+
+#Preview("Con texto") {
+    @Previewable @State var planName = "Mañanas con energía"
+    @Previewable @State var motivation = "Quiero llegar al trabajo despierto y con la cabeza clara."
+
+    PlanBasicInfoSection(planName: $planName, motivation: $motivation)
+        .padding()
+        .background(AppColor.bgCanvas)
+}

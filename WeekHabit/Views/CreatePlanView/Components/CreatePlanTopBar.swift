@@ -34,3 +34,13 @@ struct CreatePlanTopBar: View {
         .padding(.vertical, AppSpacing.s)
     }
 }
+
+#Preview("Listo para guardar") {
+    CreatePlanTopBar(isSaveDisabled: false, onCancel: {}, onSave: {})
+        .background(AppColor.bgCanvas)
+}
+
+#Preview("Sin nombre") {
+    CreatePlanTopBar(isSaveDisabled: true, onCancel: {}, onSave: {})
+        .background(AppColor.bgCanvas)
+}

@@ -46,3 +46,25 @@ struct HabitScheduleSelector: View {
         }
     }
 }
+
+#Preview("Con flexible") {
+    @Previewable @State var scheduleKind: HabitScheduleKind = .daily
+    @Previewable @State var selectedActiveDays: Set<Weekday> = []
+
+    HabitScheduleSelector(scheduleKind: $scheduleKind, selectedActiveDays: $selectedActiveDays)
+        .padding()
+        .background(AppColor.bgCanvas)
+}
+
+#Preview("Hábito a dejar") {
+    @Previewable @State var scheduleKind: HabitScheduleKind = .specificDays
+    @Previewable @State var selectedActiveDays: Set<Weekday> = [.monday, .wednesday, .friday]
+
+    HabitScheduleSelector(
+        scheduleKind: $scheduleKind,
+        selectedActiveDays: $selectedActiveDays,
+        showFlexible: false
+    )
+    .padding()
+    .background(AppColor.bgCanvas)
+}

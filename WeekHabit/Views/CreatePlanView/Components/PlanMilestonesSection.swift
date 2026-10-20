@@ -117,3 +117,22 @@ private struct MilestoneDraftRow: View {
         .clipShape(RoundedRectangle(cornerRadius: AppRadius.m, style: .continuous))
     }
 }
+
+#Preview("Con hitos") {
+    @Previewable @State var milestones = [
+        MilestoneDraft(title: "Correr 5 km seguidos", targetDate: PreviewSamples.day(10)),
+        MilestoneDraft(title: "Primera carrera", targetDate: PreviewSamples.day(30))
+    ]
+
+    PlanMilestonesSection(milestones: $milestones, planEndsAt: PreviewSamples.day(45))
+        .padding()
+        .background(AppColor.bgCanvas)
+}
+
+#Preview("Sin hitos") {
+    @Previewable @State var milestones: [MilestoneDraft] = []
+
+    PlanMilestonesSection(milestones: $milestones, planEndsAt: PreviewSamples.day(45))
+        .padding()
+        .background(AppColor.bgCanvas)
+}

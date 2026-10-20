@@ -75,3 +75,12 @@ struct PlanScheduleSection: View {
         }
     }
 }
+
+#Preview {
+    @Previewable @State var endsAt = PreviewSamples.day(45)
+    @Previewable @State var targetCompletionRate = 0.8
+
+    PlanScheduleSection(endsAt: $endsAt, targetCompletionRate: $targetCompletionRate)
+        .padding()
+        .background(AppColor.bgCanvas)
+}

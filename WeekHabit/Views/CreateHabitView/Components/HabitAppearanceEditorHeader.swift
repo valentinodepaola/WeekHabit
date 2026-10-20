@@ -30,3 +30,13 @@ struct HabitAppearanceEditorHeader: View {
         }
     }
 }
+
+#Preview {
+    HabitAppearanceEditorHeader(
+        selectedIconName: HabitAppearance.defaultIconName,
+        selectedColor: HabitAppearance.color(for: HabitAppearance.defaultColorHex),
+        onClose: {}
+    )
+    .padding()
+    .background(AppColor.bgCanvas)
+}

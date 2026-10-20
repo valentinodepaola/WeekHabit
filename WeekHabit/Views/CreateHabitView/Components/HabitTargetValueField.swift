@@ -30,3 +30,11 @@ struct HabitTargetValueField: View {
         .clipShape(RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous))
     }
 }
+
+#Preview {
+    @Previewable @State var targetValueText = "20"
+
+    HabitTargetValueField(targetValueText: $targetValueText, unitLabel: HabitMeasurementUnit.pages.shortTitle)
+        .padding()
+        .background(AppColor.bgCanvas)
+}

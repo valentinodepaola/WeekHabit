@@ -19,3 +19,13 @@ struct CreateHabitFormSection<Content: View>: View {
         }
     }
 }
+
+#Preview {
+    CreateHabitFormSection(title: "Nombre", helper: "Algo corto que reconozcas de un vistazo.") {
+        Text("Leer 20 páginas")
+            .font(AppFont.body)
+            .foregroundStyle(AppColor.textPrimary)
+    }
+    .padding()
+    .background(AppColor.bgCanvas)
+}
