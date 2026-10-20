@@ -27,3 +27,20 @@ struct TodayWidgetGlyph: View {
             }
     }
 }
+
+#if DEBUG
+/// Solo descanso y "sin hábitos": son los estados que dibujan glifo en vez de anillo, en los
+/// dos tamaños con que lo usan `systemSmall` y `systemMedium`.
+#Preview("Glifo · descanso y sin hábitos") {
+    VStack(spacing: AppSpacing.l) {
+        ForEach([TodayWidgetState.rest, .empty], id: \.self) { state in
+            HStack(spacing: AppSpacing.l) {
+                TodayWidgetGlyph(state: state, size: 76)
+                TodayWidgetGlyph(state: state, size: 92)
+            }
+        }
+    }
+    .padding()
+    .background(AppColor.bgElevated)
+}
+#endif
