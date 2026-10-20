@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct PlanAccordion: View {
     let plan: Plan
@@ -338,4 +339,53 @@ private struct PlanHabitRowButtonStyle: ButtonStyle {
             .background(configuration.isPressed ? AppColor.bgElevated.opacity(0.6) : Color.clear)
             .animation(AppMotion.linearOut, value: configuration.isPressed)
     }
+}
+
+#Preview("Abierto", traits: .sampleData) {
+    @Previewable @Query var plans: [Plan]
+    @Previewable @State var isExpanded = true
+
+    ScrollView {
+        if let plan = plans.first {
+            PlanAccordion(
+                plan: plan,
+                isExpanded: isExpanded,
+                onToggle: { isExpanded.toggle() },
+                onHabitTap: { _ in }
+            )
+            .padding()
+        }
+    }
+    .background(AppColor.bgCanvas)
+}
+
+#Preview("Cerrado", traits: .sampleData) {
+    @Previewable @Query var plans: [Plan]
+    @Previewable @State var isExpanded = false
+
+    ScrollView {
+        if let plan = plans.first {
+            PlanAccordion(
+                plan: plan,
+                isExpanded: isExpanded,
+                onToggle: { isExpanded.toggle() },
+                onHabitTap: { _ in }
+            )
+            .padding()
+        }
+    }
+    .background(AppColor.bgCanvas)
+}
+
+#Preview("Sin hábitos", traits: .emptyData) {
+    // Plan suelto, fuera del set compartido: ningún plan de muestra queda sin hábitos.
+    @Previewable @State var plan = Plan(
+        title: "Dormir mejor",
+        motivation: "Despertar sin alarma.",
+        endsAt: PreviewSamples.day(30)
+    )
+
+    PlanAccordion(plan: plan, isExpanded: true, onToggle: {}, onHabitTap: { _ in })
+        .padding()
+        .background(AppColor.bgCanvas)
 }

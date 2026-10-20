@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct QuantityLogSheet: View {
     let habit: Habit
@@ -102,5 +103,19 @@ struct QuantityLogSheet: View {
                 .clipShape(Circle())
         }
         .buttonStyle(.plain)
+    }
+}
+
+#Preview(traits: .sampleData) {
+    @Previewable @Query var habits: [Habit]
+
+    if let habit = habits.first(where: { $0.trackingKind == .quantity && $0.measurementUnit == .glasses }) {
+        QuantityLogSheet(
+            habit: habit,
+            date: .now,
+            initialValue: habit.totalValue(on: .now),
+            onSave: { _ in }
+        )
+        .background(AppColor.bgCanvas)
     }
 }

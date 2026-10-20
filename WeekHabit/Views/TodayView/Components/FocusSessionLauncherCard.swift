@@ -63,3 +63,13 @@ struct FocusSessionLauncherCard: View {
         .buttonStyle(.plain)
     }
 }
+
+#Preview {
+    VStack(spacing: AppSpacing.m) {
+        FocusSessionLauncherCard(remainingCount: 3, onStart: {})
+        FocusSessionLauncherCard(remainingCount: 1, onStart: {})
+        FocusSessionLauncherCard(remainingCount: 0, onStart: {})
+    }
+    .padding()
+    .background(AppColor.bgCanvas)
+}

@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct TodayHabitComponent: View {
     let habit: Habit
@@ -450,4 +451,48 @@ private struct ClockwiseRoundedSquare: InsettableShape {
         shape.insetAmount += amount
         return shape
     }
+}
+
+#Preview("Pendientes", traits: .sampleData) {
+    @Previewable @Query(sort: \Habit.createdAt) var habits: [Habit]
+    @Previewable @Query var experiments: [HabitExperiment]
+
+    List {
+        ForEach(Array(habits.enumerated()), id: \.element.id) { index, habit in
+            TodayHabitComponent(
+                habit: habit,
+                isCompleted: false,
+                activeExperiment: experiments.activeExperiment(for: habit.id),
+                onUrge: habit.isBreakHabit ? {} : nil,
+                onSlip: habit.isBreakHabit ? {} : nil,
+                onMinimum: {},
+                onToggle: {}
+            )
+            .todayGroupedRow(TodayGroupPosition(index: index, count: habits.count))
+        }
+    }
+    .listStyle(.plain)
+    .listRowSpacing(0)
+    .scrollContentBackground(.hidden)
+    .background(AppColor.bgCanvas)
+}
+
+#Preview("Mínima y descanso", traits: .sampleData) {
+    @Previewable @Query var habits: [Habit]
+
+    List {
+        if let habit = habits.first(where: { $0.minimumViableTitle != nil && $0.scheduleKind == .daily }) {
+            TodayHabitComponent(habit: habit, isCompleted: false, isMinimumCompleted: true, onToggle: {})
+                .todayGroupedRow(.only)
+        }
+
+        if let habit = habits.first(where: { $0.scheduleKind == .specificDays }) {
+            TodayHabitComponent(habit: habit, isCompleted: false, isSkipped: true, onToggle: {})
+                .todayGroupedRow(.only)
+        }
+    }
+    .listStyle(.plain)
+    .listRowSpacing(0)
+    .scrollContentBackground(.hidden)
+    .background(AppColor.bgCanvas)
 }
