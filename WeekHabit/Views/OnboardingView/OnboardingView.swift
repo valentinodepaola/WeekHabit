@@ -154,6 +154,6 @@ struct OnboardingView: View {
     }
 }
 
-#Preview {
+#Preview(traits: .sampleData) {
     OnboardingView()
 }

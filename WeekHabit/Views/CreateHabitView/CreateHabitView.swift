@@ -356,6 +356,6 @@ private struct HabitSaveFailure: Identifiable {
     let message: String
 }
 
-#Preview {
+#Preview(traits: .sampleData) {
     CreateHabitView()
 }

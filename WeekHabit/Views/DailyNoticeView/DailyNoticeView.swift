@@ -207,6 +207,6 @@ struct DailyNoticeView: View {
     }
 }
 
-#Preview {
+#Preview(traits: .sampleData) {
     DailyNoticeView()
 }

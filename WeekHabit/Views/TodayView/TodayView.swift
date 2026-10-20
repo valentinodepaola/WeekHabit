@@ -242,6 +242,10 @@ struct TodayView: View {
 
 }
 
-#Preview {
+#Preview("Con datos", traits: .sampleData) {
+    TodayView()
+}
+
+#Preview("Vacío", traits: .emptyData) {
     TodayView()
 }
