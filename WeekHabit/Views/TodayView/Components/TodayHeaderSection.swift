@@ -46,3 +46,18 @@ struct TodayHeaderSection: View {
         }
     }
 }
+
+#Preview {
+    TodayHeaderSection(
+        dateTitle: AppFormatters.uppercasedString(
+            from: .now,
+            format: "EEEE d 'DE' MMMM",
+            foldingDiacritics: true
+        ),
+        onNoticesTap: {},
+        onHelpTap: {},
+        onCreateTap: {}
+    )
+    .padding()
+    .background(AppColor.bgCanvas)
+}

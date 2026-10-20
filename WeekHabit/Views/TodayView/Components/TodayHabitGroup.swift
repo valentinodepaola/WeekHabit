@@ -146,3 +146,25 @@ private struct TodayGroupRowBorder: Shape {
         return path
     }
 }
+
+#Preview {
+    List {
+        ForEach(0 ..< 3, id: \.self) { index in
+            Text("Pendiente \(index + 1)")
+                .font(AppFont.bodyEmphasis)
+                .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
+                .padding(.leading, TodayGroupLayout.separatorLeading)
+                .todayGroupedRow(TodayGroupPosition(index: index, count: 3))
+        }
+
+        Text("Completado")
+            .font(AppFont.bodyEmphasis)
+            .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
+            .padding(.leading, TodayGroupLayout.separatorLeading)
+            .todayGroupedRow(.only, tone: .muted)
+    }
+    .listStyle(.plain)
+    .listRowSpacing(0)
+    .scrollContentBackground(.hidden)
+    .background(AppColor.bgCanvas)
+}

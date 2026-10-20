@@ -61,3 +61,12 @@ struct RecoveryPromptBanner: View {
             : "Ayer quedaron \(pendingCount) sin marcar"
     }
 }
+
+#Preview {
+    VStack(spacing: AppSpacing.m) {
+        RecoveryPromptBanner(pendingCount: 1, onTap: {})
+        RecoveryPromptBanner(pendingCount: 3, onTap: {})
+    }
+    .padding()
+    .background(AppColor.bgCanvas)
+}

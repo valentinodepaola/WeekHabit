@@ -46,3 +46,9 @@ struct TodayUrgeExplainer: View {
         }
     }
 }
+
+#Preview {
+    TodayUrgeExplainer(color: HabitAppearance.color(for: "#b07f5c"), onDismiss: {})
+        .padding()
+        .background(AppColor.bgCanvas)
+}

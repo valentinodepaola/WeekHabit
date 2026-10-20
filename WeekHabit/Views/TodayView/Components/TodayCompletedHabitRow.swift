@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct TodayCompletedHabitRow: View {
     let habit: Habit
@@ -127,4 +128,32 @@ struct TodayCompletedHabitRow: View {
         }
         return isMinimumCompleted ? "Marcar completo \(habit.title)" : "Desmarcar \(habit.title)"
     }
+}
+
+#Preview(traits: .sampleData) {
+    @Previewable @Query(sort: \Habit.createdAt) var habits: [Habit]
+
+    let rows: [(detail: TodayCompletionDetail, isMinimum: Bool, restNotice: String?)] = [
+        (TodayCompletionDetail(text: "07:15"), false, nil),
+        (TodayCompletionDetail(text: "08:40", isFocusSession: true), false, nil),
+        (TodayCompletionDetail(text: "Versión mínima"), true, nil),
+        (TodayCompletionDetail(text: "Meta semanal · 3/3"), false, "Ya cumpliste tu meta de esta semana.")
+    ]
+
+    List {
+        ForEach(Array(zip(habits.prefix(rows.count), rows).enumerated()), id: \.offset) { index, pair in
+            TodayCompletedHabitRow(
+                habit: pair.0,
+                detail: pair.1.detail,
+                isMinimumCompleted: pair.1.isMinimum,
+                weeklyRestNotice: pair.1.restNotice,
+                onToggle: {}
+            )
+            .todayGroupedRow(TodayGroupPosition(index: index, count: rows.count), tone: .muted)
+        }
+    }
+    .listStyle(.plain)
+    .listRowSpacing(0)
+    .scrollContentBackground(.hidden)
+    .background(AppColor.bgCanvas)
 }

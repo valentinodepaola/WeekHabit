@@ -57,3 +57,12 @@ struct TodayFreezeBanner: View {
         }
     }
 }
+
+#Preview {
+    VStack(spacing: AppSpacing.m) {
+        TodayFreezeBanner(message: "Usaste un comodín en Leer 20 páginas: tu racha sigue.", onDismiss: {})
+        TodayFreezeBanner(message: "Usaste un comodín en Leer 20 páginas: tu racha sigue.")
+    }
+    .padding()
+    .background(AppColor.bgCanvas)
+}

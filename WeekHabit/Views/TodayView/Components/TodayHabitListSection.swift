@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct TodayHabitActions {
     var toggleCompletion: (Habit) -> Void
@@ -292,4 +293,53 @@ struct TodayHabitListSection: View {
                 .foregroundStyle(AppColor.textSecondary)
         }
     }
+}
+
+#Preview(traits: .sampleData) {
+    @Previewable @Query(sort: \Habit.createdAt) var habits: [Habit]
+    @Previewable @Query var experiments: [HabitExperiment]
+    @Previewable @Namespace var namespace
+
+    let todayHabits = habits.loggableToday(on: .now)
+    let partition = todayHabits.todayPartition(on: .now)
+
+    List {
+        TodayHabitListSection(
+            todayHabits: todayHabits,
+            pendingHabits: partition.pending,
+            completedHabits: partition.completed,
+            skippedHabits: partition.skipped,
+            slippedHabits: partition.slipped,
+            experiments: experiments,
+            referenceDate: .now,
+            progress: partition.progress,
+            completedCount: partition.completedCount,
+            activeCount: partition.activeCount,
+            remainingCount: partition.pending.count,
+            slipCount: partition.slipped.count,
+            freezeMessage: nil,
+            showsUrgeExplainer: true,
+            namespace: namespace,
+            reduceMotion: false,
+            onDismissFreezeExplainer: {},
+            onDismissUrgeExplainer: {},
+            actions: TodayHabitActions(
+                toggleCompletion: { _ in },
+                markMinimum: { _ in },
+                openDetail: { _ in },
+                openUrgeLog: { _ in },
+                openSlipLog: { _ in },
+                toggleRest: { _ in },
+                requestDelete: { _ in },
+                openEdit: { _ in },
+                openSlipContext: { _ in },
+                undoSlip: { _ in },
+                startFocus: {}
+            )
+        )
+    }
+    .listStyle(.plain)
+    .listRowSpacing(0)
+    .scrollContentBackground(.hidden)
+    .background(AppColor.bgCanvas)
 }

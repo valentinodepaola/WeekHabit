@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct TodayPlanActions {
     var onHabitTap: (Habit) -> Void
@@ -64,4 +65,25 @@ struct TodayPlansSection: View {
             .tint(AppColor.editAction)
         }
     }
+}
+
+#Preview(traits: .sampleData) {
+    @Previewable @Query var plans: [Plan]
+    @Previewable @State var expandedPlans: Set<UUID> = []
+
+    List {
+        TodayPlansSection(
+            plans: plans,
+            expandedPlans: $expandedPlans,
+            actions: TodayPlanActions(
+                onHabitTap: { _ in },
+                onOpenDetail: { _ in },
+                onEdit: { _ in },
+                onDelete: { _ in }
+            )
+        )
+    }
+    .listStyle(.plain)
+    .scrollContentBackground(.hidden)
+    .background(AppColor.bgCanvas)
 }

@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 /// Contenedor de la hoja de recuperación: congela el roster de pendientes de ayer y es dueño de
 /// la navegación entre la lista y el formulario de cada hábito.
@@ -86,4 +87,24 @@ struct RecoveryPromptSheet: View {
 
         path.removeAll()
     }
+}
+
+#Preview("Un pendiente", traits: .sampleData) {
+    @Previewable @Query var habits: [Habit]
+
+    RecoveryPromptSheet(
+        candidates: habits.recoveryPromptCandidates(reference: .now),
+        referenceDate: .now,
+        onSave: { _, _ in true }
+    )
+}
+
+#Preview("Varios pendientes", traits: .sampleData) {
+    @Previewable @Query(sort: \Habit.createdAt) var habits: [Habit]
+
+    RecoveryPromptSheet(
+        candidates: habits.prefix(3).map { RecoveryPromptCandidate(habit: $0, date: PreviewSamples.day(-1)) },
+        referenceDate: .now,
+        onSave: { _, _ in true }
+    )
 }

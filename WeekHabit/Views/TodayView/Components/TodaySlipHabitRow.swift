@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct TodaySlipHabitRow: View {
     let habit: Habit
@@ -82,4 +83,23 @@ struct TodaySlipHabitRow: View {
         .padding(.vertical, AppSpacing.s)
         .frame(maxWidth: .infinity, minHeight: 64, alignment: .leading)
     }
+}
+
+#Preview(traits: .sampleData) {
+    @Previewable @Query var habits: [Habit]
+
+    List {
+        if let habit = habits.first(where: \.isBreakHabit) {
+            TodaySlipHabitRow(
+                habit: habit,
+                metadata: "23:10 · \(SlipTrigger.fatigue.title)",
+                onEdit: {},
+                onUndo: {}
+            )
+            .todayGroupedRow(.only)
+        }
+    }
+    .listStyle(.plain)
+    .scrollContentBackground(.hidden)
+    .background(AppColor.bgCanvas)
 }
