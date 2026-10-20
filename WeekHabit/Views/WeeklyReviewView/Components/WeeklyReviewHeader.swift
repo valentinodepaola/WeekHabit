@@ -41,3 +41,9 @@ struct WeeklyReviewHeader: View {
         }
     }
 }
+
+#Preview {
+    WeeklyReviewHeader(weekRangeText: "12 oct - 18 oct", onClose: {})
+        .padding()
+        .background(AppColor.bgCanvas)
+}

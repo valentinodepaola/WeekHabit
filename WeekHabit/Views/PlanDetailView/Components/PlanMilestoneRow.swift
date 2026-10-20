@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct PlanMilestoneRow: View {
     let milestone: PlanMilestone
@@ -83,4 +84,34 @@ struct PlanMilestoneRow: View {
                 .stroke(isOverdue && !isCompleted ? AppColor.warning.opacity(0.3) : AppColor.divider, lineWidth: 1)
         )
     }
+}
+
+#Preview("Del plan de muestra", traits: .sampleData) {
+    @Previewable @Query var milestones: [PlanMilestone]
+
+    VStack(spacing: AppSpacing.s) {
+        ForEach(milestones.sorted { $0.targetDate < $1.targetDate }) { milestone in
+            PlanMilestoneRow(milestone: milestone, onToggleCompletion: {})
+        }
+    }
+    .padding()
+    .background(AppColor.bgCanvas)
+}
+
+#Preview("Vencido y próximo", traits: .emptyData) {
+    // Hitos sueltos, fuera del set compartido: el plan de muestra no tiene uno vencido.
+    @Previewable @State var plan = Plan(title: "Mañanas con energía", endsAt: PreviewSamples.day(45))
+
+    VStack(spacing: AppSpacing.s) {
+        PlanMilestoneRow(
+            milestone: PlanMilestone(title: "Primera semana completa", targetDate: PreviewSamples.day(-3), plan: plan),
+            onToggleCompletion: {}
+        )
+        PlanMilestoneRow(
+            milestone: PlanMilestone(title: "Correr 5 km seguidos", targetDate: PreviewSamples.day(2), plan: plan),
+            onToggleCompletion: {}
+        )
+    }
+    .padding()
+    .background(AppColor.bgCanvas)
 }

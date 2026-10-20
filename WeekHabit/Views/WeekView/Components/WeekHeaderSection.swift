@@ -137,3 +137,33 @@ struct WeekHeaderSection: View {
         .accessibilityAddTraits(isEditing ? .isSelected : [])
     }
 }
+
+#Preview("Semana actual") {
+    @Previewable @State var weekOffset = 0
+    @Previewable @State var isEditing = false
+
+    WeekHeaderSection(
+        monthYearLabel: AppFormatters.uppercasedString(from: .now, format: "MMMM yyyy", foldingDiacritics: true),
+        weekNumber: AppCalendar.current.component(.weekOfYear, from: .now),
+        weekOffset: $weekOffset,
+        isEditing: $isEditing,
+        onShowLegend: {},
+        onCreate: {}
+    )
+    .background(AppColor.bgCanvas)
+}
+
+#Preview("Otra semana, editando") {
+    @Previewable @State var weekOffset = -2
+    @Previewable @State var isEditing = true
+
+    WeekHeaderSection(
+        monthYearLabel: AppFormatters.uppercasedString(from: .now, format: "MMMM yyyy", foldingDiacritics: true),
+        weekNumber: AppCalendar.current.component(.weekOfYear, from: .now) - 2,
+        weekOffset: $weekOffset,
+        isEditing: $isEditing,
+        onShowLegend: {},
+        onCreate: {}
+    )
+    .background(AppColor.bgCanvas)
+}

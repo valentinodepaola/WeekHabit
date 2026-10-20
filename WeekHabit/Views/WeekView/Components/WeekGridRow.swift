@@ -8,6 +8,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct WeekGridRow: View {
     let habit: Habit
@@ -197,5 +198,49 @@ private struct WeekProgressPill: View {
         .padding(.vertical, 5)
         .background(color.opacity(0.14))
         .clipShape(Capsule())
+    }
+}
+
+#Preview("Lectura", traits: .sampleData) {
+    @Previewable @Query(sort: \Habit.createdAt) var habits: [Habit]
+
+    WeekGridRowPreview(habits: habits, isEditing: false)
+}
+
+#Preview("Edición", traits: .sampleData) {
+    @Previewable @Query(sort: \Habit.createdAt) var habits: [Habit]
+
+    WeekGridRowPreview(habits: habits, isEditing: true)
+}
+
+/// Las filas de la semana actual, como las dibuja Semana.
+private struct WeekGridRowPreview: View {
+    let habits: [Habit]
+    let isEditing: Bool
+
+    private var daysInWeek: [Date] {
+        let start = AppCalendar.weekRange(containing: .now).lowerBound
+        return (0..<7).compactMap { AppCalendar.current.date(byAdding: .day, value: $0, to: start) }
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: AppSpacing.m) {
+                ForEach(habits) { habit in
+                    WeekGridRow(
+                        habit: habit,
+                        daysInWeek: daysInWeek,
+                        referenceDate: .now,
+                        today: .now,
+                        isEditing: isEditing,
+                        onSelectHabit: {},
+                        onToggle: { _ in },
+                        onSkip: { _ in }
+                    )
+                }
+            }
+            .padding()
+        }
+        .background(AppColor.bgCanvas)
     }
 }

@@ -40,3 +40,15 @@ struct FocusTimerRing: View {
         .frame(maxWidth: .infinity)
     }
 }
+
+#Preview("Con duración") {
+    FocusTimerRing(timeText: "18:24", subtitle: "3 hábitos en secuencia", remainingFraction: 0.74)
+        .padding()
+        .background(AppColor.bgCanvas)
+}
+
+#Preview("Sesión libre") {
+    FocusTimerRing(timeText: "06:10", subtitle: "Sesión libre", remainingFraction: nil)
+        .padding()
+        .background(AppColor.bgCanvas)
+}

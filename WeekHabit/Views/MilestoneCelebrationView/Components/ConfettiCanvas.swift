@@ -194,3 +194,13 @@ private struct SeededGenerator {
         return range.lowerBound + (range.upperBound - range.lowerBound) * value
     }
 }
+
+#Preview("Confeti") {
+    ConfettiCanvas(seed: 42, habitColor: HabitAppearance.color(for: HabitAppearance.defaultColorHex), reduceMotion: false)
+        .background(AppColor.bgCanvas)
+}
+
+#Preview("Movimiento reducido") {
+    ConfettiCanvas(seed: 42, habitColor: HabitAppearance.color(for: HabitAppearance.defaultColorHex), reduceMotion: true)
+        .background(AppColor.bgCanvas)
+}

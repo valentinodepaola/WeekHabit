@@ -190,4 +190,10 @@ private struct PerformanceSeedFailure: Identifiable {
     let id = UUID()
     let message: String
 }
+
+#Preview(traits: .emptyData) {
+    PerformanceSeedToolsCard(habits: [], referenceDate: .now)
+        .padding()
+        .background(AppColor.bgCanvas)
+}
 #endif

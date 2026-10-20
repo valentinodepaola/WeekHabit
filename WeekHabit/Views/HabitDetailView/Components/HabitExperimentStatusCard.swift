@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct HabitExperimentStatusCard: View {
     let experiment: HabitExperiment
@@ -58,5 +59,27 @@ struct HabitExperimentStatusCard: View {
             RoundedRectangle(cornerRadius: AppRadius.m, style: .continuous)
                 .stroke(AppColor.info.opacity(0.18), lineWidth: 1)
         }
+    }
+}
+
+#Preview("Activa", traits: .sampleData) {
+    @Previewable @Query var experiments: [HabitExperiment]
+    @Previewable @Query var habits: [Habit]
+
+    if let experiment = experiments.first, let habit = habits.first(where: { $0.id == experiment.habitID }) {
+        HabitExperimentStatusCard(experiment: experiment, habit: habit)
+            .padding()
+            .background(AppColor.bgCanvas)
+    }
+}
+
+#Preview("Lista para revisar", traits: .sampleData) {
+    @Previewable @Query var experiments: [HabitExperiment]
+    @Previewable @Query var habits: [Habit]
+
+    if let experiment = experiments.first, let habit = habits.first(where: { $0.id == experiment.habitID }) {
+        HabitExperimentStatusCard(experiment: experiment, habit: habit, referenceDate: PreviewSamples.day(6))
+            .padding()
+            .background(AppColor.bgCanvas)
     }
 }

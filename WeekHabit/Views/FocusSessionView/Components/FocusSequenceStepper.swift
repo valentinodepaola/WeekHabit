@@ -9,6 +9,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct FocusSequenceStepper: View {
     let items: [FocusSequenceItem]
@@ -136,4 +137,17 @@ struct FocusSequenceStepper: View {
         case .pending: return "Pendiente · \(minutes) min"
         }
     }
+}
+
+#Preview(traits: .sampleData) {
+    @Previewable @Query(sort: \Habit.createdAt) var habits: [Habit]
+
+    // Doce minutos dentro de tres bloques de diez: el primero hecho y el segundo en curso.
+    FocusSequenceStepper(
+        items: habits.prefix(3).map { FocusSequenceItem(id: $0.id, seconds: FocusSequence.baseSeconds) },
+        habitsByID: Dictionary(uniqueKeysWithValues: habits.map { ($0.id, $0) }),
+        elapsed: 720
+    )
+    .padding()
+    .background(AppColor.bgCanvas)
 }

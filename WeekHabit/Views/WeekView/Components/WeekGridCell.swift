@@ -356,3 +356,25 @@ private struct WeekGridCellButtonStyle: ButtonStyle {
             .animation(AppMotion.respectful(AppMotion.snap, reduceMotion), value: isPressed)
     }
 }
+
+#Preview {
+    let color = HabitAppearance.color(for: HabitAppearance.defaultColorHex)
+
+    ScrollView {
+        VStack(alignment: .leading, spacing: AppSpacing.m) {
+            ForEach(WeekGridCell.State.allCases, id: \.self) { state in
+                HStack(spacing: AppSpacing.m) {
+                    WeekGridCell(state: state, habitColor: color, interaction: .editable, onTap: {}, onSkip: {})
+                        .frame(width: WeekGridLayout.cellSize)
+                    WeekGridCell(state: state, habitColor: color, interaction: .readOnly, onTap: {}, onSkip: {})
+                        .frame(width: WeekGridLayout.cellSize)
+                    Text(state.legendTitle)
+                        .font(AppFont.label)
+                        .foregroundStyle(AppColor.textSecondary)
+                }
+            }
+        }
+        .padding()
+    }
+    .background(AppColor.bgCanvas)
+}

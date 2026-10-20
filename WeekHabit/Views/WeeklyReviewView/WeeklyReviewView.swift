@@ -402,3 +402,11 @@ private struct WeeklyReviewSaveFailure: Identifiable {
     let id = UUID()
     let message: String
 }
+
+#Preview("Semana pasada", traits: .sampleData) {
+    WeeklyReviewView(weekStart: AppCalendar.weekRange(containing: PreviewSamples.day(-7)).lowerBound)
+}
+
+#Preview("Sin hábitos", traits: .emptyData) {
+    WeeklyReviewView(weekStart: AppCalendar.weekRange(containing: .now).lowerBound)
+}

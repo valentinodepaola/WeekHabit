@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct FocusReviewChecklist: View {
     let habits: [Habit]
@@ -57,4 +58,14 @@ struct FocusReviewChecklist: View {
             completedHabitIDs.insert(habit.id)
         }
     }
+}
+
+#Preview(traits: .sampleData) {
+    @Previewable @Query(sort: \Habit.createdAt) var habits: [Habit]
+    @Previewable @State var completedHabitIDs: Set<UUID> = []
+
+    FocusReviewChecklist(habits: Array(habits.prefix(3)), completedHabitIDs: $completedHabitIDs)
+        .padding()
+        .background(AppColor.bgCanvas)
+        .onAppear { completedHabitIDs = Set(habits.prefix(1).map(\.id)) }
 }

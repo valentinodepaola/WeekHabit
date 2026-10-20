@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct WeeklyHabitDecisionRow: View {
     let habit: Habit
@@ -104,4 +105,30 @@ struct WeeklyHabitDecisionRow: View {
             action: action
         )
     }
+}
+
+#Preview(traits: .sampleData) {
+    @Previewable @Query(sort: \Habit.createdAt) var habits: [Habit]
+    @Previewable @State var decisions: [UUID: WeeklyReviewDecisionKind] = [:]
+
+    let weekStart = AppCalendar.weekRange(containing: PreviewSamples.day(-7)).lowerBound
+
+    ScrollView {
+        VStack(spacing: AppSpacing.m) {
+            ForEach(habits) { habit in
+                WeeklyHabitDecisionRow(
+                    habit: habit,
+                    summary: habit.weeklyDecisionSummary(weekStart: weekStart),
+                    decision: Binding(
+                        get: { decisions[habit.id] ?? .keep },
+                        set: { decisions[habit.id] = $0 }
+                    ),
+                    onAdjust: {},
+                    onPause: {}
+                )
+            }
+        }
+        .padding()
+    }
+    .background(AppColor.bgCanvas)
 }

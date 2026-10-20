@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct FocusHabitPicker: View {
     let habits: [Habit]
@@ -59,4 +60,16 @@ struct FocusHabitPicker: View {
             selectedHabitIDs.insert(habit.id)
         }
     }
+}
+
+#Preview(traits: .sampleData) {
+    @Previewable @Query(sort: \Habit.createdAt) var habits: [Habit]
+    @Previewable @State var selectedHabitIDs: Set<UUID> = []
+
+    ScrollView {
+        FocusHabitPicker(habits: habits, selectedHabitIDs: $selectedHabitIDs)
+            .padding()
+    }
+    .background(AppColor.bgCanvas)
+    .onAppear { selectedHabitIDs = Set(habits.prefix(2).map(\.id)) }
 }

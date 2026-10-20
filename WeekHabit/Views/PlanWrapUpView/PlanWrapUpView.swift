@@ -280,3 +280,47 @@ private struct HabitRetentionRow: View {
         .animation(AppMotion.respectful(AppMotion.snap, reduceMotion), value: shouldRetain)
     }
 }
+
+#Preview("Meta cumplida") {
+    PlanWrapUpPreview(
+        habits: [PreviewSamples.readingHabit(), PreviewSamples.phoneInBedHabit()],
+        targetCompletionRate: 0.7
+    )
+}
+
+#Preview("Sin alcanzar la meta") {
+    PlanWrapUpPreview(
+        habits: [PreviewSamples.meditationHabit(), PreviewSamples.waterHabit()],
+        targetCompletionRate: 0.95
+    )
+}
+
+/// Un plan que terminó ayer, en su propio contenedor en memoria. No va al set compartido de
+/// `PreviewSamples`: `ContentView` abriría este cierre encima de su preview.
+private struct PlanWrapUpPreview: View {
+    let container: ModelContainer?
+    let plan: Plan
+
+    init(habits: [Habit], targetCompletionRate: Double) {
+        let plan = Plan(
+            title: "Mañanas con energía",
+            motivation: "Quiero llegar al trabajo despierto y con la cabeza clara.",
+            startedAt: PreviewSamples.day(-28),
+            endsAt: PreviewSamples.day(-1),
+            targetCompletionRate: targetCompletionRate,
+            createdAt: PreviewSamples.day(-28)
+        )
+        let container = try? PreviewSamples.makeContainer()
+        container?.mainContext.insert(plan)
+        plan.habits = habits
+        self.container = container
+        self.plan = plan
+    }
+
+    var body: some View {
+        if let container {
+            PlanWrapUpView(plan: plan)
+                .modelContainer(container)
+        }
+    }
+}
