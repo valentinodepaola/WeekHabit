@@ -234,10 +234,4 @@ import WidgetKit
 } timeline: {
     YearHeatmapEntry(date: .now, content: .snapshot(.sampleEmpty))
 }
-
-#Preview("Large · no disponible", as: .systemLarge) {
-    YearHeatmapWidget()
-} timeline: {
-    YearHeatmapEntry(date: .now, content: .unavailable)
-}
 #endif

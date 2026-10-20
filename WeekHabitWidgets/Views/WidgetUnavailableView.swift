@@ -33,3 +33,40 @@ enum WidgetUnavailableCopy {
     static let headline = "Abre WeekHabit"
     static let detail = "Para poner al día lo que ves aquí"
 }
+
+#if DEBUG
+import WidgetKit
+
+// Se previsualiza a través de cada widget y no suelta: el fondo, el alineado y la variante
+// `isAccessory` los pone el despachador de cada uno, y es eso lo que hay que ver.
+
+#Preview("Circular · no disponible", as: .accessoryCircular) {
+    TodayWidget()
+} timeline: {
+    TodayWidgetEntry(date: .now, content: .unavailable)
+}
+
+#Preview("Rectangular · no disponible", as: .accessoryRectangular) {
+    TodayWidget()
+} timeline: {
+    TodayWidgetEntry(date: .now, content: .unavailable)
+}
+
+#Preview("Small · no disponible", as: .systemSmall) {
+    TodayWidget()
+} timeline: {
+    TodayWidgetEntry(date: .now, content: .unavailable)
+}
+
+#Preview("Medium · no disponible", as: .systemMedium) {
+    TodayWidget()
+} timeline: {
+    TodayWidgetEntry(date: .now, content: .unavailable)
+}
+
+#Preview("Large · no disponible", as: .systemLarge) {
+    YearHeatmapWidget()
+} timeline: {
+    YearHeatmapEntry(date: .now, content: .unavailable)
+}
+#endif
