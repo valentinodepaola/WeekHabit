@@ -5,6 +5,7 @@
 
 import CoreTransferable
 import SwiftUI
+import SwiftData
 import UIKit
 import UniformTypeIdentifiers
 
@@ -92,5 +93,13 @@ struct MilestoneShareItem: Transferable {
 
     var previewImage: Image {
         Image(uiImage: cachedImage)
+    }
+}
+
+#Preview(traits: .sampleData, .fixedLayout(width: MilestoneShareCard.width, height: MilestoneShareCard.height)) {
+    @Previewable @Query(sort: \Habit.createdAt) var habits: [Habit]
+
+    if let habit = habits.first {
+        MilestoneShareCard(habit: habit, milestone: .month)
     }
 }

@@ -49,3 +49,13 @@ struct StatTile: View {
         .appElevation(.low)
     }
 }
+
+#Preview {
+    HStack(spacing: AppSpacing.s) {
+        StatTile(label: "Completados", value: "12/18", icon: "checkmark.circle.fill")
+        StatTile(label: "Meta total", value: "18", icon: "target")
+        StatTile(label: "Consistencia", value: "—", icon: "chart.bar.fill")
+    }
+    .padding()
+    .background(AppColor.bgCanvas)
+}

@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct ActiveExperimentCard: View {
     let experiment: HabitExperiment
@@ -63,5 +64,20 @@ struct ActiveExperimentCard: View {
             return "\(remainingText) · \(experiment.daySummary) · \(suggestedHourText)"
         }
         return "\(remainingText) · \(experiment.daySummary)"
+    }
+}
+
+#Preview(traits: .sampleData) {
+    @Previewable @Query var experiments: [HabitExperiment]
+    @Previewable @Query var habits: [Habit]
+
+    if let experiment = experiments.first {
+        ActiveExperimentCard(
+            experiment: experiment,
+            habit: habits.first(where: { $0.id == experiment.habitID }),
+            referenceDate: .now
+        )
+        .padding()
+        .background(AppColor.bgCanvas)
     }
 }

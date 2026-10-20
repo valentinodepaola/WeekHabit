@@ -44,3 +44,11 @@ struct WeeklyReflectionPromptCard: View {
         .appElevation(.low)
     }
 }
+
+#Preview {
+    @Previewable @State var text = ""
+
+    WeeklyReflectionPromptCard(text: $text)
+        .padding()
+        .background(AppColor.bgCanvas)
+}

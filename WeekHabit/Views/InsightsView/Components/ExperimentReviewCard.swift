@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct ExperimentReviewCard: View {
     let experiment: HabitExperiment
@@ -136,5 +137,25 @@ struct ExperimentReviewCard: View {
                 .foregroundStyle(AppColor.textPrimary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+#Preview(traits: .sampleData) {
+    @Previewable @Query var experiments: [HabitExperiment]
+    @Previewable @Query var habits: [Habit]
+
+    // El experimento de muestra empezó hace dos días: mirado una semana después, ya terminó.
+    if let experiment = experiments.first, let habit = habits.first(where: { $0.id == experiment.habitID }) {
+        ScrollView {
+            ExperimentReviewCard(
+                experiment: experiment,
+                habit: habit,
+                referenceDate: PreviewSamples.day(6),
+                onKeep: {},
+                onRevert: {}
+            )
+            .padding()
+        }
+        .background(AppColor.bgCanvas)
     }
 }

@@ -43,3 +43,9 @@ struct NoticeHourSuggestion: View {
         .clipShape(RoundedRectangle(cornerRadius: AppRadius.m, style: .continuous))
     }
 }
+
+#Preview {
+    NoticeHourSuggestion(window: HourWindow(startHour: 21, count: 14), onApply: {})
+        .padding()
+        .background(AppColor.bgCanvas)
+}

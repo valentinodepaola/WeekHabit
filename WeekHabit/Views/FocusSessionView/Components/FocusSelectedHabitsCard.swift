@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct FocusSelectedHabitsCard: View {
     let habits: [Habit]
@@ -41,4 +42,12 @@ struct FocusSelectedHabitsCard: View {
             }
         }
     }
+}
+
+#Preview(traits: .sampleData) {
+    @Previewable @Query(sort: \Habit.createdAt) var habits: [Habit]
+
+    FocusSelectedHabitsCard(habits: Array(habits.prefix(3)))
+        .padding()
+        .background(AppColor.bgCanvas)
 }

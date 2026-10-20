@@ -11,6 +11,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct FocusSequenceSetup: View {
     @Binding var items: [FocusSequenceItem]
@@ -242,5 +243,20 @@ struct FocusSequenceSetup: View {
             items.swapAt(idx, target)
         }
         AppHaptics.play(.selection)
+    }
+}
+
+#Preview(traits: .sampleData) {
+    @Previewable @Query(sort: \Habit.createdAt) var habits: [Habit]
+    @Previewable @State var items: [FocusSequenceItem] = []
+
+    FocusSequenceSetup(
+        items: $items,
+        habitsByID: Dictionary(uniqueKeysWithValues: habits.map { ($0.id, $0) })
+    )
+    .padding()
+    .background(AppColor.bgCanvas)
+    .onAppear {
+        items = habits.prefix(3).map { FocusSequenceItem(id: $0.id, seconds: FocusSequence.baseSeconds) }
     }
 }

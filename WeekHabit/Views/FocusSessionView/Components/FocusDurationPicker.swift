@@ -42,3 +42,11 @@ struct FocusDurationPicker: View {
         }
     }
 }
+
+#Preview {
+    @Previewable @State var selectedDuration: FocusDurationPreset = .twentyFive
+
+    FocusDurationPicker(selectedDuration: $selectedDuration)
+        .padding()
+        .background(AppColor.bgCanvas)
+}

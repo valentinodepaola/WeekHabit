@@ -61,3 +61,24 @@ extension View {
         )
     }
 }
+
+#Preview {
+    VStack(spacing: AppSpacing.m) {
+        Text("Tarjeta de Insights")
+            .font(AppFont.bodyEmphasis)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .insightCard()
+
+        Text("Sin elevación, con fondo de información")
+            .font(AppFont.bodyEmphasis)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .insightCard(background: AppColor.infoMuted.opacity(0.5), elevation: nil)
+
+        Text("Padding horizontal y vertical distintos")
+            .font(AppFont.bodyEmphasis)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .insightCard(horizontalPadding: AppSpacing.l, verticalPadding: AppSpacing.s)
+    }
+    .padding()
+    .background(AppColor.bgCanvas)
+}

@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct RhythmExperimentCard: View {
     let suggestions: [RankedRhythmSuggestion]
@@ -134,4 +135,38 @@ private struct RhythmChip: View {
             .background(AppColor.bgSunken)
             .clipShape(Capsule())
     }
+}
+
+#Preview("Con sugerencias", traits: .sampleData) {
+    @Previewable @Query(sort: \Habit.createdAt) var habits: [Habit]
+
+    // Sugerencias escritas a mano: las reales dependen de cuántos días de datos haya.
+    let suggestions = habits.prefix(2).enumerated().map { index, habit in
+        RankedRhythmSuggestion(
+            suggestion: RhythmExperimentSuggestion(
+                habit: habit,
+                title: index == 0 ? "Prueba \(habit.title) en la mañana" : "Menos días para \(habit.title)",
+                message: "Marcas más seguido cuando lo haces temprano.",
+                reason: "8 de tus últimas 10 marcas fueron antes de las 9.",
+                targetDaysPerWeek: 4,
+                activeDays: [.monday, .tuesday, .thursday, .friday],
+                suggestedStartHour: index == 0 ? 7 : nil,
+                baselineConsistency: 0.5
+            ),
+            priorityScore: index == 0 ? 0.82 : 0.61,
+            priorityReason: "Prioridad alta por constancia irregular"
+        )
+    }
+
+    ScrollView {
+        RhythmExperimentCard(suggestions: suggestions, onStart: { _ in })
+            .padding()
+    }
+    .background(AppColor.bgCanvas)
+}
+
+#Preview("Sin señal") {
+    RhythmExperimentCard(suggestions: [], onStart: { _ in })
+        .padding()
+        .background(AppColor.bgCanvas)
 }
