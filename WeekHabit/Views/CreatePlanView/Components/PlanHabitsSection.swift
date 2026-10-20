@@ -103,3 +103,23 @@ private struct HabitSelectionRow: View {
         .buttonStyle(.plain)
     }
 }
+
+#Preview("Con hábitos", traits: .sampleData) {
+    @Previewable @Query var plans: [Plan]
+    @Previewable @State var selectedHabits: Set<UUID> = []
+
+    ScrollView {
+        PlanHabitsSection(selectedHabits: $selectedHabits)
+            .padding()
+    }
+    .background(AppColor.bgCanvas)
+    .onAppear { selectedHabits = Set(plans.flatMap(\.habits).map(\.id)) }
+}
+
+#Preview("Sin hábitos", traits: .emptyData) {
+    @Previewable @State var selectedHabits: Set<UUID> = []
+
+    PlanHabitsSection(selectedHabits: $selectedHabits)
+        .padding()
+        .background(AppColor.bgCanvas)
+}

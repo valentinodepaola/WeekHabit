@@ -29,3 +29,14 @@ struct HabitUnitSelector: View {
         }
     }
 }
+
+#Preview {
+    @Previewable @State var measurementUnit: HabitMeasurementUnit = .pages
+
+    HabitUnitSelector(
+        measurementUnit: $measurementUnit,
+        units: [.minutes, .pages, .kilometers, .glasses]
+    )
+    .padding()
+    .background(AppColor.bgCanvas)
+}

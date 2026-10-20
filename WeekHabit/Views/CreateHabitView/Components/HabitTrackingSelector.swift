@@ -30,3 +30,11 @@ struct HabitTrackingSelector: View {
         }
     }
 }
+
+#Preview {
+    @Previewable @State var trackingKind: HabitTrackingKind = .check
+
+    HabitTrackingSelector(trackingKind: $trackingKind)
+        .padding()
+        .background(AppColor.bgCanvas)
+}

@@ -26,3 +26,11 @@ struct HabitIconSearchField: View {
         .clipShape(RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous))
     }
 }
+
+#Preview {
+    @Previewable @State var searchText = ""
+
+    HabitIconSearchField(searchText: $searchText)
+        .padding()
+        .background(AppColor.bgCanvas)
+}

@@ -35,3 +35,11 @@ struct WeekdaySelectionComponent: View {
         }
     }
 }
+
+#Preview {
+    @Previewable @State var selectedDays: Set<Weekday> = [.monday, .wednesday, .friday]
+
+    WeekdaySelectionComponent(selectedDays: $selectedDays)
+        .padding()
+        .background(AppColor.bgCanvas)
+}

@@ -62,3 +62,16 @@ struct HabitIconBrowser: View {
         }
     }
 }
+
+#Preview {
+    @Previewable @State var selectedIconName = HabitAppearance.defaultIconName
+    @Previewable @State var searchText = ""
+
+    HabitIconBrowser(
+        selectedIconName: $selectedIconName,
+        selectedColor: HabitAppearance.color(for: HabitAppearance.defaultColorHex),
+        searchText: $searchText
+    )
+    .padding()
+    .background(AppColor.bgCanvas)
+}

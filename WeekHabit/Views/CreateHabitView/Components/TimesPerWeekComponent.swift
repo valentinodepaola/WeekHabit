@@ -50,3 +50,11 @@ struct TimesPerWeekComponent: View {
         .clipShape(Circle())
     }
 }
+
+#Preview {
+    @Previewable @State var timesPerWeek = 3
+
+    TimesPerWeekComponent(timesPerWeek: $timesPerWeek)
+        .padding()
+        .background(AppColor.bgCanvas)
+}

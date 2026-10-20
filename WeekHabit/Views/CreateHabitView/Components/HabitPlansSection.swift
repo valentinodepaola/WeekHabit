@@ -101,3 +101,21 @@ private struct PlanSelectionRow: View {
         .buttonStyle(.plain)
     }
 }
+
+#Preview("Con planes", traits: .sampleData) {
+    @Previewable @Query var plans: [Plan]
+    @Previewable @State var selectedPlans: Set<UUID> = []
+
+    HabitPlansSection(selectedPlans: $selectedPlans)
+        .padding()
+        .background(AppColor.bgCanvas)
+        .onAppear { selectedPlans = Set(plans.map(\.id)) }
+}
+
+#Preview("Sin planes", traits: .emptyData) {
+    @Previewable @State var selectedPlans: Set<UUID> = []
+
+    HabitPlansSection(selectedPlans: $selectedPlans)
+        .padding()
+        .background(AppColor.bgCanvas)
+}

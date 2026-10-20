@@ -48,3 +48,13 @@ struct HabitAppearanceEditor: View {
         }
     }
 }
+
+#Preview {
+    @Previewable @State var selectedIconName = HabitAppearance.defaultIconName
+    @Previewable @State var selectedColorHex = HabitAppearance.defaultColorHex
+
+    HabitAppearanceEditor(
+        selectedIconName: $selectedIconName,
+        selectedColorHex: $selectedColorHex
+    )
+}

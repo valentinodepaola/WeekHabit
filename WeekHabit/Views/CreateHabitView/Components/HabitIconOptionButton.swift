@@ -27,3 +27,14 @@ struct HabitIconOptionButton: View {
         .buttonStyle(.plain)
     }
 }
+
+#Preview {
+    let color = HabitAppearance.color(for: HabitAppearance.defaultColorHex)
+
+    HStack(spacing: 10) {
+        HabitIconOptionButton(iconName: "book.fill", isSelected: true, selectedColor: color) {}
+        HabitIconOptionButton(iconName: "drop.fill", isSelected: false, selectedColor: color) {}
+    }
+    .padding()
+    .background(AppColor.bgCanvas)
+}

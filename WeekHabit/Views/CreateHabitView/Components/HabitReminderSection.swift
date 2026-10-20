@@ -82,3 +82,42 @@ struct HabitReminderSection: View {
         )
     }
 }
+
+#Preview("Con permiso") {
+    @Previewable @State var isReminderEnabled = true
+    @Previewable @State var reminderTime = Date.now
+
+    HabitReminderSection(
+        isReminderEnabled: $isReminderEnabled,
+        reminderTime: $reminderTime,
+        authorizationStatus: .authorized
+    )
+    .padding()
+    .background(AppColor.bgCanvas)
+}
+
+#Preview("Sin preguntar") {
+    @Previewable @State var isReminderEnabled = false
+    @Previewable @State var reminderTime = Date.now
+
+    HabitReminderSection(
+        isReminderEnabled: $isReminderEnabled,
+        reminderTime: $reminderTime,
+        authorizationStatus: .notDetermined
+    )
+    .padding()
+    .background(AppColor.bgCanvas)
+}
+
+#Preview("Denegado") {
+    @Previewable @State var isReminderEnabled = false
+    @Previewable @State var reminderTime = Date.now
+
+    HabitReminderSection(
+        isReminderEnabled: $isReminderEnabled,
+        reminderTime: $reminderTime,
+        authorizationStatus: .denied
+    )
+    .padding()
+    .background(AppColor.bgCanvas)
+}
