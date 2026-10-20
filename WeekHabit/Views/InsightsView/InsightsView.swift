@@ -351,6 +351,10 @@ struct InsightsView: View {
 
 }
 
-#Preview {
+#Preview("Con datos", traits: .sampleData) {
+    InsightsView()
+}
+
+#Preview("Vacío", traits: .emptyData) {
     InsightsView()
 }

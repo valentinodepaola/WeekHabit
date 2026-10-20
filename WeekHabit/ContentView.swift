@@ -128,6 +128,6 @@ private struct IdentifiableWeeklyReview: Identifiable {
     var id: TimeInterval { weekStart.timeIntervalSinceReferenceDate }
 }
 
-#Preview {
+#Preview(traits: .sampleData) {
     ContentView()
 }

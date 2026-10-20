@@ -452,6 +452,10 @@ private enum WeekSheetRoute: Identifiable {
     }
 }
 
-#Preview {
+#Preview("Con datos", traits: .sampleData) {
+    WeekView()
+}
+
+#Preview("Vacío", traits: .emptyData) {
     WeekView()
 }

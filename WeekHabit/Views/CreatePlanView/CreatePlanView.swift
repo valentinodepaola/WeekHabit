@@ -133,6 +133,6 @@ private struct PlanSaveFailure: Identifiable {
     let message: String
 }
 
-#Preview {
+#Preview(traits: .sampleData) {
     CreatePlanView()
 }
