@@ -59,3 +59,18 @@ extension WHProgressRing where Center == EmptyView {
         self.center = { EmptyView() }
     }
 }
+
+// Sólo tokens de WeekHabitCore: este archivo compila también en el widget.
+#Preview {
+    HStack(spacing: AppSpacing.l) {
+        WHProgressRing(progress: 0, size: 72)
+        WHProgressRing(progress: 0.6, size: 72) {
+            Text("60%")
+                .font(AppFont.label)
+                .foregroundStyle(AppColor.textPrimary)
+        }
+        WHProgressRing(progress: 1, size: 72, progressColor: AppColor.success)
+    }
+    .padding()
+    .background(AppColor.bgCanvas)
+}

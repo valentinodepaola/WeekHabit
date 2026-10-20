@@ -63,3 +63,38 @@ extension View {
         modifier(AppElevationModifier(level: level))
     }
 }
+
+#Preview("Light") {
+    AppElevationPreview()
+        .preferredColorScheme(.light)
+}
+
+#Preview("Dark") {
+    AppElevationPreview()
+        .preferredColorScheme(.dark)
+}
+
+/// Muestra los tres niveles uno junto al otro para comparar las sombras.
+private struct AppElevationPreview: View {
+    var body: some View {
+        HStack(spacing: AppSpacing.l) {
+            level(.low, title: "low")
+            level(.medium, title: "medium")
+            level(.high, title: "high")
+        }
+        .padding(AppSpacing.xl)
+        .background(AppColor.bgCanvas)
+    }
+
+    private func level(_ level: AppElevationLevel, title: String) -> some View {
+        RoundedRectangle(cornerRadius: AppRadius.l, style: .continuous)
+            .fill(AppColor.bgElevated)
+            .frame(width: 88, height: 88)
+            .overlay {
+                Text(title)
+                    .font(AppFont.label)
+                    .foregroundStyle(AppColor.textSecondary)
+            }
+            .appElevation(level)
+    }
+}

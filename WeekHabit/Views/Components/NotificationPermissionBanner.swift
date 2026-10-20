@@ -65,3 +65,31 @@ struct NotificationPermissionBanner: View {
         #endif
     }
 }
+
+#Preview("Sin decidir") {
+    NotificationPermissionBanner(
+        icon: "bell.badge",
+        iconColor: AppColor.accent,
+        tint: AppColor.accentMuted,
+        title: "Activa las notificaciones",
+        message: "Para que pueda avisarte a la hora que elijas.",
+        actionTitle: "Activar aviso",
+        action: {}
+    )
+    .padding()
+    .background(AppColor.bgCanvas)
+}
+
+#Preview("Denegado") {
+    NotificationPermissionBanner(
+        icon: "bell.slash",
+        iconColor: AppColor.warning,
+        tint: AppColor.warning.opacity(0.14),
+        title: "Notificaciones deshabilitadas",
+        message: "Las apagaste antes. Puedes reactivarlas en Ajustes.",
+        actionTitle: "Abrir Ajustes",
+        action: {}
+    )
+    .padding()
+    .background(AppColor.bgCanvas)
+}

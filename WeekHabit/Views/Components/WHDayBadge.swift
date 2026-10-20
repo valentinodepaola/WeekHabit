@@ -57,3 +57,15 @@ struct WHDayBadge: View {
         return AppColor.textSecondary
     }
 }
+
+#Preview {
+    HStack(spacing: AppSpacing.s) {
+        WHDayBadge(initial: "L")
+        WHDayBadge(initial: "M", isToday: true)
+        WHDayBadge(initial: "X", isSelected: true) {}
+        WHDayBadge(initial: "J", isCompleted: true)
+        WHDayBadge(initial: "V", size: 44)
+    }
+    .padding()
+    .background(AppColor.bgCanvas)
+}

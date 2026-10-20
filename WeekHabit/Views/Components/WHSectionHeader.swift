@@ -40,3 +40,17 @@ struct WHSectionHeader: View {
         }
     }
 }
+
+#Preview {
+    VStack(spacing: AppSpacing.xl) {
+        WHSectionHeader(title: "Hoy")
+        WHSectionHeader(title: "Tus planes", subtitle: "2 activos")
+        WHSectionHeader(
+            title: "Hábitos",
+            subtitle: "Ordenados por hora",
+            action: WHSectionHeaderAction(label: "Ver todos", perform: {})
+        )
+    }
+    .padding()
+    .background(AppColor.bgCanvas)
+}

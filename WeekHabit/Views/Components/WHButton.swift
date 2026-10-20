@@ -114,3 +114,25 @@ private struct WHPressableButtonStyle: ButtonStyle {
             .animation(AppMotion.respectful(AppMotion.snap, reduceMotion), value: configuration.isPressed)
     }
 }
+
+#Preview("Variantes") {
+    VStack(spacing: AppSpacing.m) {
+        WHButton(title: "Guardar hábito", icon: "checkmark", variant: .primary) {}
+        WHButton(title: "Editar plan", variant: .secondary) {}
+        WHButton(title: "Ahora no", variant: .ghost) {}
+        WHButton(title: "Eliminar hábito", icon: "trash", variant: .destructive) {}
+        WHButton(title: "Guardar hábito", variant: .primary, isDisabled: true) {}
+    }
+    .padding()
+    .background(AppColor.bgCanvas)
+}
+
+#Preview("Compacto") {
+    HStack(spacing: AppSpacing.s) {
+        WHButton(title: "Activar", icon: "bell", variant: .primary, size: .compact, fullWidth: false) {}
+        WHButton(title: "Abrir Ajustes", variant: .secondary, size: .compact, fullWidth: false) {}
+        WHButton(title: "Omitir", variant: .ghost, size: .compact, fullWidth: false) {}
+    }
+    .padding()
+    .background(AppColor.bgCanvas)
+}

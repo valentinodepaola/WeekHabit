@@ -64,3 +64,22 @@ private struct ElevationIfNeeded: ViewModifier {
         }
     }
 }
+
+#Preview {
+    VStack(spacing: AppSpacing.l) {
+        ForEach([WHCardVariant.flat, .elevated, .sunken], id: \.self) { variant in
+            WHCard(variant: variant) {
+                VStack(alignment: .leading, spacing: AppSpacing.xs) {
+                    Text(String(describing: variant).capitalized)
+                        .font(AppFont.bodyEmphasis)
+                        .foregroundStyle(AppColor.textPrimary)
+                    Text("Contenido de ejemplo dentro de la tarjeta.")
+                        .font(AppFont.callout)
+                        .foregroundStyle(AppColor.textSecondary)
+                }
+            }
+        }
+    }
+    .padding()
+    .background(AppColor.bgCanvas)
+}

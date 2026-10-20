@@ -44,3 +44,23 @@ struct WHFormSection<Content: View>: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
+
+#Preview {
+    VStack(spacing: AppSpacing.xl) {
+        WHFormSection(title: "Nombre", helper: "Algo corto que reconozcas de un vistazo.") {
+            WHCard(variant: .sunken, padding: AppSpacing.m) {
+                Text("Leer 10 páginas")
+                    .font(AppFont.body)
+                    .foregroundStyle(AppColor.textPrimary)
+            }
+        }
+
+        WHFormSection {
+            Text("Sección sin título ni ayuda.")
+                .font(AppFont.callout)
+                .foregroundStyle(AppColor.textSecondary)
+        }
+    }
+    .padding()
+    .background(AppColor.bgCanvas)
+}

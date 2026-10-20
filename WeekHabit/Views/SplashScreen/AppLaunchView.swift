@@ -61,3 +61,13 @@ struct AppLaunchView<Content: View>: View {
         }
     }
 }
+
+#Preview {
+    AppLaunchView {
+        AppBackground {
+            Text("Contenido de la app")
+                .font(AppFont.body)
+                .foregroundStyle(AppColor.textSecondary)
+        }
+    }
+}

@@ -76,3 +76,9 @@ struct OnboardingNotificationsScreen: View {
         }
     }
 }
+
+#Preview {
+    AppBackground {
+        OnboardingNotificationsScreen(onRequestNotifications: {}, onSkip: {})
+    }
+}

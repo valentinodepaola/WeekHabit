@@ -50,3 +50,9 @@ struct WeeklyReviewBanner: View {
         .accessibilityLabel("Abrir revisión semanal")
     }
 }
+
+#Preview {
+    WeeklyReviewBanner(weekRangeText: "13 – 19 oct", onTap: {})
+        .padding()
+        .background(AppColor.bgCanvas)
+}

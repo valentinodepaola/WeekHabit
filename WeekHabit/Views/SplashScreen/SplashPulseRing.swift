@@ -28,3 +28,13 @@ struct SplashPulseRing: View {
     }
 }
 
+
+#Preview {
+    ZStack {
+        ForEach(0..<3, id: \.self) { index in
+            SplashPulseRing(index: index, isExpanded: true, isVisible: true)
+        }
+    }
+    .frame(width: 260, height: 260)
+    .background(AppColor.bgCanvas)
+}

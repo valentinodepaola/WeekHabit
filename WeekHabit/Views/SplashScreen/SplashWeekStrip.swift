@@ -23,3 +23,13 @@ struct SplashWeekStrip: View {
     }
 }
 
+
+#Preview {
+    VStack(spacing: AppSpacing.l) {
+        SplashWeekStrip(progress: 0)
+        SplashWeekStrip(progress: 0.5)
+        SplashWeekStrip(progress: 1)
+    }
+    .padding()
+    .background(AppColor.bgCanvas)
+}

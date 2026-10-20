@@ -63,3 +63,19 @@ struct StarterHabitRow: View {
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }
+
+#Preview {
+    @Previewable @State var selectedID = StarterHabitTemplate.defaultID
+
+    VStack(spacing: AppSpacing.s) {
+        ForEach(StarterHabitTemplate.all) { template in
+            StarterHabitRow(
+                template: template,
+                isSelected: template.id == selectedID,
+                onTap: { selectedID = template.id }
+            )
+        }
+    }
+    .padding()
+    .background(AppColor.bgCanvas)
+}

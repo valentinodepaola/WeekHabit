@@ -31,3 +31,12 @@ struct SplashCoreIcon: View {
     }
 }
 
+
+#Preview {
+    HStack(spacing: AppSpacing.xl) {
+        SplashCoreIcon(isExpanded: false)
+        SplashCoreIcon(isExpanded: true)
+    }
+    .padding(AppSpacing.xl)
+    .background(AppColor.bgCanvas)
+}
