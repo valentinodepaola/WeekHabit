@@ -237,6 +237,14 @@ Views/
 Shared UI goes in `Views/Components`. Feature-specific UI stays in that feature's `Components`
 folder. UI the widget also needs goes in `WeekHabitCore/Components`.
 
+Every view or component file ends with at least one `#Preview`, one per state when the view
+changes a lot (empty, with data, completed…). Views that need SwiftData use
+`#Preview(traits: .sampleData)` (or `.emptyData` for empty states): an in-memory container
+seeded by `PreviewSamples` (`Views/Components/Previews/PreviewSampleData.swift`),
+never the App Group store. A component that takes a model reads it with
+`@Previewable @Query`; one with a `@Binding` uses `@Previewable @State`. Widget previews use the
+value snapshots in `TodayWidgetSamples` / `YearHeatmapSamples` instead.
+
 ## Design System
 
 Reuse existing tokens/helpers:

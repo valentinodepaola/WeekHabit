@@ -15,7 +15,7 @@ xcodebuild -project WeekHabit.xcodeproj \
 
 ## Estado actual de la suite
 
-Última validación conocida (2026-10-19): **207 tests passed** en 25 suites, sobre
+Última validación conocida (2026-10-19): **209 tests passed** en 26 suites, sobre
 `platform=iOS Simulator,name=iPhone 17`, sin fallos.
 
 Además de la cobertura inicial, la suite ya cubre:
@@ -89,6 +89,10 @@ Además de la cobertura inicial, la suite ya cubre:
 - `FocusSessionActivityTests`: lo que arma la Live Activity de la Sesión de ritmo —hora de fin,
   fechas del `ContentState`, conteo y copy compartido— y que una sesión a la que la app vuelve
   tarde se cierre a su hora y no a la del regreso.
+- `PreviewSamplesTests`: el set de datos de muestra de los previews (`PreviewSamples`). Los
+  previews no corren en CI, así que esto avisa si el contenedor en memoria deja de guardarse
+  tras un esquema nuevo, o si los hábitos de muestra dejan de mostrar el estado que prometen
+  (racha con comodín, recuperación de ayer, racha rota).
 
 ## Línea base de rendimiento
 
@@ -284,5 +288,6 @@ regresión que devuelva un escaneo por día al dominio los rompe por orden de ma
 | Widget "Año de constancia" — `YearHeatmapSnapshot` y `HeatmapMonthSegment` | 156 |
 | Aviso diario — `dailyNoticeOccurrences` y la sugerencia de hora | 173 |
 | Live Activity de la Sesión de ritmo — atributos, hora de fin y cierre a su hora | 183 |
+| Datos de muestra de los previews — `PreviewSamples` | 209 |
 
 El detalle de qué cerró cada fase vive en el historial de git.
