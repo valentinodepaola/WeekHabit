@@ -20,3 +20,13 @@ struct OnboardingProgressView: View {
         .frame(height: 8)
     }
 }
+
+#Preview {
+    VStack(spacing: AppSpacing.l) {
+        OnboardingProgressView(currentIndex: 0, total: 3)
+        OnboardingProgressView(currentIndex: 1, total: 3)
+        OnboardingProgressView(currentIndex: 2, total: 3)
+    }
+    .padding()
+    .background(AppColor.bgCanvas)
+}

@@ -35,3 +35,13 @@ struct SplashScreenBackground: View {
         }
     }
 }
+
+#Preview("Light") {
+    SplashScreenBackground()
+        .preferredColorScheme(.light)
+}
+
+#Preview("Dark") {
+    SplashScreenBackground()
+        .preferredColorScheme(.dark)
+}

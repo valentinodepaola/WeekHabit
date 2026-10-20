@@ -56,3 +56,15 @@ struct SplashRhythmMark: View {
     }
 }
 
+
+#Preview("A medio camino") {
+    SplashRhythmMark(progress: 0.5, pulseIsExpanded: false, contentIsVisible: true)
+        .padding()
+        .background(AppColor.bgCanvas)
+}
+
+#Preview("Completo") {
+    SplashRhythmMark(progress: 1, pulseIsExpanded: true, contentIsVisible: true)
+        .padding()
+        .background(AppColor.bgCanvas)
+}

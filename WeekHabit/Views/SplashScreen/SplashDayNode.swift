@@ -51,3 +51,14 @@ struct SplashDayNode: View {
     }
 }
 
+
+#Preview {
+    // Con progreso 0.5 los primeros días ya están activos y el resto espera.
+    HStack(spacing: AppSpacing.s) {
+        ForEach(Weekday.ordered.indices, id: \.self) { index in
+            SplashDayNode(weekday: Weekday.ordered[index], index: index, progress: 0.5)
+        }
+    }
+    .padding()
+    .background(AppColor.bgCanvas)
+}

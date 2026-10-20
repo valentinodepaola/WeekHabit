@@ -24,3 +24,11 @@ struct AppBackground<Content: View>: View {
         .whKeyboardDoneToolbar()
     }
 }
+
+#Preview {
+    AppBackground {
+        Text("Contenido sobre el fondo de la app")
+            .font(AppFont.body)
+            .foregroundStyle(AppColor.textSecondary)
+    }
+}

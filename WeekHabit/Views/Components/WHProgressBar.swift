@@ -43,3 +43,14 @@ struct WHProgressBar: View {
         .frame(height: height)
     }
 }
+
+#Preview {
+    VStack(spacing: AppSpacing.l) {
+        WHProgressBar(progress: 0)
+        WHProgressBar(progress: 0.45)
+        WHProgressBar(progress: 0.6, goalMarker: 0.8)
+        WHProgressBar(progress: 1, progressColor: AppColor.success, height: 10)
+    }
+    .padding()
+    .background(AppColor.bgCanvas)
+}

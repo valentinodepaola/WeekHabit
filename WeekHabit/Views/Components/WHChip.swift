@@ -51,3 +51,14 @@ struct WHChip: View {
         isSelected ? AppColor.accent.opacity(0.4) : AppColor.divider
     }
 }
+
+#Preview {
+    HStack(spacing: AppSpacing.s) {
+        WHChip(label: "Diario", isSelected: true) {}
+        WHChip(label: "Días fijos", icon: "calendar") {}
+        WHChip(label: "Flexible", isDisabled: true) {}
+        WHChip(label: "Solo tag")
+    }
+    .padding()
+    .background(AppColor.bgCanvas)
+}

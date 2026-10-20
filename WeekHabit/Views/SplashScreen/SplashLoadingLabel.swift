@@ -13,3 +13,9 @@ struct SplashLoadingLabel: View {
             .padding(.bottom, AppSpacing.l)
     }
 }
+
+#Preview {
+    SplashLoadingLabel()
+        .padding()
+        .background(AppColor.bgCanvas)
+}

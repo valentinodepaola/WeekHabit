@@ -19,3 +19,9 @@ struct SplashBrandLockup: View {
     }
 }
 
+
+#Preview {
+    SplashBrandLockup()
+        .padding()
+        .background(AppColor.bgCanvas)
+}

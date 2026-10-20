@@ -97,3 +97,32 @@ extension WHListRow where Leading == EmptyView, Trailing == EmptyView {
         self.onTap = onTap
     }
 }
+
+#Preview {
+    VStack(spacing: AppSpacing.m) {
+        WHListRow(title: "Leer", subtitle: "10 páginas · todos los días")
+
+        WHListRow(title: "Meditar", subtitle: "5 días por semana") {
+            Image(systemName: "brain.head.profile")
+                .foregroundStyle(AppColor.accent)
+                .frame(width: 32, height: 32)
+                .background(AppColor.accentMuted)
+                .clipShape(Circle())
+        } trailing: {
+            Image(systemName: "chevron.right")
+                .foregroundStyle(AppColor.textTertiary)
+        }
+
+        WHListRow(
+            title: "Caminar",
+            trailing: {
+                Text("3/5")
+                    .font(AppFont.label)
+                    .foregroundStyle(AppColor.textSecondary)
+            },
+            onTap: {}
+        )
+    }
+    .padding()
+    .background(AppColor.bgCanvas)
+}

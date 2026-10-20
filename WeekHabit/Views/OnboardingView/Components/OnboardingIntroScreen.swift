@@ -55,3 +55,9 @@ struct OnboardingIntroScreen: View {
         }
     }
 }
+
+#Preview {
+    AppBackground {
+        OnboardingIntroScreen(onStart: {}, onSkip: {})
+    }
+}

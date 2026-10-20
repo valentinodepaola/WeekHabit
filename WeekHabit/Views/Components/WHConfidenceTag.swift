@@ -51,3 +51,13 @@ struct WHConfidenceTag: View {
         )
     }
 }
+
+#Preview {
+    VStack(alignment: .leading, spacing: AppSpacing.s) {
+        WHConfidenceTag(confidence: .low)
+        WHConfidenceTag(confidence: .medium)
+        WHConfidenceTag(confidence: .high)
+    }
+    .padding()
+    .background(AppColor.bgCanvas)
+}

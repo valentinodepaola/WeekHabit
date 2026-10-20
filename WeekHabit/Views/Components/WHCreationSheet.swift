@@ -183,3 +183,11 @@ struct WHCreationSheet: View {
         return "\(option.title), no disponible. \(disabledReason)"
     }
 }
+
+#Preview("Todas las opciones") {
+    WHCreationSheet { _ in }
+}
+
+#Preview("Foco bloqueado") {
+    WHCreationSheet(focusDisabledReason: "Crea un hábito primero para enfocarte en él.") { _ in }
+}
